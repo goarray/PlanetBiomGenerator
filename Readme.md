@@ -1,9 +1,9 @@
 # Starfield Planet Biome Generator
 
-⚠️ This tool does not paint detailed landscapes or terrain. ⚠️
+⚠️ This tool does not paint your planet! ⚠️
 
-It only generates ANAM.biom files for selected planets and wraps the biomes around the equator.
-Use other tools for actual biome editing.
+It only generates ANAM.biom files for planets and wraps the biomes around the equator.
+Use other tools for actual biome placement.
 
 ----  
 
