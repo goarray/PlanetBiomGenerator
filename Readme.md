@@ -16,7 +16,6 @@ Use other tools for visual/terrain biome editing.
 
 - Compatible with Starfield Creation Kit planet definitions
 
-- Biomes Source
 - - `Biomes.csv` includes all generic base game biomes, excluding named ones (like sandyearth, etc.)
 
 ----
@@ -29,15 +28,18 @@ Included:
 
 - `Starfield - AddBiomesFromBiomesCSV.pas` - Assigns 7 random generic biomes to selected planet(s)
 
-- Tip: You can batch-assign certain biomes to new planets by editing the Biomes.csv and re-running the batch script.
+- Tip: You can batch-assign specific biomes to new planets by editing the Biomes.csv and re-running the xEdit `Add` script.
 
-##Installation
+## Installation
 
 Drop the two folders into your xEdit.exe directory:
 
 - `/Edit Scripts/` → will auto-load into xEdit script list
 
 - `/PlanetBiomes/` → script and batch runner live here
+
+Note: This is not necessary for the tool to work.
+But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the `/PlanetBiomes/` directory.
 
 ## How to Use
 
@@ -47,7 +49,7 @@ Drop the two folders into your xEdit.exe directory:
 
 -  Run the script: `Starfield - ExportBiomesToPlanetBiomesCSV`
 
-- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv`
+- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in xEdit/)
 
 # 2. Generate .biom Files
 
@@ -55,7 +57,7 @@ Drop the two folders into your xEdit.exe directory:
 
 - This will create a folder like: `/PlanetBiomes/[yourpluginname.esm or .esp]/`
 
-- It will contain one .biom file per planet in the plugin
+- It will contain one `[ANAM].biom` file per planet in the plugin
 
 # 3. Install the Generated Biomes
 
