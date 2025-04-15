@@ -21,11 +21,11 @@ Use other tools for visual/terrain biome editing.
 
 ## xEdit Automation Scripts
 
-- `Starfield - ExportBiomesToPlanetBiomesCSV.pas` - Exports the selected planets’ biomes to CSV
+- `Starfield - ExportBiomesToPlanetBiomesCSV.pas` - Exports the selected planets’ biomes to PlanetBiomes.CSV
 
 - `Starfield - AddBiomesFromBiomesCSV.pas` - Assigns 7 random generic biomes to selected planet(s)
 
-- Tip: You can batch-assign specific biomes to new planets by editing the Biomes.csv and re-running the xEdit `Add` script.
+- Tip: You can batch-assign specific biomes to new planets by editing the Biomes.csv and re-running the xEdit `AddBiomes..` script.
 
 ----
 
@@ -37,8 +37,7 @@ Drop the two folders into your xEdit.exe directory:
 
 - `/PlanetBiomes/` → script and batch runner live here
 
-Note: This is not necessary for the tool to work.
-But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the `/PlanetBiomes/` directory.
+Note: This is not necessary for the tool to work. But, the export script will need added to xEdit and the /PlanetBiomes`/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the .bat `/PlanetBiomes/` directory.
 
 ## How to Use
 
@@ -54,13 +53,13 @@ But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiom
 
 - Run the batch script: `/PlanetBiomes/PlanetBiomes.bat`
 
-- This will create a folder like: `/PlanetBiomes/[yourpluginname.esm or .esp]/`
+- This will create a `plugin` folder like: /PlanetBiomes/`[yourpluginname.esm or .esp]/`
 
 - It will contain one `[ANAM].biom` file per planet in the plugin
 
 ### 3. Install the Generated Biomes
 
-- Move the generated plugin folder into your Starfield directory: `Starfield/Data/planetdata/biomemaps/[yourpluginname.esm or .esp]/`
+- Move the generated 'plugin' folder into your Starfield directory: Starfield/Data/planetdata/biomemaps/`[yourpluginname.esm or .esp]/`
 
 - Each .biom will now be recognized by the game when loading the corresponding planet.
 
