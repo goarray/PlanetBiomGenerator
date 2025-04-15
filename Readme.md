@@ -1,4 +1,4 @@
-### Starfield Planet Biome Generator
+# Starfield Planet Biome Generator
 
 ⚠️ This tool does not paint detailed landscapes or terrain.
 It only generates ANAM.biom files for selected planets and wraps biomes around the equator.
@@ -18,17 +18,16 @@ Use other tools for visual/terrain biome editing.
 
 - - `Biomes.csv` includes all generic base game biomes, excluding named ones (like sandyearth, etc.)
 
-----
 
-## xEdit Automation Script
-
-Included:
+## xEdit Automation Scripts
 
 - `Starfield - ExportBiomesToPlanetBiomesCSV.pas` - Exports the selected planets’ biomes to CSV
 
 - `Starfield - AddBiomesFromBiomesCSV.pas` - Assigns 7 random generic biomes to selected planet(s)
 
 - Tip: You can batch-assign specific biomes to new planets by editing the Biomes.csv and re-running the xEdit `Add` script.
+
+----
 
 ## Installation
 
@@ -64,6 +63,8 @@ But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiom
 - Move the generated plugin folder into your Starfield directory: `Starfield/Data/planetdata/biomemaps/[yourpluginname.esm or .esp]/`
 
 - Each .biom will now be recognized by the game when loading the corresponding planet.
+
+----  
 
 ## Done!
 
