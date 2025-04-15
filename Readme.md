@@ -59,7 +59,7 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 
 ### 3. Install the Generated Biomes
 
-- Move the generated 'plugin' folder into your Starfield directory: Starfield/Data/planetdata/biomemaps/`[yourpluginname.esm or .esp]/`
+- Move the generated 'plugin' folder into your plugins directory: /Data/planetdata/biomemaps/`[yourpluginname.esm or .esp]/`
 
 - Each .biom will now be recognized by the game when loading the corresponding planet.
 
