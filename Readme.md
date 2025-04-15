@@ -36,7 +36,7 @@ Drop the two folders into your xEdit.exe directory:
 
 - `/PlanetBiomes/` → script and batch runner live here
 
-Note: This is not necessary for the tool to work. But, the export script will need added to xEdit and the /PlanetBiomes`/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the .bat `/PlanetBiomes/` directory.
+Note: This is not necessary for the tool to work. But, the export script will need added to xEdit and the /PlanetBiomes`/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the tool's `/PlanetBiomes/` directory.
 
 ## How to Use
 
@@ -67,6 +67,4 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 ----  
 
 ## Done!
-
-You’re now ready to populate and scan your planets in-game with proper biome references.
 
