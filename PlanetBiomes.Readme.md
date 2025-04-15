@@ -16,9 +16,9 @@ In xEdit, select the planet(s) you wish to generate the .biom files for, run the
 
 This will (re)generate a /PlanetBiomes/xEditOutput/PlanetBiomes.CSV which contains all of the biome info for the selected planet(s) 
 
-Run /PlanetBiomes/PlanetBiomes.bat, this will create /[yourpluginname.esm/esp]/ and fill it with the new (ANAM).biom files.  
+Run /PlanetBiomes/PlanetBiomes.bat, this will create /[yourpluginname.esm/esp]/ and fill it with the new (ANAM).biom file(s).  
 
-Drop the created folder into your: "/planetdata/biomemaps/" directory. 
+Drop the entire /[yourpluginname.esm/esp]/ folder into your: "/planetdata/biomemaps/" directory. 
 
 Done.
 
