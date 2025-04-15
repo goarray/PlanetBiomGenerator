@@ -43,7 +43,7 @@ But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiom
 
 ## How to Use
 
-# 1. Export Biomes from Planet(s)
+### 1. Export Biomes from Planet(s)
 
 - In xEdit, select one or more planet records
 
@@ -51,7 +51,7 @@ But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiom
 
 - This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in xEdit/)
 
-# 2. Generate .biom Files
+### 2. Generate .biom Files
 
 - Run the batch script: `/PlanetBiomes/PlanetBiomes.bat`
 
@@ -59,15 +59,13 @@ But, the export script will need added to xEdit and the `/xEditOutput/PlanetBiom
 
 - It will contain one `[ANAM].biom` file per planet in the plugin
 
-# 3. Install the Generated Biomes
+### 3. Install the Generated Biomes
 
 - Move the generated plugin folder into your Starfield directory: `Starfield/Data/planetdata/biomemaps/[yourpluginname.esm or .esp]/`
 
 - Each .biom will now be recognized by the game when loading the corresponding planet.
 
 ## Done!
-
-----
 
 You’re now ready to populate and scan your planets in-game with proper biome references.
 
