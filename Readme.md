@@ -1,24 +1,77 @@
-Note, this is not going to 'paint' a pretty landscape on the planet(s), you'll need to use a separate method / tool for that. This simple generates the ANAM.biom files needed for proper planets and wraps the biomes around the equator.
+🌍 Starfield Planet Biome Generator
+⚠️ This tool does not paint detailed terrain or generate landscape detail.
+It only generates ANAM.biom files with generic biome layouts around the equator.
+For detailed landscape painting, use additional modding tools.
 
-The Biomes.CSV file contains all of the base biomes minus named ones, eg, sandyearth. 
+🔧 What It Does
+Exports biome info from selected planets using xEdit
 
-The included "Starfield - AddBiomesFromBiomesCSV" will add 7 generic (random) biomes to any selected planet(s) in xEdit from the Biomes.CSV (edit this to batch in xEdit).
+Generates .biom files based on those planets
 
-----
+Outputs files into the correct biomemaps/ folder structure
 
-Instructions:
+Includes helper scripts for batch processing and testing
 
-Drop the two folders into your xEdit.exe directory. 
+📁 Files Included
+PlanetBiomes.bat — Main batch runner
 
-The scripts in /Edit Scripts/ should wind up alongside your user created scripts.
+PlanetBiomes.py — Python processor
 
-In xEdit, select the planet(s) you wish to generate the .biom files for, run the "Starfield - ExportBiomesToPlanetBiomesCSV" xEdit script. 
+Biomes.csv — List of base game generic biomes
 
-This will (re)generate a /PlanetBiomes/xEditOutput/PlanetBiomes.CSV which contains all of the biome info for the selected planet(s) 
+Edit Scripts/ — xEdit scripts:
 
-Run /PlanetBiomes/PlanetBiomes.bat, this will create /[yourpluginname.esm/esp]/ and fill it with the new (ANAM).biom file(s).  
+Starfield - ExportBiomesToPlanetBiomesCSV.pas
 
-Drop the entire /[yourpluginname.esm/esp]/ folder into your: "/planetdata/biomemaps/" directory. 
+Starfield - AddBiomesFromBiomesCSV.pas
 
-Done.
+🚀 Quick Start
+1. Install
+Drop both folders into your xEdit directory:
 
+swift
+Copy
+Edit
+/Edit Scripts/
+/PlanetBiomes/
+The xEdit scripts will now appear under your script list.
+
+2. Export Biomes from a Planet
+Open xEdit and load your Starfield plugin(s)
+
+Select the planet(s) you want
+
+Run:
+
+nginx
+Copy
+Edit
+Starfield - ExportBiomesToPlanetBiomesCSV
+This generates:
+
+bash
+Copy
+Edit
+/PlanetBiomes/xEditOutput/PlanetBiomes.csv
+3. Generate .biom Files
+Run the batch file:
+
+swift
+Copy
+Edit
+/PlanetBiomes/PlanetBiomes.bat
+This creates a folder:
+
+css
+Copy
+Edit
+/PlanetBiomes/[YourPluginName.esm or .esp]/
+Each planet gets its own .biom file.
+
+4. Install .biom Files
+Move your output folder into Starfield’s biome path:
+
+swift
+Copy
+Edit
+Starfield/Data/planetdata/biomemaps/[YourPluginName.esm or .esp]/
