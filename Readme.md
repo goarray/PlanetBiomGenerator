@@ -11,7 +11,7 @@
 
 - Generates one [ANAM].biom file per planet
 
-- *New* generates planet """textures""" (seriously, I'm just figuring this out)
+- **New** generates planet """textures""" (seriously, I'm just figuring this out)
 
 - Includes a batch tool to automate generation
 
