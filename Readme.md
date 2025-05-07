@@ -11,6 +11,8 @@
 
 - Generates one [ANAM].biom file per planet
 
+- **NEW** now attempts to organicall distribute the biomes. The top biome in PNDT will be located around the equator, the last biome the pole.
+
 - **New** generates planet """textures""" (seriously, I'm just figuring this out)
 
 - Includes a batch tool to automate generation
