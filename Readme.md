@@ -1,6 +1,6 @@
 # Starfield Planet Biome Generator
 
-###Quick Start
+### Quick Start
 - Place in xEdit.exe directory > select planets in xEdit > run the `Starfield - ExportBiomes...` > run the PlanetBiomes.bat > place the generated /my.esm/ directory in your /biomemaps/ directory.
 
 ----  
