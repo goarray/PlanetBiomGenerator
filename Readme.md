@@ -5,7 +5,7 @@
 - .biom and .png files will now be created a a new /Output/ folder
 - Most setting are adjustable for .biom creation, a simple planet texture pipeline added
 
-#USE at your own risk!!!
+# USE at your own risk! Mostly works pretty ok.
 
 # Starfield Planet Biome Generator
 
