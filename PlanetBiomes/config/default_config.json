@@ -1,0 +1,61 @@
+{
+    "terrain_settings": {
+        "squircle_exponent": 3.3,
+        "distortion_sigma": 0.07,
+        "lat_distortion_factor": 0.08,
+        "drag_radius": 0.13,
+        "noise_factor": 0.09,
+        "lat_weight_factor": 1.14
+    },
+    "biome_drag_settings": {
+        "num_equator_drags": 10,
+        "num_pole_drags": 10,
+        "equator_drag_x_min": -50,
+        "equator_drag_x_max": 50,
+        "equator_drag_y_min": -50,
+        "equator_drag_y_max": 50,
+        "pole_drag_x_min": -50,
+        "pole_drag_x_max": 50,
+        "pole_drag_y_min": -50,
+        "pole_drag_y_max": 50,
+        "enable_equator_drag": true,
+        "equator_drag_strength": 1.0,
+        "enable_pole_drag": true,
+        "pole_drag_strength": 1.0
+    },
+    "biome_intrusion_settings": {
+        "enable_equator_intrusion": true,
+        "equator_intrusion_strength": 1.0,
+        "enable_pole_intrusion": true,
+        "pole_intrusion_strength": 1.0
+    },
+    "global_toggles": {
+        "apply_distortion": true,
+        "apply_resource_gradient": true,
+        "apply_latitude_blending": true
+    },
+    "global_seeds": {
+        "zone_seed": 42
+    },
+    "image_pipeline": {
+        "upscale_image": false,
+        "noise_scale": 50,
+        "smoothing_sigma": 0.5,
+        "elevation_scale": 50,
+        "fade_intensity": 50,
+        "light_source_x": 0.5,
+        "light_source_y": 0.5,
+        "fade_spread": 50,
+        "fractal_octaves": 2,
+        "detail_smoothness": 2,
+        "detail_strength_decay": 1.0,
+        "crater_count": 50,
+        "crater_max_radius": 50,
+        "crater_depth_min": -50,
+        "crater_depth_max": 50,
+        "enable_crater_shading": true,
+        "edge_blend_radius": 50,
+        "saturation_factor": 0.5,
+        "brightness_factor": 0.5
+    }
+}
