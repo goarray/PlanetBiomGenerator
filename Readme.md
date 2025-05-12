@@ -67,7 +67,7 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 
 - This will create a `plugin` folder like: /PlanetBiomes/Output/`[yourpluginname.esm or .esp]/`
 
-- This will contain one `[ANAM].biom` file per planet in the plugin
+- This directory will contain one `[ANAM].biom` file per planet found in the PlanetBiones.csv
 
 - **NEW** It will also create the directory /Output/BiomePNGs/, this will contain a North and South texture.png for each planet.
 
