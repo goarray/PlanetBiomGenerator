@@ -57,7 +57,7 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 
 - Run the script: `Starfield - ExportBiomesToPlanetBiomesCSV`
 
-- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in /xEdit/) (move this to /assets/)
+- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in /xEdit/) (move this to /PlanetBiomes//assets/)
 
 ### 2. Generate .biom Files
 
