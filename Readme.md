@@ -1,7 +1,16 @@
+# Expiremental UI added
+
+- Half broken at the moment, you'll need to move xEditOut/PlanetBiomes.csv to /assets/
+- .biom files may be in the wrong format.
+- .biom and .png files will now be created a a new /Output/ folder
+- Most setting are adjustable for .biom creation, a simple planet texture pipeline added
+
+# USE at your own risk! Mostly works pretty ok.
+
 # Starfield Planet Biome Generator
 
 ### Quick Start
-- Place in xEdit.exe directory > select planets in xEdit > run the `Starfield - ExportBiomes...` script in xEdit > run the PlanetBiomes.bat found in /PlanetBiomes/ > place the generated /my.esm/ directory in your /biomemaps/ directory.
+- Place in xEdit.exe directory > select planets in xEdit > run the `Starfield - ExportBiomes...` script in xEdit > move generated PlanetBiomes.csv to /PlanetBiomes/assets/ > run the PlanetBiomes.bat found in /PlanetBiomes/ > place the generated /my.esm/ directory in your /biomemaps/ directory.
 
 ----  
 
@@ -11,7 +20,7 @@
 
 - Generates one [ANAM].biom file per planet
 
-- **NEW** now attempts to organicall distribute the biomes. The top biome in PNDT will be located around the equator, the last biome the pole.
+- **NEW** now attempts to organically distribute the biomes. The top biome in PNDT (or per planet name in the PlanetBiomes.csv) will be located around the equator, the last biome the pole.
 
 - **New** generates planet """textures""" (seriously, I'm just figuring this out)
 
@@ -38,7 +47,7 @@ Drop the two folders into your xEdit.exe directory:
 
 - `/PlanetBiomes/` → scripts and batch runner live here
 
-Note: This is not necessary for the tool to work. But, the export script will need added to xEdit and the /PlanetBiomes`/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the tool's `/PlanetBiomes/` directory.
+Note: This is not necessary for the tool to work. But, the export script will need added to xEdit and the /PlanetBiomes`/xEditOutput/PlanetBiomes.csv/` the script creates will need to be moved to the tool's `/PlanetBiomes/assets/` directory.
 
 ## How to Use
 
@@ -46,21 +55,23 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 
 - In xEdit, select one or more planet records (even just base game if you want to try it out)
 
--  Run the script: `Starfield - ExportBiomesToPlanetBiomesCSV`
+- Run the script: `Starfield - ExportBiomesToPlanetBiomesCSV`
 
-- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in /xEdit/)
+- This generates the file: `/PlanetBiomes/xEditOutput/PlanetBiomes.csv` (in /xEdit/) (move this to /PlanetBiomes//assets/)
 
 ### 2. Generate .biom Files
 
 - Run the batch script: `/PlanetBiomes/PlanetBiomes.bat`
 
-- This will create a `plugin` folder like: /PlanetBiomes/`[yourpluginname.esm or .esp]/`
+- **NEW** This will launch the .biom scrambler UI (tkinter)
 
-- It will contain one `[ANAM].biom` file per planet in the plugin
+- This will create a `plugin` folder like: /PlanetBiomes/Output/`[yourpluginname.esm or .esp]/`
 
-- **NEW** It will also create the directory /BiomePNGs/, this will contain a North and South texture.png for each planet.
+- This directory will contain one `[ANAM].biom` file per planet found in the PlanetBiones.csv
 
-- Tip: Create you own PlanetBiome.csv using the template found in /PlanetBiomes.csv.Template/ for granual generation.
+- **NEW** It will also create the directory /Output/BiomePNGs/, this will contain a North and South texture.png for each planet.
+
+- Tip: Create you own PlanetBiome.csv using the template found in /PlanetBiomes/assets/ for granual generation.
 
 ### 3. Install the Generated Biomes
 
