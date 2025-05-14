@@ -3,6 +3,7 @@
 Planet Textures Generator
 
 Generates PNG texture images for planet biomes based on .biom files.
+Outputs four maps per hemisphere: albedo (color), normal, roughness, and alpha.
 Applies effects like noise, elevation, shading, craters, and edge blending
 to create realistic planetary visuals. Uses configuration from JSON and
 biome colors from CSV.
@@ -25,22 +26,30 @@ from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8
 from scipy.ndimage import gaussian_filter
 import numpy as np
 import colorsys
+import argparse
+import subprocess
 import json
 import csv
 import sys
+import os
 from PIL import Image, ImageEnhance
 
 # Directory paths
-BASE_DIR = Path(__file__).parent.parent
+if hasattr(sys, '_MEIPASS'):
+    BASE_DIR = Path(sys._MEIPASS).resolve()
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
+
 SCRIPT_DIR = BASE_DIR / "src"
 CONFIG_DIR = BASE_DIR / "config"
 ASSETS_DIR = BASE_DIR / "assets"
+CSV_DIR = BASE_DIR / "csv"
 OUTPUT_DIR = BASE_DIR / "Output"
 PNG_OUTPUT_DIR = OUTPUT_DIR / "BiomePNGs"
 
 # File paths
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
-BIOMES_CSV_PATH = ASSETS_DIR / "Biomes.csv"
+BIOMES_CSV_PATH = CSV_DIR / "Biomes.csv"
 
 # Grid constants
 GRID_SIZE = [256, 256]
@@ -67,15 +76,55 @@ CsSF_Biom = Struct(
     "resrcGridS" / UInt8[GRID_FLATSIZE],
 )
 
+
 def load_config():
     """Load configuration from JSON file."""
     global config
     try:
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
+
+        # Set default values only when missing
+        defaults = {
+            "image_pipeline": {
+                "noise_scale": 10.0,
+                "elevation_scale": 5.0,
+                "light_source_x": 1.0,
+                "light_source_y": 1.0,
+                "fade_intensity": 0.5,
+                "fade_spread": 2.0,
+                "saturation_factor": 1.2,
+                "brightness_factor": 1.0,
+                "upscale_image": False,
+                "enable_edge_blending": True,
+                "edge_blend_radius": 4,
+                "fractal_octaves": 4,
+                "detail_smoothness": 2,
+                "detail_strength_decay": 0.5,
+                "crater_max_radius": 20,
+                "crater_depth_min": 0.2,
+                "crater_depth_max": 0.8,
+                "enable_crater_shading": True,
+                "normal_strength": 1.0,
+                "roughness_base": 0.5,
+                "roughness_noise_scale": 0.1,
+                "alpha_base": 1.0,
+                "alpha_noise_scale": 0.05,
+            }
+        }
+
+        # Only update missing keys, preserving user-defined values
+        for key, value in defaults.items():
+            if key not in config:
+                config[key] = value
+            elif isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    config[key].setdefault(sub_key, sub_value)
+
     except FileNotFoundError:
         print(f"Error: Config file {CONFIG_PATH} not found.")
-        config = {}
+        config = defaults
+
 
 # Initialize configuration
 load_config()
@@ -112,22 +161,52 @@ def load_biom_file(filepath):
 
 def upscale_image(image, target_size=(1024, 1024)):
     """Upscale image to target size if enabled in config."""
-    if config["image_pipeline"]["upscale_image"]:
+    if config["image_pipeline"].get("upscale_image"):
         return image.resize(target_size, Image.Resampling.LANCZOS)
     return image
 
 def generate_noise(shape, scale=None):
-    """Generate smoothed noise for texture variation."""
+    """Generate larger-patch high-contrast salt-and-pepper noise."""
     if scale is None:
-        scale = config["image_pipeline"]["noise_scale"]
-    base_noise = np.random.rand(*shape)
-    smoothed = gaussian_filter(base_noise, sigma=scale)
-    return (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
+        scale = config["image_pipeline"].get("noise_scale")
+
+    noise = np.random.rand(*shape)
+    pepper_mask = noise < (3 * (scale / 100))
+    salt_mask = noise > (1 - (3 * (scale / 100)))
+
+    noise[pepper_mask] = 0
+    noise[salt_mask] = 1
+
+    patch_size = int(max(1, scale / 10))
+    for y in range(0, shape[0], patch_size):
+        for x in range(0, shape[1], patch_size):
+            if np.random.rand() < 0.5:
+                noise[y : y + patch_size, x : x + patch_size] = 0
+            elif np.random.rand() > 0.5:
+                noise[y : y + patch_size, x : x + patch_size] = 1
+
+    swap_count = int(scale * 5)
+    for _ in range(swap_count):
+        x1, y1, x2, y2 = (
+            np.random.randint(0, shape[1] - patch_size),
+            np.random.randint(0, shape[0] - patch_size),
+            np.random.randint(0, shape[1] - patch_size),
+            np.random.randint(0, shape[0] - patch_size),
+        )
+        (
+            noise[y1 : y1 + patch_size, x1 : x1 + patch_size],
+            noise[y2 : y2 + patch_size, x2 : x2 + patch_size],
+        ) = (
+            noise[y2 : y2 + patch_size, x2 : x2 + patch_size],
+            noise[y1 : y1 + patch_size, x1 : x1 + patch_size],
+        )
+
+    return noise
 
 def generate_elevation(shape, scale=None):
     """Generate elevation map for shading effects."""
     if scale is None:
-        scale = config["image_pipeline"]["elevation_scale"]
+        scale = config["image_pipeline"].get("elevation_scale")
     base_noise = np.random.rand(*shape)
     smoothed = gaussian_filter(base_noise, sigma=scale)
     return (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
@@ -135,9 +214,9 @@ def generate_elevation(shape, scale=None):
 def generate_atmospheric_fade(shape, intensity=None, spread=None):
     """Generate atmospheric fade effect from planet center."""
     if intensity is None:
-        intensity = config["image_pipeline"]["fade_intensity"]
+        intensity = config["image_pipeline"].get("fade_intensity")
     if spread is None:
-        spread = config["image_pipeline"]["fade_spread"]
+        spread = config["image_pipeline"].get("fade_spread")
     center_y, center_x = shape[0] // 2, shape[1] // 2
     y_grid, x_grid = np.indices(shape)
     distance_from_center = np.sqrt((x_grid - center_x) ** 2 + (y_grid - center_y) ** 2)
@@ -147,9 +226,9 @@ def generate_atmospheric_fade(shape, intensity=None, spread=None):
 def generate_shading(grid, light_source_x=None, light_source_y=None):
     """Generate anisotropic shading based on terrain gradients."""
     if light_source_x is None:
-        light_source_x = config["image_pipeline"]["light_source_x"]
+        light_source_x = config["image_pipeline"].get("light_source_x")
     if light_source_y is None:
-        light_source_y = config["image_pipeline"]["light_source_y"]
+        light_source_y = config["image_pipeline"].get("light_source_y")
     grad_x = np.gradient(grid, axis=1)
     grad_y = np.gradient(grid, axis=0)
     shading = np.clip(grad_x * light_source_x + grad_y * light_source_y, -1, 1)
@@ -166,43 +245,49 @@ def generate_fractal_noise(shape, octaves=None, detail_smoothness=None, detail_s
     base = np.random.rand(*shape)
     combined = np.zeros_like(base)
     for i in range(octaves):
-        sigma = detail_smoothness ** (i + 1)
-        weight = detail_strength_decay ** i
+        sigma = max(1, detail_smoothness ** (i * 0.3))
+        weight = detail_strength_decay ** (i * 1.5)
         combined += gaussian_filter(base, sigma=sigma) * weight
+
+    combined = (combined - combined.min()) / (combined.max() - combined.min())
+    combined = np.power(combined, 2)
     return (combined - combined.min()) / (combined.max() - combined.min())
 
-def add_craters(grid, num_craters=30, max_radius=None, crater_depth_min=None, crater_depth_max=None):
-    """Add impact craters to terrain grid."""
+def add_craters(grid, num_craters=100, max_radius=None, crater_depth_min=None, crater_depth_max=None):
+    """Add small impact craters to terrain grid."""
     if max_radius is None:
         max_radius = config["image_pipeline"].get("crater_max_radius", 20)
-    if max_radius <= 5:
-        print(f"WARNING: max_radius ({max_radius}) is too low, adjusting to 6.")
-        max_radius = 6
     if crater_depth_min is None:
         crater_depth_min = config["image_pipeline"].get("crater_depth_min", 0.2)
     if crater_depth_max is None:
         crater_depth_max = config["image_pipeline"].get("crater_depth_max", 0.8)
+
     if crater_depth_min >= crater_depth_max:
         crater_depth_max = crater_depth_min + 0.01
         print(f"WARNING: Adjusted crater_depth_max to {crater_depth_max} to ensure min < max")
+
     crater_map = np.zeros_like(grid, dtype=np.float32)
+
     for _ in range(num_craters):
         cx, cy = np.random.randint(0, GRID_SIZE[0]), np.random.randint(0, GRID_SIZE[1])
-        radius = np.random.randint(3, max_radius // 2)
+        radius = np.random.randint(1, max_radius // 3)
         y_grid, x_grid = np.indices(grid.shape)
         dist = np.sqrt((x_grid - cx) ** 2 + (y_grid - cy) ** 2)
-        crater_depth = np.exp(-dist / radius) * np.random.uniform(crater_depth_min, crater_depth_max) * 1.5
+        crater_depth = np.exp(-dist / radius) * np.random.uniform(crater_depth_min, crater_depth_max) * 1.2
         crater_map -= crater_depth
+
     return np.clip(grid + crater_map, 0, 1)
 
 def generate_crater_shading(crater_map):
     """Generate shading for crater rims."""
-    if config["image_pipeline"]["enable_crater_shading"]:
+    if config["image_pipeline"].get("enable_crater_shading"):
         shading = np.gradient(crater_map, axis=0) + np.gradient(crater_map, axis=1)
+        shading *= 2
         min_shading, max_shading = shading.min(), shading.max()
         if max_shading == min_shading:
             return np.zeros_like(crater_map)
         normalized_shading = (shading - min_shading) / (max_shading - min_shading)
+        normalized_shading = np.power(normalized_shading, 1.5)
         normalized_shading[np.isnan(normalized_shading)] = 0
         return normalized_shading
     return np.zeros_like(crater_map)
@@ -211,19 +296,26 @@ def generate_edge_blend(grid, blend_radius=None):
     """Generate edge blending map for biome transitions."""
     if not config["image_pipeline"].get("enable_edge_blending", True):
         return np.zeros_like(grid, dtype=np.float32)
+
     if blend_radius is None:
-        blend_radius = config["image_pipeline"].get("edge_blend_radius", 10)
+        blend_radius = config["image_pipeline"].get("edge_blend_radius", 4)
+
     edge_map = np.zeros_like(grid, dtype=np.float32)
+
     for y in range(GRID_SIZE[1]):
         for x in range(GRID_SIZE[0]):
             current_biome = grid[y, x]
             neighbors = [
-                grid[max(y - 1, 0), x], grid[min(y + 1, GRID_SIZE[1] - 1), x],
-                grid[y, max(x - 1, 0)], grid[y, min(x + 1, GRID_SIZE[0] - 1)]
+                grid[max(y - 1, 0), x],
+                grid[min(y + 1, GRID_SIZE[1] - 1), x],
+                grid[y, max(x - 1, 0)],
+                grid[y, min(x + 1, GRID_SIZE[0] - 1)],
             ]
             if any(neighbor != current_biome for neighbor in neighbors):
                 edge_map[y, x] = 1.0
-    return gaussian_filter(edge_map, sigma=blend_radius)
+
+    blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 3 - blend_radius))
+    return blurred_map
 
 def desaturate_color(rgb, saturate_factor=1.2):
     """Adjust color saturation in HSV space."""
@@ -234,24 +326,72 @@ def desaturate_color(rgb, saturate_factor=1.2):
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
     return tuple(int(c * 255) for c in (r, g, b))
 
-def enhance_brightness(image, bright_factor=1.5):
+def enhance_brightness(image, bright_factor=None):
     """Enhance image brightness."""
     if bright_factor is None:
         bright_factor = config["image_pipeline"].get("brightness_factor", 1.0)
+    scaled_factor = bright_factor * 4
     enhancer = ImageEnhance.Brightness(image)
-    return enhancer.enhance(bright_factor)
+    return enhancer.enhance(scaled_factor)
+
+def generate_normal_map(elevation_map, strength=None):
+    """Generate normal map from elevation map."""
+    if strength is None:
+        strength = config["image_pipeline"].get("normal_strength", 1.0)
+    grad_x = np.gradient(elevation_map, axis=1)
+    grad_y = np.gradient(elevation_map, axis=0)
+    normal_x = -grad_x * strength
+    normal_y = -grad_y * strength
+    normal_z = np.ones_like(normal_x)
+    magnitude = np.sqrt(normal_x**2 + normal_y**2 + normal_z**2)
+    normal_x = normal_x / magnitude
+    normal_y = normal_y / magnitude
+    normal_z = normal_z / magnitude
+    normal_map = np.stack((
+        (normal_x + 1) * 127.5,
+        (normal_y + 1) * 127.5,
+        normal_z * 255
+    ), axis=-1).astype(np.uint8)
+    return Image.fromarray(normal_map)
+
+def generate_roughness_map(elevation_map, fractal_map, base_value=None, noise_scale=None):
+    """Generate roughness map based on elevation and fractal noise."""
+    if base_value is None:
+        base_value = 1.0 - config["image_pipeline"].get("roughness_base", 0.5)
+    if noise_scale is None:
+        noise_scale = config["image_pipeline"].get("roughness_noise_scale", 0.1)
+    roughness = base_value * np.ones_like(elevation_map)
+    roughness += noise_scale * fractal_map
+    roughness = np.clip(roughness, 0, 1)
+    roughness_map = (roughness * 255).astype(np.uint8)
+    return Image.fromarray(roughness_map, mode='L')
+
+def generate_alpha_map(elevation_map, base_value=None, noise_scale=None):
+    """Generate alpha map for transparency."""
+    if base_value is None:
+        base_value = config["image_pipeline"].get("alpha_base", 1.0)
+    if noise_scale is None:
+        noise_scale = config["image_pipeline"].get("alpha_noise_scale", 0.05)
+    alpha = base_value * np.ones_like(elevation_map)
+    alpha += noise_scale * generate_noise(elevation_map.shape, scale=noise_scale * 100)
+    alpha = np.clip(alpha, 0, 1)
+    alpha_map = (alpha * 255).astype(np.uint8)
+    return Image.fromarray(alpha_map, mode='L')
 
 def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
-    """Generate biome image with visual effects."""
-    image = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
-    noise_map = generate_noise((GRID_SIZE[1], GRID_SIZE[0]))
+    """Generate biome image with albedo, normal, roughness, and alpha maps."""
+    # Initialize maps
+    albedo = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
+    noise_map = generate_noise((GRID_SIZE[1], GRID_SIZE[0]), scale=config["image_pipeline"]["noise_scale"])
     elevation_map = generate_elevation((GRID_SIZE[1], GRID_SIZE[0]))
     edge_blend_map = generate_edge_blend(grid)
     shading_map = generate_shading(elevation_map)
     fractal_map = generate_fractal_noise((GRID_SIZE[1], GRID_SIZE[0]))
     crater_map = add_craters(elevation_map)
     crater_shading = generate_crater_shading(crater_map)
+    bright_factor = config["image_pipeline"].get("brightness_factor", 1.0)
 
+    # Generate albedo map
     for y in range(GRID_SIZE[1]):
         for x in range(GRID_SIZE[0]):
             form_id = int(grid[y, x])
@@ -262,24 +402,78 @@ def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
             fractal_adjusted_color = tuple(int(c * (0.85 + 0.15 * fractal_map[y, x])) for c in light_adjusted_color)
             crater_adjusted_color = tuple(int(c * (0.7 + 0.3 * crater_shading[y, x])) for c in fractal_adjusted_color)
             lat_adjusted_color = tuple(int(c * (1 - lat_factor)) for c in crater_adjusted_color)
-            blended_color = tuple(int(c * (1 - 0.3 * edge_blend_map[y, x])) for c in lat_adjusted_color)
-            final_color = tuple(int(c * (0.95 + 0.05 * noise_map[y, x])) for c in blended_color)
-            image[y, x] = final_color
+            blended_color = tuple(int(c * (1 - 0.5 * edge_blend_map[y, x])) for c in lat_adjusted_color)
+            final_color = tuple(np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255) for c in blended_color)
+            albedo[y, x] = final_color
 
-    biome_image = Image.fromarray(image)
-    return enhance_brightness(biome_image, bright_factor=1.0)
+    albedo_image = Image.fromarray(albedo)
+    albedo_image = enhance_brightness(albedo_image, bright_factor)
+
+    # Generate normal, roughness, and alpha maps
+    normal_image = generate_normal_map(elevation_map)
+    roughness_image = generate_roughness_map(elevation_map, fractal_map)
+    alpha_image = generate_alpha_map(elevation_map)
+
+    return {
+        "albedo": albedo_image,
+        "normal": normal_image,
+        "roughness": roughness_image,
+        "alpha": alpha_image
+    }
+
+
+processing_widget_process = None  # ✅ Store process globally
+
+
+def start_processing_widget(title):
+    """Launch processing indicator and store process handle."""
+    global processing_widget_process
+    script_path = os.path.join(os.path.dirname(__file__), "processing_widget.py")
+
+    if not os.path.exists(script_path):
+        print(f"Error: {script_path} does not exist!")
+        return
+
+    processing_widget_process = subprocess.Popen(["python", script_path, title])
+
+
+def stop_processing_widget():
+    """Terminate processing widget when script completes."""
+    global processing_widget_process
+    if processing_widget_process:
+        processing_widget_process.terminate()
+
+_progress_started = False
 
 def main():
-    """Process .biom files and generate PNG textures."""
-    PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    biom_files = [
-        f for f in OUTPUT_DIR.rglob("*.biom")
-        if f.parent != OUTPUT_DIR and "assets" not in str(f.parent)
-    ]
 
-    if not biom_files:
-        print("No .biom files found in the output directory.")
-        sys.exit(1)
+    # Start progress bar
+    global _progress_started
+    if not _progress_started:
+        _progress_started = True
+        start_processing_widget("Processing Planet Textures")
+
+    """Process .biom files and generate PNG textures."""
+    parser = argparse.ArgumentParser(description="Generate PNG textures from .biom files")
+    parser.add_argument("biom_file", nargs="?", help="Path to the .biom file (for preview mode)")
+    parser.add_argument("--preview", action="store_true", help="Run in preview mode")
+    args = parser.parse_args()
+
+    PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    if args.preview and args.biom_file:
+        biom_files = [Path(args.biom_file)]
+        if not biom_files[0].exists():
+            print(f"Error: Provided .biom file not found: {args.biom_file}")
+            sys.exit(1)
+    else:
+        biom_files = [
+            f for f in OUTPUT_DIR.rglob("*.biom")
+            if f.parent != OUTPUT_DIR and "assets" not in str(f.parent)
+        ]
+        if not biom_files:
+            print("No .biom files found in the output directory.")
+            sys.exit(1)
 
     used_biome_ids = set()
     for biom_path in biom_files:
@@ -299,22 +493,39 @@ def main():
         print(f"Processing {biom_path.name}")
         try:
             biome_grid_n, biome_grid_s = load_biom_file(biom_path)
-            image_n = create_biome_image(biome_grid_n, biome_colors)
-            image_s = create_biome_image(biome_grid_s, biome_colors)
-            image_n = upscale_image(image_n)
-            image_s = upscale_image(image_s)
+            maps_n = create_biome_image(biome_grid_n, biome_colors)
+            maps_s = create_biome_image(biome_grid_s, biome_colors)
+
+            # Upscale all maps
+            maps_n = {k: upscale_image(v) for k, v in maps_n.items()}
+            maps_s = {k: upscale_image(v) for k, v in maps_s.items()}
+
             planet_name = biom_path.stem
-            image_n.save(PNG_OUTPUT_DIR / f"{planet_name}_North.png")
-            image_s.save(PNG_OUTPUT_DIR / f"{planet_name}_South.png")
-            print(f"Saved PNGs for {planet_name} (North and South)")
+
+            # Save all maps
+            maps_n["albedo"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_albedo.png")
+            maps_n["normal"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_normal.png")
+            maps_n["roughness"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_rough.png")
+            maps_n["alpha"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_alpha.png")
+
+            maps_s["albedo"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_albedo.png")
+            maps_s["normal"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_normal.png")
+            maps_s["roughness"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_rough.png")
+            maps_s["alpha"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_alpha.png")
+
+            print(f"Saved PNGs for {planet_name} (North and South: albedo, normal, roughness, alpha)")
         except Exception as e:
             import traceback
             print(f"Error processing {biom_path.name}: {e}")
             traceback.print_exc()
 
     print("Processing complete.")
+    stop_processing_widget()
     sys.stdout.flush()
     sys.exit(0)
+
+    with open("preview_flag.txt", "w") as f:
+        f.write("done")
 
 if __name__ == "__main__":
     main()

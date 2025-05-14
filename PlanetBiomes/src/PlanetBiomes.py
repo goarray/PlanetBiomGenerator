@@ -21,20 +21,32 @@ from pathlib import Path
 from construct import Struct, Const, Rebuild, this, len_
 from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8
 from scipy.ndimage import gaussian_filter, distance_transform_edt
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QProgressBar, QApplication
+from PySide6.QtCore import QTimer
 import numpy as np
 import subprocess
+import time
 import json
 import csv
 import sys
+import os
 
 # Directory paths
+if hasattr(sys, "_MEIPASS"):
+    BASE_DIR = Path(sys._MEIPASS).resolve()
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
+
 BASE_DIR = Path(__file__).parent.parent
 SCRIPT_DIR = BASE_DIR / "src"
 CONFIG_DIR = BASE_DIR / "config"
+OUTPUT_DIR = BASE_DIR / "Output"
+
+# File Paths
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
 TEMPLATE_PATH = BASE_DIR / "assets" / "PlanetBiomes.biom"
-CSV_PATH = BASE_DIR / "assets" / "PlanetBiomes.csv"
-OUTPUT_DIR = BASE_DIR / "Output"
+CSV_PATH = BASE_DIR / "csv" / "PlanetBiomes.csv"
+PREVIEW_BIOM_PATH = BASE_DIR / "csv" / "preview.csv"
 
 # Grid constants
 GRID_SIZE = [0x100, 0x100]
@@ -55,6 +67,18 @@ def load_config():
 
 # Initialize configuration
 load_config()
+
+
+def save_config(config):
+    """Save config to JSON file."""
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+
+
+PREVIEW_MODE = "--preview" in sys.argv
+if PREVIEW_MODE:
+    print("Running in preview mode!")
+biome_path = PREVIEW_BIOM_PATH if PREVIEW_MODE else CSV_PATH
 
 # Flatten nested config dictionary
 biome_config = {key: int(value) if isinstance(value, float) and value.is_integer() else value
@@ -78,14 +102,19 @@ CsSF_Biom = Struct(
     "resrcGridS" / UInt8[GRID_FLATSIZE],
 )
 
+
 def load_planet_biomes(csv_path):
     """Load biome data from CSV and categorize biomes."""
+
+    print(f"Attempting to load: {csv_path}")
+
     planet_biomes = {}
     life_biomes = set()
     no_life_biomes = set()
     ocean_biomes = set()
 
     with open(csv_path, newline="") as csvfile:
+
         first_line = csvfile.readline().strip()
         plugin_name = first_line.rstrip(",").strip()
         if not plugin_name:
@@ -112,9 +141,10 @@ def load_planet_biomes(csv_path):
             except ValueError:
                 print(f"Warning: Invalid FormID '{row['BIOM_FormID']}' for planet '{planet}'. Skipping.")
 
-    return plugin_name, planet_biomes, list(life_biomes), list(no_life_biomes), list(ocean_biomes)
+        return plugin_name, planet_biomes, life_biomes, no_life_biomes, ocean_biomes
 
 class BiomFile:
+
     """Manages .biom file data for biome and resource grids."""
     def __init__(self):
         self.biomeIds = []
@@ -134,6 +164,7 @@ class BiomFile:
         self.resrcGridS = np.array(data.resrcGridS)
 
     def overwrite_biome_ids(self, new_biome_ids):
+
         """Update biome grids with new biome IDs."""
         if not self.biomeIds:
             raise ValueError("No biome IDs found in file.")
@@ -154,8 +185,11 @@ class BiomFile:
         num_biomes = len(new_biome_ids)
         zones = np.linspace(0, GRID_SIZE[1], num_biomes + 1, dtype=int)
 
-        def generate_zone_map(shape, seed=biome_config["zone_seed"]):
-            """Generate smoothed noise map for biome zones."""
+        def generate_zone_map(shape, seed=None, use_random_seed=False):
+            """Generate smoothed noise map for biome zones with optional random seed."""
+            if use_random_seed or seed is None:
+                seed = np.random.randint(0, 10000)
+
             np.random.seed(seed)
             base = np.random.rand(*shape)
             large = gaussian_filter(base, sigma=16)
@@ -163,6 +197,7 @@ class BiomFile:
             small = gaussian_filter(np.random.rand(*shape), sigma=2)
             combined = 0.6 * large + 0.3 * medium + 0.1 * small
             combined = np.power(combined, 1.5)
+
             return (combined - combined.min()) / (combined.max() - combined.min())
 
         def assign_biomes(smoothed_noise, hemisphere, biome_config):
@@ -337,9 +372,39 @@ def clone_biom(biom):
     new.resrcGridS = biom.resrcGridS.copy()
     return new
 
+
+def start_processing_widget(title):
+    """Launch processing indicator and store process handle."""
+    global processing_widget_process
+    script_path = os.path.join(os.path.dirname(__file__), "processing_widget.py")
+
+    if not os.path.exists(script_path):
+        print(f"Error: {script_path} does not exist!")
+        return
+
+    processing_widget_process = subprocess.Popen(["python", script_path, title])
+
+
+def stop_processing_widget():
+    """Terminate processing widget when script completes."""
+    global processing_widget_process
+    if processing_widget_process:
+        processing_widget_process.terminate()
+
+
+_progress_started = False
+
 def main():
-    """Process planet biomes and generate output files."""
-    plugin_name, planet_biomes, life_biomes, nolife_biomes, ocean_biomes = load_planet_biomes(CSV_PATH)
+
+    # Progressing widgit start
+    global _progress_started
+    if not _progress_started:
+        _progress_started = True
+        start_processing_widget("Processing Planet Biomes")
+
+    plugin_name, planet_biomes, life_biomes, no_life_biomes, ocean_biomes = (
+        load_planet_biomes(biome_path)
+    )
     output_subdir = OUTPUT_DIR / plugin_name
     output_subdir.mkdir(parents=True, exist_ok=True)
     template = BiomFile()
@@ -351,17 +416,19 @@ def main():
         new_biom.overwrite_biome_ids(new_ids)
         new_biom.resrcGridN = assign_resources(
             new_biom.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
-            life_biomes, nolife_biomes, ocean_biomes
+            life_biomes, no_life_biomes, ocean_biomes
         ).flatten()
         new_biom.resrcGridS = assign_resources(
             new_biom.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]),
-            life_biomes, nolife_biomes, ocean_biomes
+            life_biomes, no_life_biomes, ocean_biomes
         ).flatten()
         out_path = output_subdir / f"{planet}.biom"
         new_biom.save(out_path)
 
     subprocess.run(["python", str(Path(__file__).parent / "PlanetTextures.py")], check=True)
+    stop_processing_widget()
     sys.exit()
+
 
 if __name__ == "__main__":
     main()
