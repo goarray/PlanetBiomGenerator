@@ -1,4 +1,4 @@
-# Expiremental UI added
+# Expiremental UI added (now pyside6)
 
 - Half broken at the moment, you'll need to move xEditOut/PlanetBiomes.csv to /assets/
 - .biom files may be in the wrong format.
