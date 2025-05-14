@@ -121,7 +121,7 @@ def load_planet_biomes(csv_path):
             raise ValueError("Plugin name is missing or empty.")
 
         reader = csv.DictReader(csvfile, fieldnames=["PlanetName", "BIOM_FormID", "BIOM_EditorID"])
-        next(reader, None)  # Skip header row
+        next(reader, None)
 
         for row in reader:
             planet = row["PlanetName"].strip()

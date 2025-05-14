@@ -422,7 +422,7 @@ def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
     }
 
 
-processing_widget_process = None  # ✅ Store process globally
+processing_widget_process = None
 
 
 def start_processing_widget(title):

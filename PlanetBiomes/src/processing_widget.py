@@ -9,7 +9,6 @@ if hasattr(sys, "_MEIPASS"):
     BASE_DIR = Path(sys._MEIPASS).resolve()
 else:
     BASE_DIR = Path(__file__).parent.parent.resolve()
-    # Optional: Adjust BASE_DIR if needed, but simplify or skip if structure is fixed
     if not (BASE_DIR / "src" / "PlanetBiomes.py").exists():
         print(
             f"Warning: PlanetBiomes.py not found in {BASE_DIR / 'src'}. Adjusting BASE_DIR."
@@ -36,7 +35,7 @@ class ProcessingDialog(QDialog):
             print(f"Error: GIF not found at {GIF_PATH}")
             self.label.setText("GIF not found")
         else:
-            self.movie = QMovie(str(GIF_PATH))  # QMovie expects a string path
+            self.movie = QMovie(str(GIF_PATH))
             if not self.movie.isValid():
                 print(f"Error: Failed to load GIF at {GIF_PATH}")
                 self.label.setText("Invalid GIF")

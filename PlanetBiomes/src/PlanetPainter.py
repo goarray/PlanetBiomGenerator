@@ -219,7 +219,7 @@ def start_planet_biomes():
     # Start the process
     print(f"Starting PlanetBiomes.py at {SCRIPT_PATH}")
     planet_biomes_process.start()
-    if not planet_biomes_process.waitForStarted(5000):  # 5-second timeout
+    if not planet_biomes_process.waitForStarted(5000):
         print(f"Failed to start PlanetBiomes.py: {planet_biomes_process.errorString()}")
         planet_biomes_process = None
         cleanup_and_exit(1)
@@ -242,16 +242,16 @@ def cancel_and_exit():
     global planet_biomes_process
     if planet_biomes_process and planet_biomes_process.state() != QProcess.NotRunning:
         planet_biomes_process.terminate()
-        planet_biomes_process.waitForFinished(1000)  # Wait up to 1 second
+        planet_biomes_process.waitForFinished(1000)
         if planet_biomes_process.state() != QProcess.NotRunning:
-            planet_biomes_process.kill()  # Force kill if it doesn't terminate
+            planet_biomes_process.kill()
     sys.exit()
 
 
 def save_and_continue():
     """Save config, start PlanetBiomes, and hide UI."""
     save_config()
-    main_window.hide()  # Hide instead of close to keep QProcess alive
+    main_window.hide()
     start_planet_biomes()
 
 
@@ -315,7 +315,7 @@ def generate_preview(main_window):
 
     disable_upscaling()
 
-    process = QProcess()  # No parent to avoid destruction
+    process = QProcess()
     main_window.preview_process = process
     main_window.progress_started = False
 
@@ -374,7 +374,7 @@ def wait_for_preview(main_window):
         )
 
     start_time = time.time()
-    timeout = 60  # 60 seconds timeout
+    timeout = 60
 
     timer = QTimer(main_window)
 
@@ -387,9 +387,9 @@ def wait_for_preview(main_window):
             # Terminate the processing widget
             if main_window.processing_widget_process:
                 main_window.processing_widget_process.terminate()
-                main_window.processing_widget_process.wait(1000)  # Wait up to 1 second
+                main_window.processing_widget_process.wait(1000)
                 if main_window.processing_widget_process.poll() is None:
-                    main_window.processing_widget_process.kill()  # Force kill if needed
+                    main_window.processing_widget_process.kill()
                 main_window.processing_widget_process = None
             timer.stop()
             timer.deleteLater()
@@ -507,8 +507,8 @@ class MainWindow(QMainWindow):
         secondary_images_container.setLayout(secondary_images_layout)
         image_names = ["Normal", "Rough", "Alpha"]
         for index, image_file in enumerate(IMAGE_FILES[1:]):
-            label_text = QLabel(image_names[index])  # Assign corresponding label
-            label_text.setAlignment(Qt.AlignCenter)  # Center text above the image
+            label_text = QLabel(image_names[index])
+            label_text.setAlignment(Qt.AlignCenter)
             secondary_images_layout.addWidget(label_text)
             label = QLabel()
             image_path = PNG_OUTPUT_DIR / image_file
