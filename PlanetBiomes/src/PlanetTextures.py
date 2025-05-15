@@ -5,8 +5,10 @@ Planet Textures Generator
 Generates PNG and DDS texture images for planet biomes based on .biom files.
 Outputs four maps per hemisphere: albedo (color), normal, rough, and alpha.
 Applies effects like noise, elevation, shading, craters, and edge blending
-to create realistic planetary visuals. Uses configuration from JSON and
-biome colors from CSV. Converts PNGs to DDS format using texconv.exe for Starfield compatibility.
+to create realistic planetary visuals when process_images is True.
+When process_images is False, generates simple texture maps directly from biome data.
+Uses configuration from JSON and biome colors from CSV.
+Converts PNGs to DDS format using texconv.exe for Starfield compatibility.
 
 Dependencies:
 - Python 3.8+
@@ -32,7 +34,6 @@ import subprocess
 import json
 import csv
 import sys
-import os
 from PIL import Image, ImageEnhance
 
 # Directory paths
@@ -89,6 +90,7 @@ def load_config():
         # Set default values only when missing
         defaults = {
             "image_pipeline": {
+                "process_images": True,  # Toggle for full processing vs. direct conversion
                 "noise_scale": 10.0,
                 "elevation_scale": 5.0,
                 "light_source_x": 1.0,
@@ -118,7 +120,7 @@ def load_config():
                 "albedo_format": "BC7_UNORM",
                 "normal_format": "BC7_UNORM",
                 "rough_format": "BC4_UNORM",
-                "alpha_format": "BC4_UNORM"
+                "alpha_format": "BC4_UNORM",
             },
         }
 
@@ -137,6 +139,7 @@ def load_config():
 
 # Initialize configuration
 load_config()
+
 
 def load_biome_colors(csv_path, used_biome_ids, saturate_factor=None):
     """Load RGB colors for used biome IDs from CSV."""
@@ -239,9 +242,6 @@ def generate_elevation(shape, scale=None):
         + gaussian_filter(fine_noise, sigma=scale / 4) * 0.2
     )
     elevation = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
-    print(
-        f"Elevation map - min: {elevation.min():.4f}, max: {elevation.max():.4f}, range: {elevation.max() - elevation.min():.4f}"
-    )
     if elevation.max() - elevation.min() < 0.1:
         print("Warning: Elevation map has low variation, reducing scale")
         scale = min(scale, 2.0)
@@ -251,9 +251,6 @@ def generate_elevation(shape, scale=None):
             + gaussian_filter(fine_noise, sigma=scale / 4) * 0.2
         )
         elevation = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
-        print(
-            f"Adjusted elevation map - min: {elevation.min():.4f}, max: {elevation.max():.4f}"
-        )
     return elevation
 
 
@@ -407,8 +404,6 @@ def generate_normal_map(elevation_map, strength=None):
 
     # Compute gradients
     grad_y, grad_x = np.gradient(elevation_map)
-    print(f"Gradient X - min: {grad_x.min():.4f}, max: {grad_x.max():.4f}")
-    print(f"Gradient Y - min: {grad_y.min():.4f}, max: {grad_y.max():.4f}")
 
     # Calculate normal components
     normal_x = -grad_x * strength
@@ -417,7 +412,6 @@ def generate_normal_map(elevation_map, strength=None):
 
     # Normalize the normal vector
     magnitude = np.sqrt(normal_x**2 + normal_y**2 + normal_z**2)
-    print(f"Magnitude - min: {magnitude.min():.4f}, max: {magnitude.max():.4f}")
     normal_x = np.divide(
         normal_x, magnitude, where=magnitude != 0, out=np.zeros_like(normal_x)
     )
@@ -427,9 +421,6 @@ def generate_normal_map(elevation_map, strength=None):
     normal_z = np.divide(
         normal_z, magnitude, where=magnitude != 0, out=np.ones_like(normal_z)
     )
-    print(f"Normal X - min: {normal_x.min():.4f}, max: {normal_x.max():.4f}")
-    print(f"Normal Y - min: {normal_y.min():.4f}, max: {normal_y.max():.4f}")
-    print(f"Normal Z - min: {normal_z.min():.4f}, max: {normal_z.max():.4f}")
 
     # Map to RGB (0-255), centered at 128 for X and Y, 255 for flat Z
     normal_map = np.stack(
@@ -441,9 +432,6 @@ def generate_normal_map(elevation_map, strength=None):
         axis=-1,
     ).astype(np.uint8)
 
-    print(
-        f"Normal map RGB - min: {normal_map.min(axis=(0,1))}, max: {normal_map.max(axis=(0,1))}"
-    )
     return Image.fromarray(normal_map, mode="RGB")
 
 
@@ -477,7 +465,47 @@ def generate_alpha_map(elevation_map, base_value=None, noise_scale=None):
 
 def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
     """Generate biome image with albedo, normal, rough, and alpha maps."""
-    # Initialize maps
+    process_images = config["image_pipeline"].get("process_images", True)
+
+    if not process_images:
+        # Direct 1-to-1 conversion without processing
+        albedo = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
+        for y in range(GRID_SIZE[1]):
+            for x in range(GRID_SIZE[0]):
+                form_id = int(grid[y, x])
+                albedo[y, x] = biome_colors.get(form_id, default_color)
+
+        albedo_image = Image.fromarray(albedo)
+
+        # Flat normal map (pointing straight up, RGB = 128, 128, 255)
+        normal_map = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
+        normal_map[..., 0] = 128  # X
+        normal_map[..., 1] = 128  # Y
+        normal_map[..., 2] = 255  # Z
+        normal_image = Image.fromarray(normal_map, mode="RGB")
+
+        # Constant roughness map
+        base_roughness = 1.0 - config["image_pipeline"].get("roughness_base", 0.5)
+        roughness_map = np.full(
+            (GRID_SIZE[1], GRID_SIZE[0]), int(base_roughness * 255), dtype=np.uint8
+        )
+        rough_image = Image.fromarray(roughness_map, mode="L")
+
+        # Constant alpha map
+        base_alpha = config["image_pipeline"].get("alpha_base", 1.0)
+        alpha_map = np.full(
+            (GRID_SIZE[1], GRID_SIZE[0]), int(base_alpha * 255), dtype=np.uint8
+        )
+        alpha_image = Image.fromarray(alpha_map, mode="L")
+
+        return {
+            "albedo": albedo_image,
+            "normal": normal_image,
+            "rough": rough_image,
+            "alpha": alpha_image,
+        }
+
+    # Original processing pipeline
     albedo = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
     noise_map = generate_noise(
         (GRID_SIZE[1], GRID_SIZE[0]), scale=config["image_pipeline"]["noise_scale"]
@@ -585,37 +613,9 @@ def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
         raise
 
 
-processing_widget_process = None
-
-
-def start_processing_widget(title):
-    """Launch processing indicator and store process handle."""
-    global processing_widget_process
-    script_path = os.path.join(os.path.dirname(__file__), "processing_widget.py")
-
-    if not os.path.exists(script_path):
-        print(f"Error: {script_path} does not exist!")
-        return
-
-    processing_widget_process = subprocess.Popen(["python", script_path, title])
-
-
-def stop_processing_widget():
-    """Terminate processing widget when script completes."""
-    global processing_widget_process
-    if processing_widget_process:
-        processing_widget_process.terminate()
-
-
-_progress_started = False
-
-
 def main():
     """Process .biom files and generate PNG and DDS textures."""
     global _progress_started
-    if not _progress_started:
-        _progress_started = True
-        start_processing_widget("Processing Planet Textures")
 
     parser = argparse.ArgumentParser(
         description="Generate PNG and DDS textures from .biom files"
@@ -683,21 +683,21 @@ def main():
                     maps[texture_type].save(png_path)
                     print(f"Saved PNG: {png_path}")
 
-                    # Convert to DDS
-                    texture_output_dir = TEXTURE_OUTPUT_DIR
-                    texture_path = convert_png_to_dds(
-                        png_path, texture_output_dir, plugin_name, texture_type
-                    )
+                    # Skip DDS conversion in preview mode
+                    if not args.preview:
+                        texture_output_dir = TEXTURE_OUTPUT_DIR
+                        texture_path = convert_png_to_dds(
+                            png_path, texture_output_dir, plugin_name, texture_type
+                        )
+                        print(f"Converted DDS saved to: {texture_path}")
 
-                    print(f"Converted DDS saved to: {texture_path}")
-
-                    # Optionally delete PNG
-                    if delete_pngs:
-                        try:
-                            png_path.unlink()
-                            print(f"Deleted intermediate PNG: {png_path}")
-                        except OSError as e:
-                            print(f"Error deleting {png_path}: {e}")
+                        # Optionally delete PNG after DDS conversion
+                        if delete_pngs:
+                            try:
+                                png_path.unlink()
+                                print(f"Deleted intermediate PNG: {png_path}")
+                            except OSError as e:
+                                print(f"Error deleting {png_path}: {e}")
 
             print(
                 f"Generated textures for {planet_name} (North and South: albedo, normal, rough, alpha)"
@@ -708,10 +708,14 @@ def main():
             print(f"Error processing {biom_path.name}: {e}")
             traceback.print_exc()
 
-    print("Processing complete.")
-    stop_processing_widget()
+    print("Texture processing complete.")
+
+    subprocess.run(
+        ["python", str(Path(__file__).parent / "PlanetMaterials.py")], check=True
+    )
     sys.stdout.flush()
-    sys.exit(0)
+    sys.exit()
+
 
 if __name__ == "__main__":
     main()

@@ -18,13 +18,11 @@ Dependencies:
 from pathlib import Path
 from PIL import Image
 from themes import THEMES
-import time
 import sys
 import os
-import signal
 import json
-import subprocess
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QMovie
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -53,16 +51,23 @@ else:
         )
         BASE_DIR = Path(__file__).parent.resolve()
 
+
+CONFIG_DIR = BASE_DIR / "config"
 IMAGE_DIR = BASE_DIR / "assets" / "images"
-DEFAULT_IMAGE_PATH = IMAGE_DIR / "default.png"
 PNG_OUTPUT_DIR = BASE_DIR / "Output" / "Textures"
 
 # File Paths
 SCRIPT_PATH = BASE_DIR / "src" / "PlanetBiomes.py"
 PREVIEW_BIOME_PATH = BASE_DIR / "assets" / "PlanetBiomes.biom"
-CONFIG_DIR = BASE_DIR / "config"
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "default_config.json"
+DEFAULT_IMAGE_PATH = IMAGE_DIR / "default.png"
+GIF_PATH = IMAGE_DIR / "progress_0.gif"
+GIF_PATHS = {
+    1: IMAGE_DIR / "progress_1.gif",
+    2: IMAGE_DIR / "progress_2.gif",
+    3: IMAGE_DIR / "progress_3.gif",
+}
 
 # Image paths for display
 IMAGE_FILES = [
@@ -87,9 +92,9 @@ BOOLEAN_KEYS = {
 # Human-readable labels for UI elements
 LABELS = {
     # .biom manipulation labels
-    "lat_weight_factor": "Zoom",
+    "zoom": "Zoom",
     "squircle_exponent": "Diamond (1) Circle (2) Squircle (max)",
-    "noise_factor": "Equator Weight Mult",
+    "noise_factor": "Equator Weight",
     "global_seed": "Generation Seed",
     "noise_scale": "Anomoly Scale",
     "noise_amplitude": "Anomoly Distortion",
@@ -118,6 +123,12 @@ LABELS = {
     "roughness_noise_scale": "Roughness Contrast",
     "alpha_base": "Alpha Base",
     "alpha_noise_scale": "Alpha Noise Scale",
+}
+
+PROCESSING_MAP = {
+    "Biome processing complete.": [1],
+    "Texture processing complete.": [2],
+    "Materials processing complete.": [3],
 }
 
 # Global configuration dictionary
@@ -174,8 +185,19 @@ def update_value(category, key, val, index=None):
         config[category][key][index] = val
     elif isinstance(config[category][key], int):
         config[category][key] = int(float(val))
-    elif isinstance(config[category][key], float):
-        config[category][key] = round(float(val), 2)
+    elif isinstance(config[category][key], float) and (
+        "x_min" in key or "y_min" in key or "x_max" in key or "y_max" in key
+    ):
+        val = float(val)
+        # Prevent min/max invalid ordering
+        paired_key = (
+            key.replace("min", "max") if "min" in key else key.replace("max", "min")
+        )
+        if "min" in key and val >= config[category].get(paired_key, val + 1):
+            val = config[category][paired_key] - 1
+        elif "max" in key and val <= config[category].get(paired_key, val - 1):
+            val = config[category][paired_key] + 1
+        config[category][key] = val
 
     save_config()
 
@@ -253,9 +275,9 @@ def cancel_and_exit():
 
 
 def save_and_continue():
-    """Save config, start PlanetBiomes, and hide UI."""
+    """Save config, start PlanetBiomes."""
     save_config()
-    main_window.hide()
+    start_processing(main_window)
     start_planet_biomes()
 
 
@@ -298,8 +320,7 @@ def disable_upscaling():
 
 
 def generate_preview(main_window):
-    """Start the preview script asynchronously and set up non-blocking wait."""
-    # Check if a preview process is already running
+    """Start the preview script asynchronously and refresh UI when PlanetTextures completes."""
     if (
         hasattr(main_window, "preview_process")
         and main_window.preview_process.state() != QProcess.NotRunning
@@ -319,27 +340,29 @@ def generate_preview(main_window):
 
     disable_upscaling()
 
+    start_processing(main_window)
+
     process = QProcess()
     main_window.preview_process = process
-    main_window.progress_started = False
-
     main_window.preview_button.setEnabled(False)
 
-    process.finished.connect(lambda: wait_for_preview(main_window))
-    process.errorOccurred.connect(
-        lambda error: (
-            print(f"Preview script error: {process.errorString()}"),
-            main_window.preview_button.setEnabled(True),
-        )
-    )
-    process.readyReadStandardOutput.connect(
-        lambda: print(
-            f"Script output: {process.readAllStandardOutput().data().decode()}"
-        )
-    )
-    process.readyReadStandardError.connect(
-        lambda: print(f"Script error: {process.readAllStandardError().data().decode()}")
-    )
+    def handle_output():
+        output = process.readAllStandardOutput().data().decode()
+        print(f"Script output: {output}")
+
+        for message, indices in PROCESSING_MAP.items():
+            if message in output:
+                print(f"{message} detected—restoring images {indices}")
+                for index in indices:
+                    main_window.image_labels[index].setPixmap(
+                        QPixmap(str(IMAGE_FILES[index]))
+                    )
+                    main_window.image_labels[index].update()
+
+        main_window.preview_button.setEnabled(True)
+
+    process.readyReadStandardOutput.connect(handle_output)
+    process.finished.connect(main_window.refresh_images)
 
     print(f"Starting preview process with {SCRIPT_PATH} {PREVIEW_BIOME_PATH} --preview")
     process.setWorkingDirectory(str(BASE_DIR))
@@ -350,74 +373,21 @@ def generate_preview(main_window):
         process = None
 
 
-def start_processing_widget(main_window, title):
-    """Launch processing indicator as a separate process and return the process."""
-    print(f"Starting processing widget with title: {title}")
-    script_path = os.path.join(os.path.dirname(__file__), "processing_widget.py")
+def start_processing(main_window):
+    """Start processing and replace secondary images [1], [2], and [3] with unique GIFs."""
 
-    if not os.path.exists(script_path):
-        print(f"Error: {script_path} does not exist!")
-        return None
-
-    try:
-        process = subprocess.Popen(
-            ["python", script_path, title], stderr=subprocess.PIPE
-        )
-        return process
-    except Exception as e:
-        print(f"Failed to start processing widget: {e}")
-        return None
-
-
-def wait_for_preview(main_window):
-    """Wait for preview process to complete and refresh images."""
-    if not main_window.progress_started:
-        main_window.progress_started = True
-        main_window.processing_widget_process = start_processing_widget(
-            main_window, "Processing Planet Preview"
+    for index in [1, 2, 3]:
+        gif_path = GIF_PATHS.get(
+            index, GIF_PATH
         )
 
-    start_time = time.time()
-    timeout = 60
-
-    timer = QTimer(main_window)
-
-    def update_progress():
-        elapsed = time.time() - start_time
-        if main_window.preview_process.state() == QProcess.NotRunning:
-            print("Preview script finished, refreshing images")
-            main_window.refresh_images()
-            main_window.preview_button.setEnabled(True)
-            # Terminate the processing widget
-            if main_window.processing_widget_process:
-                main_window.processing_widget_process.terminate()
-                main_window.processing_widget_process.wait(1000)
-                if main_window.processing_widget_process.poll() is None:
-                    main_window.processing_widget_process.kill()
-                main_window.processing_widget_process = None
-            timer.stop()
-            timer.deleteLater()
-            main_window.progress_started = False
-        elif elapsed > timeout:
-            print("Preview timed out")
-            main_window.preview_process.terminate()
-            main_window.preview_process.waitForFinished(1000)
-            main_window.preview_button.setEnabled(True)
-            # Terminate the processing widget on timeout
-            if main_window.processing_widget_process:
-                main_window.processing_widget_process.terminate()
-                main_window.processing_widget_process.wait(1000)
-                if main_window.processing_widget_process.poll() is None:
-                    main_window.processing_widget_process.kill()
-                main_window.processing_widget_process = None
-            timer.stop()
-            timer.deleteLater()
-            main_window.progress_started = False
-        else:
-            print("Waiting for preview completion...")
-
-    timer.timeout.connect(update_progress)
-    timer.start(500)
+        movie = QMovie(str(gif_path))
+        if movie.isValid():
+            main_window.image_labels[index].setMovie(
+                movie
+            )
+            movie.start()
+            main_window.image_labels[index].show()
 
 
 class MainWindow(QMainWindow):
@@ -608,7 +578,7 @@ class MainWindow(QMainWindow):
                     slider = QSlider(Qt.Horizontal)
 
                     min_val = 0.01
-                    if "drag_strength" in key or "lat_weight_factor" in key or "edge_blend_radius" in key:
+                    if "drag_strength" in key or "edge_blend_radius" in key or "zoom" in key:
                         max_val = 4
                     elif "octaves" in key or "smoothness" in key or "squircle" in key:
                         max_val = 4
@@ -652,29 +622,27 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(self.themes.get(theme_name, ""))
 
     def refresh_images(self):
-        """Refresh the preview images from the output directory."""
+        """Swap between processing GIF and preview images dynamically."""
         for i, image_file in enumerate(IMAGE_FILES):
             output_image = PNG_OUTPUT_DIR / image_file
-            if output_image.exists():
-                self.image_labels[i].setPixmap(QPixmap(str(output_image)))
-            else:
-                print(f"Preview image not found at {output_image}")
-                self.image_labels[i].setPixmap(self.default_image)
-            self.image_labels[i].update()
 
-    def closeEvent(self, event):
-        """Clean up processes on window close."""
-        if hasattr(self, "preview_process") and self.preview_process:
-            self.preview_process.terminate()
-            self.preview_process.waitForFinished(1000)
-        if self.processing_widget_process:
-            self.processing_widget_process.terminate()
-            self.processing_widget_process.wait(1000)
-            if self.processing_widget_process.poll() is None:
-                self.processing_widget_process.kill()
-            self.processing_widget_process = None
-        cleanup_and_exit()
-        event.accept()
+            # ✅ Check if processing is still running and leave GIF in place
+            if (
+                i in [1, 2, 3]
+                and self.preview_process
+                and self.preview_process.state() != QProcess.NotRunning
+            ):
+                print(f"Processing... using GIF instead of {image_file}")
+                self.image_labels[i].setMovie(self.processing_movie)
+                self.processing_movie.start()
+            else:
+                self.image_labels[i].setPixmap(
+                    QPixmap(str(output_image))
+                    if output_image.exists()
+                    else self.default_image
+                )
+
+            self.image_labels[i].update()
 
 
 if __name__ == "__main__":

@@ -5,16 +5,6 @@ Planet Biomes Generator
 Generates biome and resource grids for planets based on configuration and CSV data.
 Outputs .biom files with biome assignments and resource distributions.
 Supports procedural generation with noise, distortion, and drag effects.
-
-Dependencies:
-- Python 3.8+
-- construct
-- scipy
-- numpy
-- json
-- csv
-- pathlib
-- subprocess
 """
 
 from pathlib import Path
@@ -184,7 +174,7 @@ class BiomFile:
             new_biome_ids = new_biome_ids[:7]
 
         def generate_noise_map(shape, seed=None, use_random_seed=False):
-            """Generate smoothed noise map for biome zones with optional config-based seed."""
+            """Generate smoothed noise map for biome zones."""
             if use_random_seed:
                 seed = np.random.randint(0, 10000)
             elif seed is None:
@@ -206,16 +196,12 @@ class BiomFile:
                 )
                 return np.full(GRID_FLATSIZE, new_biome_ids[0], dtype=np.uint32)
 
-            # Generate noise to layer on top of distortion
             noise_map = generate_noise_map((GRID_SIZE[1], GRID_SIZE[0]))
-
-            # Combine distortion (base_grid) with noise
-            combined = (biome_config["noise_factor"] * noise_map) + (
-                (1 - biome_config["noise_factor"]) * base_grid
+            combined = ((1 - biome_config["noise_factor"]) * noise_map) + (
+                biome_config["noise_factor"] * base_grid
             )
             combined = np.clip(combined, 0, 1)
 
-            # Assign biomes based on combined grid
             reversed_biome_ids = list(reversed(new_biome_ids))
             grid = np.zeros(GRID_FLATSIZE, dtype=np.uint32)
             for y in range(GRID_SIZE[1]):
@@ -229,38 +215,35 @@ class BiomFile:
             return grid
 
         def generate_distortion_map(shape, biome_config):
-            """Generate base distortion map with equator/pole drag and intrusion effects."""
+            """Generate base distortion map with scaled squircle and layered noise for drag/intrusion."""
             distortion_grid = np.zeros(shape)
             center_y, center_x = GRID_SIZE[1] // 2, GRID_SIZE[0] // 2
             n = biome_config["squircle_exponent"]
+            zoom = biome_config.get("zoom", 1.0)
 
-            # Base latitude factor
+            # Base latitude factor with zoom-scaled squircle
             for y in range(GRID_SIZE[1]):
                 for x in range(GRID_SIZE[0]):
                     dx = (x - center_x) / (GRID_SIZE[0] / 2)
                     dy = (y - center_y) / (GRID_SIZE[1] / 2)
+                    # Scale radial distance by zoom (smaller zoom = squeeze, larger = magnify)
                     r = (abs(dx) ** n + abs(dy) ** n) ** (1 / n)
-                    r = min(r, 1.0)
-                    distortion_grid[y, x] = r
+                    r_scaled = r / zoom  # Divide by zoom to scale squircle
+                    r_scaled = min(r_scaled, 1.0)
+                    distortion_grid[y, x] = r_scaled
 
-            # Apply latitude-based distortion using Perlin noise
+            # Apply latitude-based distortion using layered noise
             if biome_config["apply_distortion"]:
-                distortion_sigma = biome_config.get("distortion_sigma", 0.05)
-                distortion_sigma = 0.999 * (distortion_sigma ** 0.95)
-
-                noise_amplitude = biome_config.get("distortion_amplitude", 0.2)
-
+                noise_map = generate_noise_map(shape)
+                distortion_amplitude = biome_config.get("distortion_amplitude", 0.2)
                 for y in range(GRID_SIZE[1]):
                     for x in range(GRID_SIZE[0]):
-                        noise_offset = noise.pnoise2(
-                            x * distortion_sigma, y * distortion_sigma, octaves=3
-                        )
                         lat_factor = distortion_grid[y, x] + biome_config[
                             "lat_distortion_factor"
-                        ] * (noise_offset * noise_amplitude)
+                        ] * (noise_map[y, x] * distortion_amplitude)
                         distortion_grid[y, x] = np.clip(lat_factor, 0, 1)
 
-            # Apply equator and pole drag/intrusion effects
+            # Apply equator and pole drag/intrusion effects with layered noise
             num_equator_drags = int(biome_config["num_equator_drags"])
             equator_drag_centers = []
             num_pole_drags = int(biome_config["num_pole_drags"])
@@ -311,28 +294,17 @@ class BiomFile:
             noise_amplitude = biome_config.get("noise_amplitude", 0.3)
             equator_influence_zones = biome_config.get("equator_influence_zones", 2)
             pole_influence_zones = biome_config.get("pole_influence_zones", 2)
-            # New config parameter for noise scale factor (0 to 1, where 1 produces ~50x50 pixel globs)
-            noise_scale_factor = biome_config.get("noise_scale_factor", 0.1)
-            # Exponentially scale the noise frequency to control blob size
-            # Base scale is divided by 2^factor to reduce frequency (increase blob size)
-            noise_scale = 0.1 / (
-                2 ** (noise_scale_factor * 4)
-            )  # Exponential scaling: 0.1 to 0.00625
+
+            # Use layered noise for drag/intrusion
+            drag_noise_map = generate_noise_map(shape)
 
             for y in range(GRID_SIZE[1]):
                 for x in range(GRID_SIZE[0]):
+                    noise_offset = drag_noise_map[y, x] * (noise_amplitude * drag_radius)
+
                     if biome_config["enable_equator_drag"]:
                         for cx, cy in equator_drag_centers:
                             ddx, ddy = x - cx, y - cy
-                            noise_offset = (
-                                noise.pnoise2(
-                                    x * noise_scale,
-                                    y * noise_scale,
-                                    octaves=1,
-                                    persistence=0.5,
-                                )
-                                * noise_amplitude
-                            )
                             effective_radius = (
                                 drag_radius * radius_scale * (1 + noise_offset)
                             )
@@ -352,15 +324,6 @@ class BiomFile:
                     if biome_config["enable_pole_drag"]:
                         for cx, cy in pole_drag_centers:
                             ddx, ddy = x - cx, y - cy
-                            noise_offset = (
-                                noise.pnoise2(
-                                    x * noise_scale,
-                                    y * noise_scale,
-                                    octaves=1,
-                                    persistence=0.5,
-                                )
-                                * noise_amplitude
-                            )
                             effective_radius = (
                                 drag_radius * radius_scale * (1 + noise_offset)
                             )
@@ -380,15 +343,6 @@ class BiomFile:
                     if biome_config["enable_equator_intrusion"]:
                         for cx, cy in equator_drag_centers:
                             ddx, ddy = x - cx, y - cy
-                            noise_offset = (
-                                noise.pnoise2(
-                                    x * noise_scale,
-                                    y * noise_scale,
-                                    octaves=1,
-                                    persistence=0.5,
-                                )
-                                * noise_amplitude
-                            )
                             effective_radius = (
                                 drag_radius * radius_scale * (1 + noise_offset)
                             )
@@ -408,15 +362,6 @@ class BiomFile:
                     if biome_config["enable_pole_intrusion"]:
                         for cx, cy in pole_drag_centers:
                             ddx, ddy = x - cx, y - cy
-                            noise_offset = (
-                                noise.pnoise2(
-                                    x * noise_scale,
-                                    y * noise_scale,
-                                    octaves=1,
-                                    persistence=0.5,
-                                )
-                                * noise_amplitude
-                            )
                             effective_radius = (
                                 drag_radius * radius_scale * (1 + noise_offset)
                             )
@@ -503,31 +448,7 @@ def clone_biom(biom):
     return new
 
 
-def start_processing_widget(title):
-    """Launch processing indicator and store process handle."""
-    global processing_widget_process
-    script_path = os.path.join(os.path.dirname(__file__), "processing_widget.py")
-    if not os.path.exists(script_path):
-        print(f"Error: {script_path} does not exist!")
-        return
-    processing_widget_process = subprocess.Popen(["python", script_path, title])
-
-
-def stop_processing_widget():
-    """Terminate processing widget when script completes."""
-    global processing_widget_process
-    if processing_widget_process:
-        processing_widget_process.terminate()
-
-
-_progress_started = False
-
-
 def main():
-    global _progress_started
-    if not _progress_started:
-        _progress_started = True
-        start_processing_widget("Processing Planet Biomes")
     plugin_name, planet_biomes, life_biomes, no_life_biomes, ocean_biomes = (
         load_planet_biomes(biome_path)
     )
@@ -556,7 +477,9 @@ def main():
     subprocess.run(
         ["python", str(Path(__file__).parent / "PlanetTextures.py")], check=True
     )
-    stop_processing_widget()
+
+    print("Biome processing complete.")
+    sys.stdout.flush()
     sys.exit()
 
 
