@@ -188,7 +188,7 @@ class BiomFile:
             if use_random_seed:
                 seed = np.random.randint(0, 10000)
             elif seed is None:
-                seed = config["global_seeds"].get("zone_seed", 0)
+                seed = config["global_seed"].get("zone_seed", 0)
             np.random.seed(seed)
             base = np.random.rand(*shape)
             large = gaussian_filter(base, sigma=16)

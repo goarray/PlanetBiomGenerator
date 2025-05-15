@@ -90,7 +90,7 @@ LABELS = {
     "lat_weight_factor": "Zoom",
     "squircle_exponent": "Diamond (1) Circle (2) Squircle (max)",
     "noise_factor": "Equator Weight Mult",
-    "global_seeds": "Generation Seed",
+    "global_seed": "Generation Seed",
     "noise_scale": "Anomoly Scale",
     "noise_amplitude": "Anomoly Distortion",
     "enable_equator_drag": "Enable Polar Anomolies",
