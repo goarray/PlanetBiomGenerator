@@ -2,11 +2,11 @@
 """
 Planet Textures Generator
 
-Generates PNG texture images for planet biomes based on .biom files.
-Outputs four maps per hemisphere: albedo (color), normal, roughness, and alpha.
+Generates PNG and DDS texture images for planet biomes based on .biom files.
+Outputs four maps per hemisphere: albedo (color), normal, rough, and alpha.
 Applies effects like noise, elevation, shading, craters, and edge blending
 to create realistic planetary visuals. Uses configuration from JSON and
-biome colors from CSV.
+biome colors from CSV. Converts PNGs to DDS format using texconv.exe for Starfield compatibility.
 
 Dependencies:
 - Python 3.8+
@@ -18,6 +18,7 @@ Dependencies:
 - json
 - csv
 - pathlib
+- texconv.exe (in textconv/ subdirectory)
 """
 
 from pathlib import Path
@@ -35,7 +36,7 @@ import os
 from PIL import Image, ImageEnhance
 
 # Directory paths
-if hasattr(sys, '_MEIPASS'):
+if hasattr(sys, "_MEIPASS"):
     BASE_DIR = Path(sys._MEIPASS).resolve()
 else:
     BASE_DIR = Path(__file__).parent.parent.resolve()
@@ -45,11 +46,12 @@ CONFIG_DIR = BASE_DIR / "config"
 ASSETS_DIR = BASE_DIR / "assets"
 CSV_DIR = BASE_DIR / "csv"
 OUTPUT_DIR = BASE_DIR / "Output"
-PNG_OUTPUT_DIR = OUTPUT_DIR / "BiomePNGs"
+TEXTURE_OUTPUT_DIR = OUTPUT_DIR / "Textures"
 
 # File paths
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
 BIOMES_CSV_PATH = CSV_DIR / "Biomes.csv"
+TEXCONV_PATH = BASE_DIR / "textconv" / "texconv.exe"
 
 # Grid constants
 GRID_SIZE = [256, 256]
@@ -110,7 +112,14 @@ def load_config():
                 "roughness_noise_scale": 0.1,
                 "alpha_base": 1.0,
                 "alpha_noise_scale": 0.05,
-            }
+            },
+            "dds_conversion": {
+                "delete_pngs_after_conversion": False,
+                "albedo_format": "BC7_UNORM",
+                "normal_format": "BC7_UNORM",
+                "rough_format": "BC4_UNORM",
+                "alpha_format": "BC4_UNORM"
+            },
         }
 
         # Only update missing keys, preserving user-defined values
@@ -151,19 +160,31 @@ def load_biome_colors(csv_path, used_biome_ids, saturate_factor=None):
 
     return biome_colors
 
+
 def load_biom_file(filepath):
-    """Load .biom file and return biome grids as numpy arrays."""
+    """Load .biom file and return biome grids as numpy arrays, plus plugin name."""
+    biom_path = Path(filepath)
+    plugin_name = biom_path.parent.name
+
     with open(filepath, "rb") as f:
         data = CsSF_Biom.parse_stream(f)
-    biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(GRID_SIZE[1], GRID_SIZE[0])
-    biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(GRID_SIZE[1], GRID_SIZE[0])
-    return biome_grid_n, biome_grid_s
+
+    biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(
+        GRID_SIZE[1], GRID_SIZE[0]
+    )
+    biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(
+        GRID_SIZE[1], GRID_SIZE[0]
+    )
+
+    return biome_grid_n, biome_grid_s, plugin_name
+
 
 def upscale_image(image, target_size=(1024, 1024)):
     """Upscale image to target size if enabled in config."""
     if config["image_pipeline"].get("upscale_image"):
         return image.resize(target_size, Image.Resampling.LANCZOS)
     return image
+
 
 def generate_noise(shape, scale=None):
     """Generate larger-patch high-contrast salt-and-pepper noise."""
@@ -203,13 +224,38 @@ def generate_noise(shape, scale=None):
 
     return noise
 
+
 def generate_elevation(shape, scale=None):
-    """Generate elevation map for shading effects."""
+    """Generate elevation map with increased variation."""
     if scale is None:
-        scale = config["image_pipeline"].get("elevation_scale")
+        scale = config["image_pipeline"].get("elevation_scale", 5.0)
     base_noise = np.random.rand(*shape)
-    smoothed = gaussian_filter(base_noise, sigma=scale)
-    return (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
+    detail_noise = np.random.rand(*shape)
+    fine_noise = np.random.rand(*shape)
+    # Combine noise layers with different scales
+    smoothed = (
+        gaussian_filter(base_noise, sigma=scale) * 0.5
+        + gaussian_filter(detail_noise, sigma=scale / 2) * 0.3
+        + gaussian_filter(fine_noise, sigma=scale / 4) * 0.2
+    )
+    elevation = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
+    print(
+        f"Elevation map - min: {elevation.min():.4f}, max: {elevation.max():.4f}, range: {elevation.max() - elevation.min():.4f}"
+    )
+    if elevation.max() - elevation.min() < 0.1:
+        print("Warning: Elevation map has low variation, reducing scale")
+        scale = min(scale, 2.0)
+        smoothed = (
+            gaussian_filter(base_noise, sigma=scale) * 0.5
+            + gaussian_filter(detail_noise, sigma=scale / 2) * 0.3
+            + gaussian_filter(fine_noise, sigma=scale / 4) * 0.2
+        )
+        elevation = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
+        print(
+            f"Adjusted elevation map - min: {elevation.min():.4f}, max: {elevation.max():.4f}"
+        )
+    return elevation
+
 
 def generate_atmospheric_fade(shape, intensity=None, spread=None):
     """Generate atmospheric fade effect from planet center."""
@@ -220,11 +266,12 @@ def generate_atmospheric_fade(shape, intensity=None, spread=None):
     center_y, center_x = shape[0] // 2, shape[1] // 2
     y_grid, x_grid = np.indices(shape)
     distance_from_center = np.sqrt((x_grid - center_x) ** 2 + (y_grid - center_y) ** 2)
-    max_distance = np.sqrt(center_x ** 2 + center_y ** 2)
+    max_distance = np.sqrt(center_x**2 + center_y**2)
     return np.exp(-spread * (distance_from_center / max_distance)) * intensity
 
+
 def generate_shading(grid, light_source_x=None, light_source_y=None):
-    """Generate anisotropic shading based on terrain gradients."""
+    """Generate anisotropic shading based terrain gradients."""
     if light_source_x is None:
         light_source_x = config["image_pipeline"].get("light_source_x")
     if light_source_y is None:
@@ -234,14 +281,19 @@ def generate_shading(grid, light_source_x=None, light_source_y=None):
     shading = np.clip(grad_x * light_source_x + grad_y * light_source_y, -1, 1)
     return (shading - shading.min()) / (shading.max() - shading.min())
 
-def generate_fractal_noise(shape, octaves=None, detail_smoothness=None, detail_strength_decay=None):
+
+def generate_fractal_noise(
+    shape, octaves=None, detail_smoothness=None, detail_strength_decay=None
+):
     """Generate fractal noise for terrain complexity."""
     if octaves is None:
         octaves = config["image_pipeline"].get("fractal_octaves", 4)
     if detail_smoothness is None:
         detail_smoothness = config["image_pipeline"].get("detail_smoothness", 2)
     if detail_strength_decay is None:
-        detail_strength_decay = config["image_pipeline"].get("detail_strength_decay", 0.5)
+        detail_strength_decay = config["image_pipeline"].get(
+            "detail_strength_decay", 0.5
+        )
     base = np.random.rand(*shape)
     combined = np.zeros_like(base)
     for i in range(octaves):
@@ -253,7 +305,10 @@ def generate_fractal_noise(shape, octaves=None, detail_smoothness=None, detail_s
     combined = np.power(combined, 2)
     return (combined - combined.min()) / (combined.max() - combined.min())
 
-def add_craters(grid, num_craters=100, max_radius=None, crater_depth_min=None, crater_depth_max=None):
+
+def add_craters(
+    grid, num_craters=100, max_radius=None, crater_depth_min=None, crater_depth_max=None
+):
     """Add small impact craters to terrain grid."""
     if max_radius is None:
         max_radius = config["image_pipeline"].get("crater_max_radius", 20)
@@ -264,7 +319,9 @@ def add_craters(grid, num_craters=100, max_radius=None, crater_depth_min=None, c
 
     if crater_depth_min >= crater_depth_max:
         crater_depth_max = crater_depth_min + 0.01
-        print(f"WARNING: Adjusted crater_depth_max to {crater_depth_max} to ensure min < max")
+        print(
+            f"WARNING: Adjusted crater_depth_max to {crater_depth_max} to ensure min < max"
+        )
 
     crater_map = np.zeros_like(grid, dtype=np.float32)
 
@@ -273,10 +330,15 @@ def add_craters(grid, num_craters=100, max_radius=None, crater_depth_min=None, c
         radius = np.random.randint(1, max_radius // 3)
         y_grid, x_grid = np.indices(grid.shape)
         dist = np.sqrt((x_grid - cx) ** 2 + (y_grid - cy) ** 2)
-        crater_depth = np.exp(-dist / radius) * np.random.uniform(crater_depth_min, crater_depth_max) * 1.2
+        crater_depth = (
+            np.exp(-dist / radius)
+            * np.random.uniform(crater_depth_min, crater_depth_max)
+            * 1.2
+        )
         crater_map -= crater_depth
 
     return np.clip(grid + crater_map, 0, 1)
+
 
 def generate_crater_shading(crater_map):
     """Generate shading for crater rims."""
@@ -291,6 +353,7 @@ def generate_crater_shading(crater_map):
         normalized_shading[np.isnan(normalized_shading)] = 0
         return normalized_shading
     return np.zeros_like(crater_map)
+
 
 def generate_edge_blend(grid, blend_radius=None):
     """Generate edge blending map for biome transitions."""
@@ -317,6 +380,7 @@ def generate_edge_blend(grid, blend_radius=None):
     blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 3 - blend_radius))
     return blurred_map
 
+
 def desaturate_color(rgb, saturate_factor=1.2):
     """Adjust color saturation in HSV space."""
     if saturate_factor is None:
@@ -326,6 +390,7 @@ def desaturate_color(rgb, saturate_factor=1.2):
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
     return tuple(int(c * 255) for c in (r, g, b))
 
+
 def enhance_brightness(image, bright_factor=None):
     """Enhance image brightness."""
     if bright_factor is None:
@@ -334,27 +399,57 @@ def enhance_brightness(image, bright_factor=None):
     enhancer = ImageEnhance.Brightness(image)
     return enhancer.enhance(scaled_factor)
 
+
 def generate_normal_map(elevation_map, strength=None):
-    """Generate normal map from elevation map."""
+    """Generate RGB normal map from elevation map with purple hue."""
     if strength is None:
         strength = config["image_pipeline"].get("normal_strength", 1.0)
-    grad_x = np.gradient(elevation_map, axis=1)
-    grad_y = np.gradient(elevation_map, axis=0)
+
+    # Compute gradients
+    grad_y, grad_x = np.gradient(elevation_map)
+    print(f"Gradient X - min: {grad_x.min():.4f}, max: {grad_x.max():.4f}")
+    print(f"Gradient Y - min: {grad_y.min():.4f}, max: {grad_y.max():.4f}")
+
+    # Calculate normal components
     normal_x = -grad_x * strength
     normal_y = -grad_y * strength
-    normal_z = np.ones_like(normal_x)
-    magnitude = np.sqrt(normal_x**2 + normal_y**2 + normal_z**2)
-    normal_x = normal_x / magnitude
-    normal_y = normal_y / magnitude
-    normal_z = normal_z / magnitude
-    normal_map = np.stack((
-        (normal_x + 1) * 127.5,
-        (normal_y + 1) * 127.5,
-        normal_z * 255
-    ), axis=-1).astype(np.uint8)
-    return Image.fromarray(normal_map)
+    normal_z = np.ones_like(normal_x)  # Z points outward
 
-def generate_roughness_map(elevation_map, fractal_map, base_value=None, noise_scale=None):
+    # Normalize the normal vector
+    magnitude = np.sqrt(normal_x**2 + normal_y**2 + normal_z**2)
+    print(f"Magnitude - min: {magnitude.min():.4f}, max: {magnitude.max():.4f}")
+    normal_x = np.divide(
+        normal_x, magnitude, where=magnitude != 0, out=np.zeros_like(normal_x)
+    )
+    normal_y = np.divide(
+        normal_y, magnitude, where=magnitude != 0, out=np.zeros_like(normal_y)
+    )
+    normal_z = np.divide(
+        normal_z, magnitude, where=magnitude != 0, out=np.ones_like(normal_z)
+    )
+    print(f"Normal X - min: {normal_x.min():.4f}, max: {normal_x.max():.4f}")
+    print(f"Normal Y - min: {normal_y.min():.4f}, max: {normal_y.max():.4f}")
+    print(f"Normal Z - min: {normal_z.min():.4f}, max: {normal_z.max():.4f}")
+
+    # Map to RGB (0-255), centered at 128 for X and Y, 255 for flat Z
+    normal_map = np.stack(
+        (
+            (normal_x + 1) * 127.5,  # Red: X
+            (normal_y + 1) * 127.5,  # Green: Y
+            normal_z * 255,  # Blue: Z
+        ),
+        axis=-1,
+    ).astype(np.uint8)
+
+    print(
+        f"Normal map RGB - min: {normal_map.min(axis=(0,1))}, max: {normal_map.max(axis=(0,1))}"
+    )
+    return Image.fromarray(normal_map, mode="RGB")
+
+
+def generate_roughness_map(
+    elevation_map, fractal_map, base_value=None, noise_scale=None
+):
     """Generate roughness map based on elevation and fractal noise."""
     if base_value is None:
         base_value = 1.0 - config["image_pipeline"].get("roughness_base", 0.5)
@@ -364,7 +459,8 @@ def generate_roughness_map(elevation_map, fractal_map, base_value=None, noise_sc
     roughness += noise_scale * fractal_map
     roughness = np.clip(roughness, 0, 1)
     roughness_map = (roughness * 255).astype(np.uint8)
-    return Image.fromarray(roughness_map, mode='L')
+    return Image.fromarray(roughness_map, mode="L")
+
 
 def generate_alpha_map(elevation_map, base_value=None, noise_scale=None):
     """Generate alpha map for transparency."""
@@ -376,13 +472,16 @@ def generate_alpha_map(elevation_map, base_value=None, noise_scale=None):
     alpha += noise_scale * generate_noise(elevation_map.shape, scale=noise_scale * 100)
     alpha = np.clip(alpha, 0, 1)
     alpha_map = (alpha * 255).astype(np.uint8)
-    return Image.fromarray(alpha_map, mode='L')
+    return Image.fromarray(alpha_map, mode="L")
+
 
 def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
-    """Generate biome image with albedo, normal, roughness, and alpha maps."""
+    """Generate biome image with albedo, normal, rough, and alpha maps."""
     # Initialize maps
     albedo = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
-    noise_map = generate_noise((GRID_SIZE[1], GRID_SIZE[0]), scale=config["image_pipeline"]["noise_scale"])
+    noise_map = generate_noise(
+        (GRID_SIZE[1], GRID_SIZE[0]), scale=config["image_pipeline"]["noise_scale"]
+    )
     elevation_map = generate_elevation((GRID_SIZE[1], GRID_SIZE[0]))
     edge_blend_map = generate_edge_blend(grid)
     shading_map = generate_shading(elevation_map)
@@ -397,29 +496,93 @@ def create_biome_image(grid, biome_colors, default_color=(128, 128, 128)):
             form_id = int(grid[y, x])
             biome_color = biome_colors.get(form_id, default_color)
             lat_factor = abs((y / GRID_SIZE[1]) - 0.5) * 0.4
-            shaded_color = tuple(int(c * (0.8 + 0.2 * elevation_map[y, x])) for c in biome_color)
-            light_adjusted_color = tuple(int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color)
-            fractal_adjusted_color = tuple(int(c * (0.85 + 0.15 * fractal_map[y, x])) for c in light_adjusted_color)
-            crater_adjusted_color = tuple(int(c * (0.7 + 0.3 * crater_shading[y, x])) for c in fractal_adjusted_color)
-            lat_adjusted_color = tuple(int(c * (1 - lat_factor)) for c in crater_adjusted_color)
-            blended_color = tuple(int(c * (1 - 0.5 * edge_blend_map[y, x])) for c in lat_adjusted_color)
-            final_color = tuple(np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255) for c in blended_color)
+            shaded_color = tuple(
+                int(c * (0.8 + 0.2 * elevation_map[y, x])) for c in biome_color
+            )
+            light_adjusted_color = tuple(
+                int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color
+            )
+            fractal_adjusted_color = tuple(
+                int(c * (0.85 + 0.15 * fractal_map[y, x])) for c in light_adjusted_color
+            )
+            crater_adjusted_color = tuple(
+                int(c * (0.7 + 0.3 * crater_shading[y, x]))
+                for c in fractal_adjusted_color
+            )
+            lat_adjusted_color = tuple(
+                int(c * (1 - lat_factor)) for c in crater_adjusted_color
+            )
+            blended_color = tuple(
+                int(c * (1 - 0.5 * edge_blend_map[y, x])) for c in lat_adjusted_color
+            )
+            final_color = tuple(
+                np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
+                for c in blended_color
+            )
             albedo[y, x] = final_color
 
     albedo_image = Image.fromarray(albedo)
     albedo_image = enhance_brightness(albedo_image, bright_factor)
 
-    # Generate normal, roughness, and alpha maps
+    # Generate normal, rough, and alpha maps
     normal_image = generate_normal_map(elevation_map)
-    roughness_image = generate_roughness_map(elevation_map, fractal_map)
+    rough_image = generate_roughness_map(elevation_map, fractal_map)
     alpha_image = generate_alpha_map(elevation_map)
 
     return {
         "albedo": albedo_image,
         "normal": normal_image,
-        "roughness": roughness_image,
-        "alpha": alpha_image
+        "rough": rough_image,
+        "alpha": alpha_image,
     }
+
+
+def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
+    """Convert a PNG file to DDS using texconv.exe with Starfield-compatible formats."""
+    if not TEXCONV_PATH.exists():
+        raise FileNotFoundError(f"texconv.exe not found at {TEXCONV_PATH}")
+
+    # Ensure output directory exists
+    texture_output_dir = texture_output_dir / plugin_name
+    texture_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Determine DDS format based on texture type
+    format_map = {
+        "albedo": config["dds_conversion"].get("albedo_format", "BC7_UNORM"),
+        "normal": config["dds_conversion"].get("normal_format", "BC7_UNORM"),
+        "rough": config["dds_conversion"].get("rough_format", "BC4_UNORM"),
+        "alpha": config["dds_conversion"].get("alpha_format", "BC4_UNORM"),
+    }
+    dds_format = format_map.get(texture_type, "BC7_UNORM")
+
+    # Construct output DDS path
+    texture_filename = png_path.stem + ".dds"
+    texture_path = texture_output_dir / texture_filename
+
+    # Build texconv command
+    cmd = [
+        str(TEXCONV_PATH),
+        "-f",
+        dds_format,
+        "-m",
+        "0",  # Generate all mipmaps
+        "-y",  # Overwrite output
+        "-o",
+        str(texture_output_dir),
+        str(png_path),
+    ]
+
+    # Execute texconv
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print(f"Converted {png_path.name} to {texture_path.name} ({dds_format})")
+        return texture_path
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting {png_path.name} to DDS: {e.stderr}")
+        raise
+    except FileNotFoundError:
+        print(f"Error: texconv.exe not found at {TEXCONV_PATH}")
+        raise
 
 
 processing_widget_process = None
@@ -443,23 +606,27 @@ def stop_processing_widget():
     if processing_widget_process:
         processing_widget_process.terminate()
 
+
 _progress_started = False
 
-def main():
 
-    # Start progress bar
+def main():
+    """Process .biom files and generate PNG and DDS textures."""
     global _progress_started
     if not _progress_started:
         _progress_started = True
         start_processing_widget("Processing Planet Textures")
 
-    """Process .biom files and generate PNG textures."""
-    parser = argparse.ArgumentParser(description="Generate PNG textures from .biom files")
-    parser.add_argument("biom_file", nargs="?", help="Path to the .biom file (for preview mode)")
+    parser = argparse.ArgumentParser(
+        description="Generate PNG and DDS textures from .biom files"
+    )
+    parser.add_argument(
+        "biom_file", nargs="?", help="Path to the .biom file (for preview mode)"
+    )
     parser.add_argument("--preview", action="store_true", help="Run in preview mode")
     args = parser.parse_args()
 
-    PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    TEXTURE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.preview and args.biom_file:
         biom_files = [Path(args.biom_file)]
@@ -468,7 +635,8 @@ def main():
             sys.exit(1)
     else:
         biom_files = [
-            f for f in OUTPUT_DIR.rglob("*.biom")
+            f
+            for f in OUTPUT_DIR.rglob("*.biom")
             if f.parent != OUTPUT_DIR and "assets" not in str(f.parent)
         ]
         if not biom_files:
@@ -477,9 +645,10 @@ def main():
 
     used_biome_ids = set()
     for biom_path in biom_files:
+        plugin_name = biom_path.parent.name
         print(f"Collecting biome IDs from {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path)
+            biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
             used_biome_ids.update(biome_grid_n.flatten())
             used_biome_ids.update(biome_grid_s.flatten())
         except Exception as e:
@@ -489,10 +658,12 @@ def main():
     if not biome_colors:
         raise ValueError("No valid biome colors loaded from Biomes.csv")
 
+    delete_pngs = config["dds_conversion"].get("delete_pngs_after_conversion", False)
+
     for biom_path in biom_files:
         print(f"Processing {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path)
+            biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
             maps_n = create_biome_image(biome_grid_n, biome_colors)
             maps_s = create_biome_image(biome_grid_s, biome_colors)
 
@@ -502,20 +673,38 @@ def main():
 
             planet_name = biom_path.stem
 
-            # Save all maps
-            maps_n["albedo"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_albedo.png")
-            maps_n["normal"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_normal.png")
-            maps_n["roughness"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_rough.png")
-            maps_n["alpha"].save(PNG_OUTPUT_DIR / f"{planet_name}_North_alpha.png")
+            # Save PNGs and convert to DDS
+            texture_types = ["albedo", "normal", "rough", "alpha"]
+            for hemisphere, maps in [("North", maps_n), ("South", maps_s)]:
+                for texture_type in texture_types:
+                    # Save PNG
+                    png_filename = f"{planet_name}_{hemisphere}_{texture_type}.png"
+                    png_path = TEXTURE_OUTPUT_DIR / png_filename
+                    maps[texture_type].save(png_path)
+                    print(f"Saved PNG: {png_path}")
 
-            maps_s["albedo"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_albedo.png")
-            maps_s["normal"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_normal.png")
-            maps_s["roughness"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_rough.png")
-            maps_s["alpha"].save(PNG_OUTPUT_DIR / f"{planet_name}_South_alpha.png")
+                    # Convert to DDS
+                    texture_output_dir = TEXTURE_OUTPUT_DIR
+                    texture_path = convert_png_to_dds(
+                        png_path, texture_output_dir, plugin_name, texture_type
+                    )
 
-            print(f"Saved PNGs for {planet_name} (North and South: albedo, normal, roughness, alpha)")
+                    print(f"Converted DDS saved to: {texture_path}")
+
+                    # Optionally delete PNG
+                    if delete_pngs:
+                        try:
+                            png_path.unlink()
+                            print(f"Deleted intermediate PNG: {png_path}")
+                        except OSError as e:
+                            print(f"Error deleting {png_path}: {e}")
+
+            print(
+                f"Generated textures for {planet_name} (North and South: albedo, normal, rough, alpha)"
+            )
         except Exception as e:
             import traceback
+
             print(f"Error processing {biom_path.name}: {e}")
             traceback.print_exc()
 
@@ -523,9 +712,6 @@ def main():
     stop_processing_widget()
     sys.stdout.flush()
     sys.exit(0)
-
-    with open("preview_flag.txt", "w") as f:
-        f.write("done")
 
 if __name__ == "__main__":
     main()

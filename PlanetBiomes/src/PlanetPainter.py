@@ -55,7 +55,7 @@ else:
 
 IMAGE_DIR = BASE_DIR / "assets" / "images"
 DEFAULT_IMAGE_PATH = IMAGE_DIR / "default.png"
-PNG_OUTPUT_DIR = BASE_DIR / "Output" / "BiomePNGs"
+PNG_OUTPUT_DIR = BASE_DIR / "Output" / "Textures"
 
 # File Paths
 SCRIPT_PATH = BASE_DIR / "src" / "PlanetBiomes.py"
@@ -81,6 +81,7 @@ BOOLEAN_KEYS = {
     "apply_distortion",
     "apply_resource_gradient",
     "apply_latitude_blending",
+    "delete_pngs_after_conversion"
 }
 
 # Human-readable labels for UI elements
@@ -90,16 +91,19 @@ LABELS = {
     "squircle_exponent": "Diamond (1) Circle (2) Squircle (max)",
     "noise_factor": "Equator Weight Mult",
     "global_seeds": "Generation Seed",
+    "noise_scale": "Anomoly Scale",
+    "noise_amplitude": "Anomoly Distortion",
+    "enable_equator_drag": "Enable Polar Anomolies",
+    "enable_pole_drag": "Enable Equator Anomolies",
     # .png manipulation labels
+    "image_pipeline": "Image Settings",
     "brightness_factor": "Brightness",
     "saturation_factor": "Saturation",
     "enable_edge_blending": "Enable Edges",
     "edge_blend_radius": "Edge Detail",
     "distortion_sigma": "Fine Distortion",
     "lat_distortion_factor": "Large Distortion",
-    "drag_radius": "Polar Anomolies",
-    "enable_equator_drag": "Allow Equator Dragging",
-    "enable_pole_drag": "Allow Pole Dragging",
+    "drag_radius": "Anomolies",
     "enable_equator_intrusion": "Enable Equator Intrusions",
     "enable_pole_intrusion": "Enable Pole Intrusions",
     "apply_distortion": "Apply Terrain Distortion",
@@ -465,7 +469,7 @@ class MainWindow(QMainWindow):
         theme_selector = QComboBox()
         theme_selector.addItems(self.themes.keys())
         theme_selector.currentTextChanged.connect(self.change_theme)
-        left_layout.addWidget(theme_selector)
+        center_layout.addWidget(theme_selector)
 
         # Organize sections into panels
         sliders_layout = QVBoxLayout()
@@ -477,8 +481,8 @@ class MainWindow(QMainWindow):
         right_layout.addLayout(image_pipeline_layout)
 
         # Group assignments for panels
-        left_groups = ["terrain_settings", "biome_drag_settings"]
-        center_groups = ["biome_intrusion_settings", "global_toggles", "global_seeds"]
+        left_groups = ["distortion_settings", "equator_anomolies", "pole_anomolies"]
+        center_groups = ["global_toggles", "global_seed"]
         right_groups = ["image_pipeline"]
 
         # Image layout
@@ -513,12 +517,17 @@ class MainWindow(QMainWindow):
             label = QLabel()
             image_path = PNG_OUTPUT_DIR / image_file
             label.setPixmap(
-                self.default_image
+                self.default_image.scaled(
+                    80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
                 if not image_path.exists()
-                else QPixmap(str(image_path))
+                else QPixmap(str(image_path)).scaled(
+                    80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
             )
             label.setAlignment(Qt.AlignCenter)
             label.setFixedSize(80, 80)
+            label.setScaledContents(True)
             label.setStyleSheet("border: 1px solid #4a4a8e; border-radius: 4px;")
             self.image_labels.append(label)
             secondary_images_layout.addWidget(label)
@@ -552,11 +561,11 @@ class MainWindow(QMainWindow):
 
         # Create UI elements for configuration
         group_heights = {
-            "terrain_settings": 0.35,
-            "biome_drag_settings": 0.6,
-            "biome_intrusion_settings": 0.18,
-            "global_toggles": 0.15,
-            "global_seeds": 0.1,
+            "distortion_settings": 0.38,
+            "equator_anomolies": 0.3,
+            "pole_anomolies": 0.3,
+            "global_toggles": 0.2,
+            "global_seed": 0.1,
             "image_pipeline": 0.99,
         }
 
@@ -583,10 +592,8 @@ class MainWindow(QMainWindow):
                     checkbox = QCheckBox(LABELS.get(key, key.replace("_", " ").title()))
                     checkbox.setChecked(value)
                     checkbox_vars[key] = checkbox
-                    checkbox.stateChanged.connect(
-                        lambda state, c=category, k=key: update_value(
-                            c, k, state == Qt.Checked
-                        )
+                    checkbox.toggled.connect(
+                        lambda val, k=key, c=category: update_value(c, k, val)
                     )
                     group_layout.addWidget(checkbox)
                 elif isinstance(value, (int, float)):
@@ -611,16 +618,10 @@ class MainWindow(QMainWindow):
                         max_val = 20
                     elif "x_min" in key or "y_min" in key or "crater_depth_min" in key:
                         min_val, max_val = -100, -0.01
-                    elif (
-                        "factor" in key
-                        or "normal" in key
-                        or "roughness" in key
-                        or "alpha" in key
-                        or "noise_factor" in key
-                    ):
-                        max_val = 1
-                    else:
+                    elif "x_max" in key or "y_max" in key or "crater_depth_max" in key:
                         max_val = 100
+                    else:
+                        max_val = 1
 
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))

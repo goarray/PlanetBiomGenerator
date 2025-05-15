@@ -1,33 +1,36 @@
 {
     "terrain_settings": {
-        "lat_weight_factor": 1.0,
-        "squircle_exponent": 4.0,
-        "noise_factor": 0.26,
-        "distortion_sigma": 45.82,
-        "lat_distortion_factor": 0,
-        "drag_radius": 9.51
+        "lat_weight_factor": 0.38,
+        "squircle_exponent": 3.78,
+        "noise_factor": 0.2,
+        "distortion_sigma": 54.19,
+        "distortion_amplitude": 0.1,
+        "lat_distortion_factor": 0.0
     },
     "biome_drag_settings": {
+        "drag_radius": 10.01,
+        "noise_scale": 0.55,
+        "noise_amplitude": 0.55,
         "enable_equator_drag": true,
-        "equator_drag_strength": 1.25,
-        "num_equator_drags": 6,
-        "equator_drag_x_min": -67,
-        "equator_drag_x_max": 31,
-        "equator_drag_y_min": -69,
-        "equator_drag_y_max": 28,
+        "equator_drag_strength": 1.8,
+        "num_equator_drags": 8,
+        "equator_drag_x_min": -93,
+        "equator_drag_x_max": 94,
+        "equator_drag_y_min": -93,
+        "equator_drag_y_max": 92,
         "enable_pole_drag": true,
-        "pole_drag_strength": 1.01,
-        "num_pole_drags": 5,
-        "pole_drag_x_min": -74,
-        "pole_drag_x_max": 26,
-        "pole_drag_y_min": -73,
-        "pole_drag_y_max": 26
+        "pole_drag_strength": 1.63,
+        "num_pole_drags": 8,
+        "pole_drag_x_min": -95,
+        "pole_drag_x_max": 97,
+        "pole_drag_y_min": -93,
+        "pole_drag_y_max": 93
     },
     "biome_intrusion_settings": {
-        "enable_equator_intrusion": true,
-        "equator_intrusion_strength": 71.8,
-        "enable_pole_intrusion": true,
-        "pole_intrusion_strength": 55.69
+        "enable_equator_intrusion": false,
+        "equator_intrusion_strength": 0.4,
+        "enable_pole_intrusion": false,
+        "pole_intrusion_strength": 0.36
     },
     "global_toggles": {
         "apply_distortion": true,
@@ -35,13 +38,15 @@
         "apply_latitude_blending": true
     },
     "global_seeds": {
-        "zone_seed": 68
+        "random_seed": false,
+        "zone_seed": 72
     },
     "image_pipeline": {
-        "upscale_image": true,
-        "brightness_factor": 0.87,
-        "saturation_factor": 0.72,
-        "enable_edge_blending": true,
+        "upscale_image": false,
+        "delete_pngs_after_conversion": true,
+        "brightness_factor": 0.53,
+        "saturation_factor": 0.43,
+        "enable_edge_blending": false,
         "edge_blend_radius": 2,
         "fractal_octaves": 2,
         "noise_scale": 0.42,
@@ -56,10 +61,10 @@
         "crater_depth_min": -51.45,
         "crater_depth_max": 47.37,
         "enable_crater_shading": true,
-        "normal_strength": 0.52,
+        "normal_strength": 5,
         "roughness_base": 0.48,
         "roughness_noise_scale": 0.52,
         "alpha_base": 0.52,
-        "alpha_noise_scale": 0.01
+        "alpha_noise_scale": 0.55
     }
 }
