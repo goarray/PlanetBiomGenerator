@@ -47,19 +47,12 @@ CsSF_Biom = Struct(
 
 
 def load_json(path: Path) -> Dict:
-    """Load config.json with nested categories intact."""
     try:
         with open(path, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Missing config: {path}")
         return {}
-
-
-# Load and use config
-config = load_json(CONFIG_PATH)
-# print(config["enable_noise"])
-print(config.get("user_seed", 0))
 
 
 def load_biomes(
@@ -98,10 +91,10 @@ def get_seed(config: Dict, use_random: bool = False) -> int:
         seed = random.randint(0, 99999)
         config["user_seed"] = seed  # store it for future reuse
         return seed
-    return int(config.get("user_seed", 0))
+    return config.get("user_seed", 0)
 
 
-def generate_base_pattern(shape: Tuple[int, int]) -> np.ndarray:
+def generate_base_pattern(shape: Tuple[int, int]) -> np.ndarray: # Create the base square gradient of
     """Generate a square target pattern with values from 0 (perimeter) to 1 (center)."""
     h, w = shape
     # Create grid of coordinates normalized to [0,1]
@@ -121,46 +114,34 @@ def generate_base_pattern(shape: Tuple[int, int]) -> np.ndarray:
     return base_pattern
 
 
-def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
+def remap_gradient(g: np.ndarray, equator_weight: float) -> np.ndarray:
+    """Remap gradient values (0-1) to adjust equator width.
+
+    equator_weight: float in (0, 1)
+        - 0.5 means no change
+        - < 0.5 thinner equator band, fatter poles
+        - > 0.5 thicker equator band, thinner poles
     """
-    Remap grid values [0,1] using cumulative weights so biome bands vary in size.
-    """
-    import numpy as np
+    # Clamp equator_weight to avoid divide-by-zero or nonsense
+    ew = max(0.01, min(equator_weight, 0.99))
 
-    weights = np.array(weights, dtype=np.float32)
-    weights /= weights.sum()  # Normalize
-    cdf = np.cumsum(weights)
-    cdf = np.insert(cdf, 0, 0.0)  # start at 0
+    out = np.empty_like(g)
+    mid = 0.5
+    left_mask = g < mid
+    right_mask = ~left_mask
 
-    # Allocate output grid
-    remapped = np.zeros_like(grid)
+    # scale below 0.5 linearly so that [0,0.5] maps to [0, ew]
+    out[left_mask] = g[left_mask] / mid * ew
 
-    # Define ranges and remap each slice of the input
-    for i in range(len(weights)):
-        # The input range this slice originally covered
-        input_lower = i / len(weights)
-        input_upper = (i + 1) / len(weights)
+    # scale above 0.5 linearly so that [0.5,1] maps to [ew,1]
+    out[right_mask] = ew + (g[right_mask] - mid) / mid * (1 - ew)
 
-        # The output range to map it to
-        output_lower = cdf[i]
-        output_upper = cdf[i + 1]
-
-        # Mask of values in this input range
-        mask = (grid >= input_lower) & (grid < input_upper)
-
-        # Linearly scale within that range
-        slice_grid = (grid[mask] - input_lower) / (input_upper - input_lower)
-        remapped[mask] = output_lower + slice_grid * (output_upper - output_lower)
-
-    return remapped
+    return out
 
 
 def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     """Generate smooth noise normalized to 0..1."""
-    seed = get_seed(
-        config.get("some_values", {}),
-        config.get("some_values", {}).get("use_random", False),
-    )
+    seed = get_seed(config, config.get("use_random", False))
     np.random.seed(seed)
     noise = np.random.rand(*shape)
     noise = gaussian_filter(noise, sigma=16)
@@ -172,7 +153,7 @@ def generate_combined_pattern(shape: Tuple[int, int], config: Dict) -> np.ndarra
     """Generate combined base pattern plus noise (if enabled)."""
     base_pattern = generate_base_pattern(shape)
 
-    if not config.get("some_values", {}).get("enable_noise", True):
+    if config.get("disable_noise", False):
         return base_pattern
 
     noise = generate_noise(shape, config)
@@ -265,7 +246,11 @@ def main():
     preview = "--preview" in sys.argv
     print("Running in preview mode" if preview else "Generating full biome set...")
     config = load_json(CONFIG_PATH)
-    biome_cfg = config.get("some_values", {})
+    biome_cfg = {
+        k: int(v) if isinstance(v, float) and v.is_integer() else v
+        for cat in config.values()
+        for k, v in cat.items()
+    }
     biome_csv = PREVIEW_PATH if preview else CSV_PATH
 
     plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
@@ -278,12 +263,9 @@ def main():
         print(f"Processing: {planet} ({len(biomes)} biomes)")
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
-        zone_weights = [
-            config.get("Zone Weight", {}).get(f"zone_0{i}", 1.0) for i in range(7)
-        ]
+        noise = generate_noise((GRID_SIZE[1], GRID_SIZE[0]), biome_cfg)
         pattern = generate_combined_pattern((GRID_SIZE[1], GRID_SIZE[0]), biome_cfg)
-        remapped_pattern = remap_biome_weights(pattern, zone_weights)
-        inst.overwrite(biomes, remapped_pattern)
+        inst.overwrite(biomes, pattern) 
         inst.resrcGridN = assign_resources(
             inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), life, nolife, ocean
         ).flatten()
