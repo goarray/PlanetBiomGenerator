@@ -1,8 +1,6 @@
-# Expiremental UI added (now pyside6)
+# Expiremental UI added (now QtPy6)
 
-- Half broken at the moment, you'll need to move xEditOut/PlanetBiomes.csv to /assets/
-- .biom files may be in the wrong format.
-- .biom and .png files will now be created a a new /Output/ folder
+- .biom, .png and .dds files will be created in a /output/ folder
 - Most setting are adjustable for .biom creation, a simple planet texture pipeline added
 
 # USE at your own risk! Mostly works pretty ok.
@@ -63,13 +61,13 @@ Note: This is not necessary for the tool to work. But, the export script will ne
 
 - Run the batch script: `/PlanetBiomes/PlanetBiomes.bat`
 
-- **NEW** This will launch the .biom scrambler UI (tkinter)
+- This will launch the .biom scrambler UI, press `Create Planet`
 
 - This will create a `plugin` folder like: /PlanetBiomes/Output/`[yourpluginname.esm or .esp]/`
 
 - This directory will contain one `[ANAM].biom` file per planet found in the PlanetBiones.csv
 
-- **NEW** It will also create the directory /Output/BiomePNGs/, this will contain a North and South texture.png for each planet.
+- **NEW** It will also create the directory /output/textures/`[yourpluginname.esm or esp]`, this will contain a North and South texture.png for each planet.
 
 - Tip: Create you own PlanetBiome.csv using the template found in /PlanetBiomes/assets/ for granual generation.
 
