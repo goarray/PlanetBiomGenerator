@@ -1,6 +1,6 @@
 # Expiremental UI added (now QtPy6)
 
-- .biom and .png files will now be created a a new /Output/ folder
+- .biom, .png and .dds files will be created in a /output/ folder
 - Most setting are adjustable for .biom creation, a simple planet texture pipeline added
 
 # USE at your own risk! Mostly works pretty ok.
