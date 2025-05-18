@@ -452,7 +452,7 @@ class MainWindow(QMainWindow):
         self.setup_config_controls()
 
         # Apply default theme
-        self.change_theme("Sci-Fi Light")
+        self.change_theme("Starfield")
 
     def reset_to_defaults(self, key):
         """Reset a single setting to its default using update_value() and update UI sliders."""
@@ -798,7 +798,7 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(self.themes[theme_name])
             message = f"Applied theme: {theme_name}"
         else:
-            self.setStyleSheet(self.themes.get("Sci-Fi Light", ""))
+            self.setStyleSheet(self.themes.get("Starfield", ""))
             message = f"Error: Theme '{theme_name}' not found in themes"
 
         self.stdout_widget.appendPlainText(message)

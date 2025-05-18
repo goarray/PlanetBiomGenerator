@@ -1,19 +1,22 @@
 {
     "Starfield": {
-        "background": "#121416",
-        "color": "#c9d1d9",
-        "font_family": "{primary}, {secondary}, monospace",
-        "button_color": "#2a2f37",
-        "border_color": "#3c4450",
+        "background": "#121317",
+        "color": "#d9dfe8",
+        "font_family": "{primary}, {secondary}, sans-serif",
+        "button_color": "#2a3344",
+        "border_color": "#4a5a77",
         "fonts": {
-            "primary": "Orbitron",
-            "secondary": "Exo 2",
+            "primary": "Eurostile",
+            "secondary": "Futura",
             "size_small": "12px",
             "size_large": "14px"
         },
-        "accent": "#4d7aa9",
-        "highlight": "#94c9ff",
-        "disabled_color": "#5a5f66"
+        "accent": "#4ab3e6",
+        "highlight": "#a8d4ff",
+        "disabled_color": "#6a727f",
+        "button_border_radius": "3px",
+        "shadow": "0 0 8px rgba(74, 179, 230, 0.3)",
+        "hover_effect": "transform: scale(1.05); box-shadow: 0 0 10px rgba(74, 179, 230, 0.5);"
     },
     "Cyberpunk": {
         "background": "#0a0f1a",
