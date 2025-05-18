@@ -1,4 +1,6 @@
 {
+    "_theme_group": "Parameters related to themes",
+    "theme": "Starfield",
     "_biome_toggles_group": "Biome-related options",
     "enable_noise": true,
     "apply_distortion": true,

@@ -14,28 +14,33 @@ Dependencies:
 - pathlib
 """
 
-from pathlib import Path
-import random
+# Standard Libraries
 import sys
 import os
 import json
 import subprocess
+from pathlib import Path
+
+# Third Party Libraries
+import numpy as np
 from PyQt6.uic import loadUi
 from PyQt6.QtWidgets import QApplication, QMainWindow, QSplashScreen, QPushButton
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie
 from themes import THEMES
 
-# Directory paths
-BASE_DIR = (
-    Path(sys._MEIPASS).resolve()
-    if hasattr(sys, "_MEIPASS")
-    else Path(__file__).parent.parent.resolve()
-)
+# Determine base directory depending on execution mode
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
+
+# Directory Paths
 CONFIG_DIR = BASE_DIR / "config"
 IMAGE_DIR = BASE_DIR / "assets" / "images"
 PNG_OUTPUT_DIR = BASE_DIR / "output" / "textures"
 INPUT_DIR = BASE_DIR / "input"
+OUTPUT_DIR = BASE_DIR / "output"
 
 # File Paths
 UI_PATH = Path(__file__).parent / "mainwindow.ui"
@@ -88,8 +93,9 @@ BOOLEAN_KEYS = {
     "random_distortion",
 }
 
+
 PROCESSING_MAP = {
-    "Permits approved, site secured.": [0],
+    "Permits closed, loan secured.": [0],
     "Terraforming complete.": [1],
     "Ore distributed.": [2],
     "Landscaping complete.": [3],
@@ -114,6 +120,7 @@ def load_config():
     except FileNotFoundError:
         print(f"Error: Config file {config_path} not found. Creating default config.")
         raw_config = {
+            "user_seed": 1234567,
             "zoom": 1.0,
             "squircle_exponent": 2.0,
             "noise_factor": 0.5,
@@ -184,6 +191,7 @@ def load_config():
         if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
             raw_config[key] = bool(int(value))
     config = raw_config
+    return config
 
 
 def save_config():
@@ -218,7 +226,7 @@ def get_seed():
     try:
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
-        return int(config.get("user_seed", 0))  # ✅ Default to 0 if missing
+        return int(config.get("user_seed", 0))
     except (FileNotFoundError, json.JSONDecodeError):
         print("Error loading config. Using default seed: 0")
         return 0
@@ -305,31 +313,48 @@ def start_planet_biomes(main_window, mode=""):
         output = planet_biomes_process.readAllStandardOutput().data().decode()
         main_window.stdout_widget.appendPlainText(output)
         updated = False
+
         for message, indices in PROCESSING_MAP.items():
             if message in output:
+                main_window.stderr_widget.appendPlainText(message)
                 for index in indices:
                     output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
                     if output_image.exists():
-                        main_window.image_labels[index].setPixmap(
-                            QPixmap(str(output_image))
+                        pixmap = QPixmap(str(output_image)).scaled(
+                            main_window.image_labels[index].width(),
+                            main_window.image_labels[index].height(),
+                            Qt.AspectRatioMode.KeepAspectRatio,
                         )
+                        main_window.image_labels[index].setPixmap(pixmap)
                 updated = True
+
         # Fallback: refresh all images if a completion-like message is detected
         if not updated and "complete" in output.lower():
             for index in range(len(IMAGE_FILES)):
                 output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
                 if output_image.exists():
-                    main_window.image_labels[index].setPixmap(
-                        QPixmap(str(output_image))
+                    pixmap = QPixmap(str(output_image)).scaled(
+                        main_window.image_labels[index].width(),
+                        main_window.image_labels[index].height(),
+                        Qt.AspectRatioMode.KeepAspectRatio,
                     )
+                    main_window.image_labels[index].setPixmap(pixmap)
+
+        if "Visual inspection" in output:
+            output_dir = Path(OUTPUT_DIR)
+            num_files = sum(1 for f in output_dir.rglob("*") if f.is_file())
+            main_window.stdout_widget.appendPlainText(
+                f"Forms filed correctly: {num_files}"
+            )
+
+    def handle_error():
+        error_output = planet_biomes_process.readAllStandardError().data().decode()
+        if error_output:
+            main_window.stderr_widget.appendPlainText(f"{error_output}")
 
     # Connect signals
     planet_biomes_process.readyReadStandardOutput.connect(handle_output)
-    planet_biomes_process.readyReadStandardError.connect(
-        lambda: main_window.stderr_widget.appendPlainText(
-            planet_biomes_process.readAllStandardError().data().decode()
-        )
-    )
+    planet_biomes_process.readyReadStandardError.connect(handle_error)
     seed = get_seed()
 
     planet_biomes_process.finished.connect(
@@ -352,7 +377,7 @@ def start_planet_biomes(main_window, mode=""):
             main_window.image_labels[index].setMovie(movie)
             movie.start()
 
-    main_window.stdout_widget.appendPlainText(
+    main_window.stderr_widget.appendPlainText(
         f"Starting PlanetBiomes.py with args: {args}"
     )
     planet_biomes_process.start()
@@ -406,6 +431,27 @@ def start_processing(main_window):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        # Determine the path to mainwindow.ui
+        if getattr(sys, "frozen", False):
+            # Running as a PyInstaller bundle
+            base_path = sys._MEIPASS
+        else:
+            # Running as a regular Python script
+            base_path = os.path.dirname(__file__)
+        ui_path = os.path.join(base_path, "src", "mainwindow.ui")
+        loadUi(ui_path, self)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        if getattr(sys, 'frozen', False):
+            # Running as a bundled executable
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        UI_PATH = os.path.join(BASE_DIR, "mainwindow.ui")
         loadUi(str(UI_PATH), self)
 
         self.slider_mappings = {}
@@ -413,6 +459,9 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
+        config = load_config()
+        theme = config.get("theme", "Starfield")
+
         self.image_labels = [
             self.albedo_preview_image,
             self.normal_preview_image,
@@ -420,7 +469,11 @@ class MainWindow(QMainWindow):
             self.alpha_preview_image,
         ]
         self.default_image = (
-            QPixmap(str(DEFAULT_IMAGE_PATH))
+            QPixmap(str(DEFAULT_IMAGE_PATH)).scaled(
+                self.image_labels[0].width(),
+                self.image_labels[0].height(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+            )
             if DEFAULT_IMAGE_PATH.exists()
             else QPixmap()
         )
@@ -451,8 +504,7 @@ class MainWindow(QMainWindow):
         # Map checkboxes and sliders to config
         self.setup_config_controls()
 
-        # Apply default theme
-        self.change_theme("Starfield")
+        self.change_theme(theme)
 
     def reset_to_defaults(self, key):
         """Reset a single setting to its default using update_value() and update UI sliders."""
@@ -793,10 +845,17 @@ class MainWindow(QMainWindow):
         )
 
     def change_theme(self, theme_name):
-        """Apply the selected theme and update stdout."""
+        """Apply the selected theme, update stdout, and save to config."""
+
         if theme_name in self.themes:
             self.setStyleSheet(self.themes[theme_name])
             message = f"Applied theme: {theme_name}"
+
+            # Save selected theme to config
+            config["theme"] = theme_name
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(config, f, indent=4)
+
         else:
             self.setStyleSheet(self.themes.get("Starfield", ""))
             message = f"Error: Theme '{theme_name}' not found in themes"
@@ -806,10 +865,19 @@ class MainWindow(QMainWindow):
     def refresh_images(self):
         for i, image_file in enumerate(IMAGE_FILES):
             output_image = PNG_OUTPUT_DIR / image_file
-            self.image_labels[i].setPixmap(
+            pixmap = (
                 QPixmap(str(output_image))
                 if output_image.exists()
-                else QPixmap(str(DEFAULT_IMAGE_PATH))  # Explicitly use default.png
+                else QPixmap(str(DEFAULT_IMAGE_PATH))
+            )
+
+            # Scale while keeping aspect ratio
+            self.image_labels[i].setPixmap(
+                pixmap.scaled(
+                    self.image_labels[i].width(),
+                    self.image_labels[i].height(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                )
             )
 
     def refresh_ui_from_config(self):

@@ -2,16 +2,15 @@ import json
 import sys
 from pathlib import Path
 
-# Ensure BASE_DIR is the actual root project folder
-BASE_DIR = (
-    Path(sys._MEIPASS).resolve()
-    if hasattr(sys, "_MEIPASS")
-    else Path(__file__).parent.parent.resolve()
-)
+# Determine base directory depending on execution mode
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
 
 CONFIG_DIR = BASE_DIR / "config"
-DEFAULT_THEME_PATH = CONFIG_DIR / "default_themes.json"
-CUSTOM_THEME_PATH = CONFIG_DIR / "custom_themes.json"
+DEFAULT_THEME_PATH = CONFIG_DIR / "themes_config.json"
+CUSTOM_THEME_PATH = CONFIG_DIR / "custom_themes_config.json"
 
 DEFAULT_THEMES = {
     "Light": {

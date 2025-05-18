@@ -1,40 +1,43 @@
 #!/usr/bin/env python3
-from pathlib import Path
-from typing import Dict, List, Set, Tuple
-from construct import Struct, Const, Rebuild, this, len_
-from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8
-from scipy.ndimage import gaussian_filter, distance_transform_edt
-import numpy as np
-import subprocess
+
+# Standard Libraries
+import sys
+import os
 import json
 import csv
-import sys
+import subprocess
 import random
+from pathlib import Path
+from typing import Dict, List, Set, Tuple
 
-# Constants
-GRID_SIZE = [256, 256]
-GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
+# Third Party Libraries
+import numpy as np
+from scipy.ndimage import gaussian_filter, distance_transform_edt
+from construct import Struct, Const, Rebuild, this, len_
+from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8
 
-# Directories
-BASE_DIR = (
-    Path(sys._MEIPASS).resolve()
-    if hasattr(sys, "_MEIPASS")
-    else Path(__file__).parent.parent.resolve()
-)
+# Determine base directory depending on execution mode
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
 
-# File paths
+
+# Directory Paths
+INPUT_DIR = BASE_DIR / "input"
+OUTPUT_DIR = BASE_DIR / "output" / "planetdata" / "biomemaps"
+
+# File Paths
 CONFIG_PATH = BASE_DIR / "config" / "custom_config.json"
 TEMPLATE_PATH = BASE_DIR / "assets" / "PlanetBiomes.biom"
 CSV_PATH = BASE_DIR / "csv" / "PlanetBiomes.csv"
 PREVIEW_PATH = BASE_DIR / "csv" / "preview.csv"
 
-# Custom user input path
-INPUT_DIR = BASE_DIR / "input"
+# Constants
+GRID_SIZE = [256, 256]
+GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
-# Outputs
-OUTPUT_DIR = BASE_DIR / "output" / "planetdata" / "biomemaps"
-
-# .biom structure
+# .biom Structure
 CsSF_Biom = Struct(
     "magic" / Const(0x105, UInt16),
     "_numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
@@ -65,6 +68,7 @@ def load_json(path: Path) -> Dict:
 
 # Load and use config
 config = load_json(CONFIG_PATH)
+theme = config.get("theme", "Starfield")
 
 
 def load_biomes(
@@ -264,8 +268,8 @@ class BiomFile:
 
 
 def main():
+    print("=== Starting PlanetBiomes ===", flush=True)
     preview = "--preview" in sys.argv
-    print("Running in preview mode" if preview else "Generating full biome set...")
     config = load_json(CONFIG_PATH)
     biome_cfg = config
     biome_csv = PREVIEW_PATH if preview else CSV_PATH
@@ -277,7 +281,13 @@ def main():
     template.load(TEMPLATE_PATH)
 
     for planet, biomes in planets.items():
-        print(f"Processing: {planet} ({len(biomes)} biomes)")
+        print(f"Location: {planet}. approved for ({len(biomes)}) biomes.")
+        print(
+            f"Biom file '{planet}.biom' with {len(biomes)} biomes created in '{out_dir / (planet + '.esm')}'",
+            file=sys.stderr,
+            flush=True,
+        )
+        OUTPUT_DIR
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
         zone_weights = [config.get(f"zone_0{i}", 1.0) for i in range(7)]
@@ -293,7 +303,6 @@ def main():
         inst.save(out_dir / f"{planet}.biom")
 
     subprocess.run(["python", str(BASE_DIR / "src" / "PlanetTextures.py")], check=True)
-    print("Biome processing complete.", flush=True)
 
 
 if __name__ == "__main__":

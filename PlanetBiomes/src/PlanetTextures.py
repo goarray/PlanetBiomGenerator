@@ -36,9 +36,9 @@ import csv
 import sys
 from PIL import Image, ImageEnhance
 
-# Directory paths
-if hasattr(sys, "_MEIPASS"):
-    BASE_DIR = Path(sys._MEIPASS).resolve()
+# Determine base directory depending on execution mode
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
 else:
     BASE_DIR = Path(__file__).parent.parent.resolve()
 
@@ -549,7 +549,7 @@ def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
     # Execute texconv
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print(f"Converted {png_path.name} to {texture_path.name} ({dds_format})")
+        print(f"Converted {png_path.name} to {texture_path.name} ({dds_format})", file=sys.stderr)
         return texture_path
     except subprocess.CalledProcessError as e:
         print(f"Error converting {png_path.name} to DDS: {e.stderr}")
@@ -561,6 +561,7 @@ def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
 
 def main():
     """Process .biom files and generate PNG and DDS textures."""
+    print("=== Starting PlanetTextures ===", flush=True)
     global _progress_started
 
     parser = argparse.ArgumentParser(
@@ -592,7 +593,7 @@ def main():
     used_biome_ids = set()
     for biom_path in biom_files:
         plugin_name = biom_path.parent.name
-        print(f"Collecting biome IDs from {biom_path.name}")
+        print(f"Running environmental anaylisis on {biom_path.name}")
         try:
             biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
             used_biome_ids.update(biome_grid_n.flatten())
@@ -607,7 +608,7 @@ def main():
     keep_pngs = config.get("keep_pngs_after_conversion", True)
 
     for biom_path in biom_files:
-        print(f"Processing {biom_path.name}")
+        print(f"Distributing labor force {biom_path.name}")
         try:
             biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
             maps_n = create_biome_image(biome_grid_n, biome_colors)
@@ -628,11 +629,12 @@ def main():
                     png_filename = f"{planet_name}_{hemisphere}_{texture_type}.png"
                     png_path = TEXTURE_OUTPUT_DIR / png_filename
                     maps[texture_type].save(png_path)
-                    print(f"Saved PNG: {png_path}")
 
                     if not once_per_run:
                         print("Permits approved, site secured.")
                         once_per_run = True
+                    
+                    print(f"Saved PNG: {png_path}", file=sys.stderr)
 
                     # Skip DDS conversion in preview mode
                     if not args.preview:
@@ -640,26 +642,27 @@ def main():
                         texture_path = convert_png_to_dds(
                             png_path, texture_output_dir, plugin_name, texture_type
                         )
-                        print(f"Converted DDS saved to: {texture_path}")
+                        print(f"Converted DDS saved to: {texture_path}", file=sys.stderr)
 
                         # Optionally delete PNG after DDS conversion
                         if not keep_pngs:
                             try:
                                 png_path.unlink()
-                                print(f"Deleted intermediate PNG: {png_path}")
+                                print(f"Deleted intermediate PNG: {png_path}", file=sys.stderr)
                             except OSError as e:
                                 print(f"Error deleting {png_path}: {e}")
 
             print(
-                f"Generated textures for {planet_name} (North and South: albedo, normal, rough, alpha)"
+                f"Generated textures for {planet_name} (North and South: albedo, normal, rough, alpha)", file=sys.stderr
+            )
+            print(
+                f"Visual inspection of {planet_name} complete."
             )
         except Exception as e:
             import traceback
 
             print(f"Error processing {biom_path.name}: {e}")
             traceback.print_exc()
-
-    print("Materials processing complete.")
 
     subprocess.run(["python", str(BASE_DIR / "src" / "PlanetMaterials.py")], check=True)
     sys.stdout.flush()

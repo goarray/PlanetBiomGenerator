@@ -1126,7 +1126,7 @@
             <string>Keep PNGs After Conversion</string>
            </property>
            <property name="text">
-            <string>Output .PNG</string>
+            <string>Keep .PNGs</string>
            </property>
           </widget>
          </item>
