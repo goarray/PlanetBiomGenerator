@@ -26,6 +26,12 @@ def is_process_running(process_name):
 
 def run_materials_processing():
     """Simulate material processing by waiting a few seconds."""
+    print("Starting materials processing...")
+
+    # Simulated processing time
+    time.sleep(2)
+
+    print("Materials processing complete.")
 
     if RESTART_PLANET_PAINTER and not is_process_running("PlanetPainter.py"):
         print("Restarting PlanetPainter...")

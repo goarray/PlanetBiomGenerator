@@ -21,7 +21,7 @@ import os
 import json
 import subprocess
 from PyQt6.uic import loadUi
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSplashScreen
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSplashScreen, QPushButton
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie
 from themes import THEMES
@@ -34,7 +34,8 @@ BASE_DIR = (
 )
 CONFIG_DIR = BASE_DIR / "config"
 IMAGE_DIR = BASE_DIR / "assets" / "images"
-PNG_OUTPUT_DIR = BASE_DIR / "Output" / "Textures"
+PNG_OUTPUT_DIR = BASE_DIR / "output" / "textures"
+INPUT_DIR = BASE_DIR / "input"
 
 # File Paths
 UI_PATH = Path(__file__).parent / "mainwindow.ui"
@@ -74,7 +75,7 @@ BOOLEAN_KEYS = {
     "enable_texture_light",
     "enable_texture_edges",
     "enable_basic_filters",
-    "enable_texture_anomolies",
+    "enable_texture_anomalies",
     "process_images",
     "enable_texture_noise",
     "upscale_image",
@@ -87,68 +88,21 @@ BOOLEAN_KEYS = {
     "random_distortion",
 }
 
-# Human-readable labels
-LABELS = {
-    "zoom": "Zoom",
-    "squircle_exponent": "Diamond (1) Circle (2) Squircle (max)",
-    "noise_factor": "Equator Weight",
-    "global_seed": "Generation Seed",
-    "noise_scale": "Anomaly Scale",
-    "noise_amplitude": "Anomaly Distortion",
-    "enable_equator_drag": "Enable Polar Anomalies",
-    "enable_pole_drag": "Enable Equator Anomalies",
-    "image_pipeline": "Image Settings",
-    "brightness_factor": "Brightness",
-    "saturation_factor": "Saturation",
-    "enable_edge_blending": "Enable Edges",
-    "edge_blend_radius": "Edge Detail",
-    "distortion_sigma": "Fine Distortion",
-    "lat_distortion_factor": "Large Distortion",
-    "drag_radius": "Anomalies",
-    "enable_equator_intrusion": "Enable Equator Intrusions",
-    "enable_pole_intrusion": "Enable Pole Intrusions",
-    "apply_distortion": "Apply Terrain Distortion",
-    "apply_resource_gradient": "Use Resource Gradient",
-    "apply_latitude_blending": "Blend Biomes by Latitude",
-    "user_seed": "Seed",
-    "elevation_scale": "Terrain Smoothness",
-    "detail_smoothness": "Fractal Noise",
-    "detail_strength_decay": "Fractal Decay",
-    "normal_strength": "Normal Strength",
-    "roughness_base": "Roughness Smoothness",
-    "roughness_noise_scale": "Roughness Contrast",
-    "alpha_base": "Alpha Base",
-    "alpha_noise_scale": "Alpha Noise Scale",
-    "fade_intensity": "Fade Intensity",
-    "fade_spread": "Fade Spread",
-    "perlin_noise": "Perlin Noise",
-    "swap_factor": "Swap Factor",
-    "fractal_octaves": "Fractal Octaves",
-    "tint_factor": "Tint Factor",
-    "equator_anomoly_count": "Equator Anomaly Count",
-    "equator_anomoly_scale": "Equator Anomaly Scale",
-    "polar_anomoly_count": "Polar Anomaly Count",
-    "polar_anomoly_scale": "Polar Anomaly Scale",
-    "distortion_scale": "Distortion Scale",
-    "distortion_influence": "Distortion Influence",
-    "biome_distortion": "Biome Distortion",
-    "noise_scatter": "Noise Scatter",
-    "biome_perlin": "Biome Perlin",
-    "biome_swap": "Biome Swap",
-    "biom_fractal": "Biome Fractal",
-}
-
 PROCESSING_MAP = {
-    "Biome processing complete.": [1],
-    "Texture processing complete.": [2],
-    "Materials processing complete.": [3],
+    "Permits approved, site secured.": [0],
+    "Terraforming complete.": [1],
+    "Ore distributed.": [2],
+    "Landscaping complete.": [3],
+    "don't panic!": [0, 1, 2, 3],
 }
 
-# Global variables
+# Global declarations
 config = {}
 checkbox_vars = {}
 slider_vars = {}
 planet_biomes_process = None
+process_list = []
+
 
 def load_config():
     """Load configuration from custom or default JSON file."""
@@ -160,82 +114,77 @@ def load_config():
     except FileNotFoundError:
         print(f"Error: Config file {config_path} not found. Creating default config.")
         raw_config = {
-            "some_values": {
-                "zoom": 1.0,
-                "squircle_exponent": 2.0,
-                "noise_factor": 0.5,
-                "noise_scale": 0.1,
-                "noise_amplitude": 0.1,
-                "enable_equator_drag": False,
-                "enable_pole_drag": False,
-                "apply_distortion": False,
-                "enable_noise": False,
-                "enable_anomalies": False,
-                "enable_biases": False,
-                "brightness_factor": 1.0,
-                "saturation_factor": 1.0,
-                "edge_blend_radius": 0.5,
-                "detail_smoothness": 0.5,
-                "detail_strength_decay": 0.5,
-                "normal_strength": 0.5,
-                "roughness_base": 0.5,
-                "roughness_noise_scale": 0.5,
-                "fade_intensity": 0.5,
-                "fade_spread": 0.5,
-                "perlin_noise": 0.5,
-                "swap_factor": 0.5,
-                "fractal_octaves": 0.5,
-                "tint_factor": 0.5,
-                "equator_anomoly_count": 0.5,
-                "equator_anomoly_scale": 0.5,
-                "polar_anomoly_count": 0.5,
-                "polar_anomoly_scale": 0.5,
-                "distortion_scale": 0.5,
-                "distortion_influence": 0.5,
-                "biome_distortion": 0.5,
-                "noise_scatter": 0.5,
-                "biome_perlin": 0.5,
-                "biome_swap": 0.5,
-                "biom_fractal": 0.5,
-                "enable_texture_light": False,
-                "enable_texture_edges": False,
-                "enable_basic_filters": False,
-                "enable_texture_anomolies": False,
-                "process_images": False,
-                "enable_texture_noise": False,
-                "enable_texture_preview": False,
-                "enable_random_drag": False,
-                "random_distortion": False,
-            },
-            "global_seed": {"user_seed": 12345, "use_random": False},
-            "image_pipeline": {
-                "enable_edge_blending": False,
-                "upscale_image": False,
-                "keep_pngs_after_conversion": False,
-                "output_csv_files": False,
-                "output_dds_files": False,
-                "output_mat_files": False,
-                "output_biom_files": False,
-            },
-            "biome_zones": {
-                "zone_00": 0.5,
-                "zone_01": 0.5,
-                "zone_02": 0.5,
-                "zone_03": 0.5,
-                "zone_04": 0.5,
-                "zone_05": 0.5,
-                "zone_06": 0.5,
-            },
+            "zoom": 1.0,
+            "squircle_exponent": 2.0,
+            "noise_factor": 0.5,
+            "noise_scale": 0.1,
+            "noise_amplitude": 0.1,
+            "enable_equator_drag": False,
+            "enable_pole_drag": False,
+            "apply_distortion": False,
+            "enable_noise": False,
+            "enable_anomalies": False,
+            "enable_biases": False,
+            "brightness_factor": 1.0,
+            "saturation_factor": 1.0,
+            "edge_blend_radius": 0.5,
+            "detail_smoothness": 0.5,
+            "detail_strength_decay": 0.5,
+            "normal_strength": 0.5,
+            "roughness_base": 0.5,
+            "roughness_noise_scale": 0.5,
+            "fade_intensity": 0.5,
+            "fade_spread": 0.5,
+            "perlin_noise": 0.5,
+            "swap_factor": 0.5,
+            "fractal_octaves": 0.5,
+            "tint_factor": 0.5,
+            "equator_anomaly_count": 0.5,
+            "equator_anomaly_scale": 0.5,
+            "polar_anomaly_count": 0.5,
+            "polar_anomaly_scale": 0.5,
+            "distortion_scale": 0.5,
+            "distortion_influence": 0.5,
+            "biome_distortion": 0.5,
+            "noise_scatter": 0.5,
+            "biome_perlin": 0.5,
+            "biome_swap": 0.5,
+            "biome_fractal": 0.5,
+            "enable_texture_light": False,
+            "enable_texture_edges": False,
+            "enable_basic_filters": False,
+            "enable_texture_anomalies": False,
+            "process_images": False,
+            "enable_texture_noise": False,
+            "enable_texture_preview": False,
+            "enable_random_drag": False,
+            "random_distortion": False,
+            "enable_edge_blending": False,
+            "upscale_image": False,
+            "keep_pngs_after_conversion": False,
+            "output_csv_files": False,
+            "output_dds_files": False,
+            "output_mat_files": False,
+            "output_biom_files": False,
+            "zone_00": 0.5,
+            "zone_01": 0.5,
+            "zone_02": 0.5,
+            "zone_03": 0.5,
+            "zone_04": 0.5,
+            "zone_05": 0.5,
+            "zone_06": 0.5,
+            "light_bias": "light_bias_cc",
+            "biome_bias": "biome_bias_cc",
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(DEFAULT_CONFIG_PATH, "w") as f:
             json.dump(raw_config, f, indent=4)
 
-    for category, sub_config in raw_config.items():
-        for key, value in sub_config.items():
-            if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
-                raw_config[category][key] = bool(int(value))
+    for key, value in raw_config.items():
+        if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
+            raw_config[key] = bool(int(value))
     config = raw_config
+
 
 def save_config():
     """Save current configuration to JSON file."""
@@ -244,84 +193,197 @@ def save_config():
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
 
-def update_value(category, key, val, index=None):
+
+def update_value(key, val, index=None):
     """Update configuration value and save to file."""
-    if isinstance(config[category][key], bool):
-        config[category][key] = bool(val)
-    elif isinstance(config[category][key], (int, float)):
-        config[category][key] = float(val) if isinstance(val, str) else val
+    if key not in config:
+        print(f"Warning: Key '{key}' not found in config.")
+        return
+
+    if key == "user_seed":
+        config[key] = int(val)
+    elif isinstance(config[key], bool):
+        config[key] = bool(val)
+    elif isinstance(config[key], (int, float)):
+        try:
+            config[key] = float(val) if isinstance(val, str) else val
+        except ValueError:
+            print(f"Error: Cannot convert '{val}' to float for '{key}'")
+            return
+
     save_config()
 
-def start_planet_biomes():
-    """Start PlanetBiomes.py asynchronously."""
-    global planet_biomes_process
+def get_seed():
+    """Retrieve user seed from `_config.json`."""
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        return int(config.get("user_seed", 0))  # ✅ Default to 0 if missing
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Error loading config. Using default seed: 0")
+        return 0
+
+
+def update_bias_selection(self, button_name, is_checked):
+    """Update the config when a new radio button is selected and update UI."""
+    if is_checked:
+        # Determine if it's a light_bias or biome_bias button
+        bias_type = (
+            "light_bias" if button_name.startswith("light_bias_") else "biome_bias"
+        )
+        config[bias_type] = button_name
+        # Clear redundant bias keys to avoid conflicts
+        bias_keys = [
+            "biome_bias_nw",
+            "biome_bias_nn",
+            "biome_bias_ne",
+            "biome_bias_ww",
+            "biome_bias_cc",
+            "biome_bias_ee",
+            "biome_bias_sw",
+            "biome_bias_ss",
+            "biome_bias_se",
+            "light_bias_nw",
+            "light_bias_nn",
+            "light_bias_ne",
+            "light_bias_ww",
+            "light_bias_cc",
+            "light_bias_ee",
+            "light_bias_sw",
+            "light_bias_ss",
+            "light_bias_se",
+        ]
+        for key in bias_keys:
+            if key in config:
+                del config[key]
+        save_config()
+        print(f"{bias_type} Updated: {button_name}")
+
+        # Update UI for the respective bias group
+        group_prefix = "light_bias_" if bias_type == "light_bias" else "biome_bias_"
+        for btn_name in bias_keys:
+            if btn_name.startswith(group_prefix):
+                btn = getattr(self, btn_name, None)
+                if btn:
+                    btn.setChecked(btn_name == button_name)
+
+
+def start_planet_biomes(main_window, mode=""):
+    """Start PlanetBiomes.py asynchronously, handle modes, and update UI."""
+    main_window.stdout_widget.clear()
+    main_window.stderr_widget.clear()
+    global planet_biomes_process, process_list
+
     if not SCRIPT_PATH.exists():
-        print(f"Error: PlanetBiomes.py not found at {SCRIPT_PATH}")
+        main_window.stderr_widget.appendPlainText(
+            f"Error: PlanetBiomes.py not found at {SCRIPT_PATH}"
+        )
         return
+
+    # Disable upscaling for preview mode
+    if "--preview" in mode:
+        disable_upscaling()
+
+    # Save config to ensure latest settings are used
+    save_config()
 
     planet_biomes_process = QProcess()
     planet_biomes_process.setProgram("python")
-    planet_biomes_process.setArguments([str(SCRIPT_PATH)])
+    args = [str(SCRIPT_PATH)]
+    if mode:
+        if "--preview" in mode:
+            args.extend([str(PREVIEW_BIOME_PATH), "--preview"])
+        else:
+            args.extend(mode.split())
+    planet_biomes_process.setArguments(args)
     planet_biomes_process.setWorkingDirectory(str(BASE_DIR))
 
+    process_list.append(planet_biomes_process)
+
+    # Handle output for image updates
+    def handle_output():
+        output = planet_biomes_process.readAllStandardOutput().data().decode()
+        main_window.stdout_widget.appendPlainText(output)
+        updated = False
+        for message, indices in PROCESSING_MAP.items():
+            if message in output:
+                for index in indices:
+                    output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
+                    if output_image.exists():
+                        main_window.image_labels[index].setPixmap(
+                            QPixmap(str(output_image))
+                        )
+                updated = True
+        # Fallback: refresh all images if a completion-like message is detected
+        if not updated and "complete" in output.lower():
+            for index in range(len(IMAGE_FILES)):
+                output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
+                if output_image.exists():
+                    main_window.image_labels[index].setPixmap(
+                        QPixmap(str(output_image))
+                    )
+
+    # Connect signals
+    planet_biomes_process.readyReadStandardOutput.connect(handle_output)
+    planet_biomes_process.readyReadStandardError.connect(
+        lambda: main_window.stderr_widget.appendPlainText(
+            planet_biomes_process.readAllStandardError().data().decode()
+        )
+    )
+    seed = get_seed()
+
     planet_biomes_process.finished.connect(
-        lambda exit_code: (
-            print(f"PlanetBiomes.py finished with exit code {exit_code}"),
-            cleanup_and_exit(exit_code),
+        lambda exit_code: main_window.stdout_widget.appendPlainText(
+            f"Permit {seed} closed, don't panic!"
+            if exit_code == 0
+            else f"Permit denied, code {exit_code}: Construction halted."
         )
     )
     planet_biomes_process.errorOccurred.connect(
-        lambda error: print(f"Error: {planet_biomes_process.errorString()}")
-    )
-    planet_biomes_process.readyReadStandardOutput.connect(
-        lambda: print(
-            f"Output: {planet_biomes_process.readAllStandardOutput().data().decode()}"
-        )
-    )
-    planet_biomes_process.readyReadStandardError.connect(
-        lambda: print(
-            f"Error: {planet_biomes_process.readAllStandardError().data().decode()}"
+        lambda error: main_window.stderr_widget.appendPlainText(
+            f"Error: {planet_biomes_process.errorString()}"
         )
     )
 
-    print(f"Starting PlanetBiomes.py at {SCRIPT_PATH}")
+    # Start GIFs for processing
+    for index in [1, 2, 3]:
+        movie = QMovie(str(GIF_PATHS.get(index)))
+        if movie.isValid():
+            main_window.image_labels[index].setMovie(movie)
+            movie.start()
+
+    main_window.stdout_widget.appendPlainText(
+        f"Starting PlanetBiomes.py with args: {args}"
+    )
     planet_biomes_process.start()
 
+
 def cleanup_and_exit(exit_code=0):
-    """Clean up and exit the application."""
-    global planet_biomes_process
-    if planet_biomes_process and planet_biomes_process.state() != QProcess.ProcessState.NotRunning:
-        planet_biomes_process.terminate()
-        planet_biomes_process.waitForFinished(1000)
-        if planet_biomes_process.state() != QProcess.ProcessState.NotRunning:
-            planet_biomes_process.kill()
-    planet_biomes_process = None
+    """Clean up background processes before exiting the application."""
+    cancel_processing()
+    print("Application cleanup complete. Exiting now...")
     sys.exit(exit_code)
 
-def set_seed():
-    """Update config with a random seed if 'use_random' is True."""
-    seed_cfg = config.get("global_seed", {})
-    if seed_cfg.get("use_random", False):
-        seed_cfg["user_seed"] = random.randint(0, 99999)
-        config["global_seed"] = seed_cfg
+
+def cancel_processing():
+    """Kill any running background processes without closing the app."""
+    global process_list
+    for process in process_list:
+        if process.state() != QProcess.ProcessState.NotRunning:
+            process.terminate()
+            process.waitForFinished(500)
+            if process.state() != QProcess.ProcessState.NotRunning:
+                process.kill()
+    process_list.clear()
+    main_window.refresh_images()
+    print("Processing halted, but the app remains open.")
 
 
-def reset_to_defaults(category, key):
-    """Reset a single setting to its default using update_value()."""
-    try:
-        with open(DEFAULT_CONFIG_PATH, "r") as f:
-            default_config = json.load(f)
-
-        default_value = default_config.get(category, {}).get(key)
-        if default_value is not None:
-            update_value(
-                category, key, default_value
-            )  # ✅ Ensure update_value is being called
-        else:
-            print(f"Warning: {category}/{key} not found in defaults.")
-
-    except FileNotFoundError:
-        print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
+def cancel_and_exit():
+    """Terminate all processes and close the application."""
+    cancel_processing()
+    print("Exiting application...")
+    sys.exit()
 
 
 def disable_upscaling():
@@ -329,89 +391,27 @@ def disable_upscaling():
     try:
         with open(CONFIG_PATH, "r") as file:
             config_data = json.load(file)
-        config_data["image_pipeline"]["upscale_image"] = False
+        config_data["upscale_image"] = False
         with open(CONFIG_PATH, "w") as file:
             json.dump(config_data, file, indent=4)
     except Exception as e:
         print(f"Error disabling upscaling: {e}")
 
-def generate_preview(main_window):
-    """Start the preview script asynchronously."""
-    set_seed()
-    save_config()
-    if (
-        hasattr(main_window, "preview_process")
-        and main_window.preview_process.state() != QProcess.ProcessState.NotRunning
-    ):
-        print("Preview is already running, please wait.")
-        return
-
-    if not SCRIPT_PATH.exists() or not PREVIEW_BIOME_PATH.exists():
-        print(f"Error: Script or biome file not found.")
-        main_window.preview_command_button.setEnabled(True)
-        return
-
-    disable_upscaling()
-    start_processing(main_window)
-
-    process = QProcess()
-    main_window.preview_process = process
-    main_window.preview_command_button.setEnabled(True)
-
-    def handle_output():
-        output = process.readAllStandardOutput().data().decode()
-        print(f"Script output: {output}")
-        main_window.stdout_widget.appendPlainText(output)
-        for message, indices in PROCESSING_MAP.items():
-            if message in output:
-                for index in indices:
-                    main_window.image_labels[index].setPixmap(
-                        QPixmap(str(PNG_OUTPUT_DIR / IMAGE_FILES[index]))
-                    )
-
-    process.readyReadStandardOutput.connect(handle_output)
-    process.finished.connect(main_window.refresh_images)
-    process.setWorkingDirectory(str(BASE_DIR))
-    process.start("python", [str(SCRIPT_PATH), str(PREVIEW_BIOME_PATH), "--preview"])
-    if not process.waitForStarted(5000):
-        print(f"Failed to start preview script: {process.errorString()}")
-        main_window.preview_command_button.setEnabled(True)
 
 def start_processing(main_window):
-    """Start processing and display GIFs."""
-    process = QProcess()
-    main_window.processing_process = process
-    for index in [1, 2, 3]:
-        movie = QMovie(str(GIF_PATHS.get(index)))
-        if movie.isValid():
-            main_window.image_labels[index].setMovie(movie)
-            movie.start()
+    """Start processing by calling start_planet_biomes."""
+    start_planet_biomes(main_window)
 
-    process.setProgram("python")
-    process.setArguments([str(SCRIPT_PATH)])
-    process.setWorkingDirectory(str(BASE_DIR))
-
-    process.readyReadStandardOutput.connect(
-        lambda: (
-            main_window.stdout_widget.appendPlainText(
-                process.readAllStandardOutput().data().decode()
-            ),
-            main_window.stdout_widget.repaint(),
-        )
-    )
-
-    process.readyReadStandardError.connect(
-        lambda: main_window.stdout_widget.appendPlainText(
-            "Error: " + process.readAllStandardError().data().decode()
-        )
-    )
-    process.start()
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         loadUi(str(UI_PATH), self)
-        self.setWindowTitle("Biome Config Editor")
+
+        self.slider_mappings = {}
+        self.checkbox_mappings = {}
+
+        self.setWindowTitle("Planet Painter")
         self.themes = THEMES
         self.image_labels = [
             self.albedo_preview_image,
@@ -425,101 +425,278 @@ class MainWindow(QMainWindow):
             else QPixmap()
         )
 
+        message = f"Available themes: {', '.join(self.themes.keys())}"
+        self.stdout_widget.appendPlainText(message)
+
         # Connect signals
-        self.preview_command_button.clicked.connect(lambda: generate_preview(self))
-        self.save_command_button.clicked.connect(self.save_and_continue)
-        self.exit_command_button.clicked.connect(self.cancel_and_exit)
-        self.reset_command_button.clicked.connect(reset_to_defaults)
+        self.preview_command_button.clicked.connect(
+            lambda: start_planet_biomes(self, "--preview")
+        )
+        self.halt_command_button.clicked.connect(cancel_processing)
+        self.exit_command_button.clicked.connect(cancel_and_exit)
+        self.reset_command_button.clicked.connect(self.reset_all_to_defaults)
         self.themes_dropdown.addItems(self.themes.keys())
+
+        # Populate themes dropdown
+        self.themes_dropdown.clear()  # Clear any existing items
+        self.themes_dropdown.addItems(self.themes.keys())
+        if not self.themes_dropdown.count():
+            print("Error: No themes loaded into themes_dropdown")
+
         self.themes_dropdown.currentTextChanged.connect(self.change_theme)
-        self.open_output_button.clicked.connect(self.open_output_folder)
+
+        self.open_output_button.clicked.connect(lambda: self.open_folder(PNG_OUTPUT_DIR))
+        self.open_input_button.clicked.connect(lambda: self.open_folder(INPUT_DIR))
 
         # Map checkboxes and sliders to config
         self.setup_config_controls()
 
         # Apply default theme
-        self.change_theme("Light Sci-Fi")
+        self.change_theme("Sci-Fi Light")
+
+    def reset_to_defaults(self, key):
+        """Reset a single setting to its default using update_value() and update UI sliders."""
+        print(f"Resetting key: '{key}'")  # Debug print
+        try:
+            with open(DEFAULT_CONFIG_PATH, "r") as f:
+                default_config = json.load(f)
+
+            if not isinstance(key, str):
+                print(f"Error: Invalid key '{key}', expected a string.")
+                return
+
+            default_value = default_config.get(key)
+            if default_value is not None:
+                update_value(key, default_value)
+
+                # Update sliders
+                slider = slider_vars.get(key)
+                if slider:
+                    slider.setValue(int(default_value * 100))
+
+                # Update checkboxes
+                checkbox = checkbox_vars.get(key)
+                if checkbox and isinstance(default_value, bool):
+                    checkbox.setChecked(default_value)
+
+            else:
+                print(f"Warning: '{key}' not found in defaults.")
+        except FileNotFoundError:
+            print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
+
+    def reset_all_to_defaults(self):
+        print("Resetting all configuration settings to defaults")
+        try:
+            with open(DEFAULT_CONFIG_PATH, "r") as f:
+                default_config = json.load(f)
+
+            # Overwrite custom config file entirely
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(default_config, f, indent=4)
+
+            # Reload config in memory
+            global config
+            config = default_config
+
+            # Re-apply UI control values
+            for key in self.slider_mappings:
+                slider = slider_vars.get(key)
+                if slider:
+                    value = config.get(key, 0)
+                    slider.setValue(int(value * 100))
+
+            for key in self.checkbox_mappings:
+                checkbox = checkbox_vars.get(key)
+                if checkbox:
+                    checkbox.setChecked(config.get(key, False))
+
+            # Set radio buttons for biases
+            saved_light_bias = config.get("light_bias", "light_bias_cc")
+            saved_biome_bias = config.get("biome_bias", "biome_bias_cc")
+            for button_name in [
+                "biome_bias_nw",
+                "biome_bias_nn",
+                "biome_bias_ne",
+                "biome_bias_ww",
+                "biome_bias_cc",
+                "biome_bias_ee",
+                "biome_bias_sw",
+                "biome_bias_ss",
+                "biome_bias_se",
+                "light_bias_nw",
+                "light_bias_nn",
+                "light_bias_ne",
+                "light_bias_ww",
+                "light_bias_cc",
+                "light_bias_ee",
+                "light_bias_sw",
+                "light_bias_ss",
+                "light_bias_se",
+            ]:
+                button = getattr(self, button_name, None)
+                if button:
+                    button.setChecked(
+                        button_name == saved_light_bias
+                        or button_name == saved_biome_bias
+                    )
+
+            # Update seed display
+            self.seed_display.display(config.get("user_seed", 0))
+            self.refresh_ui_from_config()
+
+        except FileNotFoundError:
+            print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
+
+    def open_folder(self, directory):
+        """Open the specified directory in the file explorer."""
+        if directory.exists():
+            if sys.platform == "win32":
+                os.startfile(directory)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", directory])
+            else:
+                subprocess.run(["xdg-open", directory])
+        else:
+            print(f"Error: Directory {directory} does not exist.")
 
     def setup_config_controls(self):
         """Map UI controls to configuration keys."""
         checkbox_mappings = {
-            "enable_noise": ("some_values", "enable_noise"),
-            "apply_distortion": ("some_values", "apply_distortion"),
-            "enable_biases": ("some_values", "enable_biases"),
-            "enable_anomalies": ("some_values", "enable_anomalies"),
-            "use_random": ("global_seed", "use_random"),
-            "enable_equator_drag": ("some_values", "enable_equator_drag"),
-            "enable_pole_drag": ("some_values", "enable_pole_drag"),
-            "enable_texture_light": ("some_values", "enable_texture_light"),
-            "enable_texture_edges": ("some_values", "enable_texture_edges"),
-            "enable_basic_filters": ("some_values", "enable_basic_filters"),
-            "enable_texture_anomolies": ("some_values", "enable_texture_anomolies"),
-            "process_images": ("some_values", "process_images"),
-            "enable_texture_noise": ("some_values", "enable_texture_noise"),
-            "upscale_image": ("image_pipeline", "upscale_image"),
-            "enable_texture_preview": ("some_values", "enable_texture_preview"),
-            "output_csv_files": ("image_pipeline", "output_csv_files"),
-            "output_dds_files": ("image_pipeline", "output_dds_files"),
-            "keep_pngs_after_conversion": ("image_pipeline", "keep_pngs_after_conversion"),
-            "output_mat_files": ("image_pipeline", "output_mat_files"),
-            "output_biom_files": ("image_pipeline", "output_biom_files"),
-            "enable_random_drag": ("some_values", "enable_random_drag"),
-            "random_distortion": ("some_values", "random_distortion"),
-        }
-        slider_mappings = {
-            "zoom": ("some_values", "zoom"),
-            "squircle_exponent": ("some_values", "squircle_exponent"),
-            "noise_factor": ("some_values", "noise_factor"),
-            "noise_scale": ("some_values", "noise_scale"),
-            "noise_amplitude": ("some_values", "noise_amplitude"),
-            "user_seed": ("global_seed", "user_seed"),
-            "brightness_factor": ("some_values", "brightness_factor"),
-            "saturation_factor": ("some_values", "saturation_factor"),
-            "edge_blend_radius": ("some_values", "edge_blend_radius"),
-            "detail_smoothness": ("some_values", "detail_smoothness"),
-            "detail_strength_decay": ("some_values", "detail_strength_decay"),
-            "normal_strength": ("some_values", "normal_strength"),
-            "roughness_base": ("some_values", "roughness_base"),
-            "roughness_noise_scale": ("some_values", "roughness_noise_scale"),
-            "fade_intensity": ("some_values", "fade_intensity"),
-            "fade_spread": ("some_values", "fade_spread"),
-            "perlin_noise": ("some_values", "perlin_noise"),
-            "swap_factor": ("some_values", "swap_factor"),
-            "fractal_octaves": ("some_values", "fractal_octaves"),
-            "tint_factor": ("some_values", "tint_factor"),
-            "equator_anomoly_count": ("some_values", "equator_anomoly_count"),
-            "equator_anomoly_scale": ("some_values", "equator_anomoly_scale"),
-            "polar_anomoly_count": ("some_values", "polar_anomoly_count"),
-            "polar_anomoly_scale": ("some_values", "polar_anomoly_scale"),
-            "distortion_scale": ("some_values", "distortion_scale"),
-            "distortion_influence": ("some_values", "distortion_influence"),
-            "biome_distortion": ("some_values", "biome_distortion"),
-            "noise_scatter": ("some_values", "noise_scatter"),
-            "biome_perlin": ("some_values", "biome_perlin"),
-            "biome_swap": ("some_values", "biome_swap"),
-            "biom_fractal": ("some_values", "biom_fractal"),
-            "zone_00": ("biome_zones", "zone_00"),
-            "zone_01": ("biome_zones", "zone_01"),
-            "zone_02": ("biome_zones", "zone_02"),
-            "zone_03": ("biome_zones", "zone_03"),
-            "zone_04": ("biome_zones", "zone_04"),
-            "zone_05": ("biome_zones", "zone_05"),
-            "zone_06": ("biome_zones", "zone_06"),
+            "enable_noise": "enable_noise",
+            "apply_distortion": "apply_distortion",
+            "enable_biases": "enable_biases",
+            "enable_anomalies": "enable_anomalies",
+            "use_random": "use_random",
+            "enable_equator_drag": "enable_equator_drag",
+            "enable_pole_drag": "enable_pole_drag",
+            "enable_texture_light": "enable_texture_light",
+            "enable_texture_edges": "enable_texture_edges",
+            "enable_basic_filters": "enable_basic_filters",
+            "enable_texture_anomalies": "enable_texture_anomalies",
+            "process_images": "process_images",
+            "enable_texture_noise": "enable_texture_noise",
+            "upscale_image": "upscale_image",
+            "enable_texture_preview": "enable_texture_preview",
+            "output_csv_files": "output_csv_files",
+            "output_dds_files": "output_dds_files",
+            "keep_pngs_after_conversion": "keep_pngs_after_conversion",
+            "output_mat_files": "output_mat_files",
+            "output_biom_files": "output_biom_files",
+            "enable_random_drag": "enable_random_drag",
+            "random_distortion": "random_distortion",
         }
 
-        for checkbox_name, (category, key) in checkbox_mappings.items():
+        slider_mappings = {
+            "zoom": "zoom",
+            "squircle_exponent": "squircle_exponent",
+            "noise_factor": "noise_factor",
+            "noise_scale": "noise_scale",
+            "noise_amplitude": "noise_amplitude",
+            "user_seed": "user_seed",
+            "brightness_factor": "brightness_factor",
+            "saturation_factor": "saturation_factor",
+            "edge_blend_radius": "edge_blend_radius",
+            "detail_smoothness": "detail_smoothness",
+            "detail_strength_decay": "detail_strength_decay",
+            "normal_strength": "normal_strength",
+            "roughness_base": "roughness_base",
+            "roughness_noise_scale": "roughness_noise_scale",
+            "fade_intensity": "fade_intensity",
+            "fade_spread": "fade_spread",
+            "perlin_noise": "perlin_noise",
+            "swap_factor": "swap_factor",
+            "fractal_octaves": "fractal_octaves",
+            "tint_factor": "tint_factor",
+            "equator_anomaly_count": "equator_anomaly_count",
+            "equator_anomaly_scale": "equator_anomaly_scale",
+            "polar_anomaly_count": "polar_anomaly_count",
+            "polar_anomaly_scale": "polar_anomaly_scale",
+            "distortion_scale": "distortion_scale",
+            "distortion_influence": "distortion_influence",
+            "biome_distortion": "biome_distortion",
+            "noise_scatter": "noise_scatter",
+            "biome_perlin": "biome_perlin",
+            "biome_swap": "biome_swap",
+            "biome_fractal": "biome_fractal",
+            "zone_00": "zone_00",
+            "zone_01": "zone_01",
+            "zone_02": "zone_02",
+            "zone_03": "zone_03",
+            "zone_04": "zone_04",
+            "zone_05": "zone_05",
+            "zone_06": "zone_06",
+        }
+
+        reset_buttons = [
+            "zoom_reset",
+            "squircle_exponent_reset",
+            "noise_factor_reset",
+            "noise_scale_reset",
+            "noise_amplitude_reset",
+            "noise_scatter_reset",
+            "biome_perlin_reset",  # Fixed typo from "biome_prelin_reset"
+            "biome_swap_reset",
+            "biome_fractal_reset",  # Fixed typo from "biome_fractal_reset"
+            "brightness_factor_reset",
+            "saturation_factor_reset",
+            "tint_factor_reset",
+            "detail_smoothness_reset",
+            "detail_strength_decay_reset",
+            "edge_blend_radius_reset",
+            "perlin_noise_reset",
+            "swap_factor_reset",
+            "fractal_octaves_reset",
+            "roughness_noise_scale_reset",
+            "roughness_base_reset",
+            "normal_strength_reset",
+            "fade_intensity_reset",
+            "fade_spread_reset",
+            "distortion_influence_reset",
+            "distortion_scale_reset",
+            "biome_distortion_reset",
+        ]
+
+        # Custom reset functions for grouped settings
+        def reset_anomaly_counts():
+            print("Resetting anomaly counts")
+            self.reset_to_defaults("equator_anomaly_count")
+            self.reset_to_defaults("polar_anomaly_count")
+
+        def reset_anomaly_scales():
+            print("Resetting anomaly scales")
+            self.reset_to_defaults("equator_anomaly_scale")
+            self.reset_to_defaults("polar_anomaly_scale")
+
+        def reset_equator_bias():
+            print("Resetting equator bias")
+            for zone in ["zone_00", "zone_01", "zone_02"]:  # Adjust zones as needed
+                self.reset_to_defaults(zone)
+
+        def reset_pole_bias():
+            print("Resetting pole bias")
+            for zone in ["zone_03", "zone_04"]:  # Adjust zones as needed
+                self.reset_to_defaults(zone)
+
+        def reset_balanced_bias():
+            print("Resetting balanced bias")
+            for zone in ["zone_05", "zone_06"]:  # Adjust zones as needed
+                self.reset_to_defaults(zone)
+
+        # Connect checkboxes
+        for checkbox_name, key in checkbox_mappings.items():
             checkbox = getattr(self, checkbox_name, None)
             if checkbox:
-                checkbox.setChecked(config.get(category, {}).get(key, False))
-                checkbox.toggled.connect(
-                    lambda val, c=category, k=key: update_value(c, k, val)
-                )
+                checkbox.setChecked(config.get(key, False))
+                checkbox.toggled.connect(lambda val, k=key: update_value(k, val))
                 checkbox_vars[key] = checkbox
+            else:
+                print(f"Warning: Checkbox '{checkbox_name}' not found in UI")
 
-        for slider_name, (category, key) in slider_mappings.items():
+        # Connect sliders
+        for slider_name, key in slider_mappings.items():
             slider = getattr(self, slider_name, None)
             if slider:
-                value = config.get(category, {}).get(key, 0)
+                value = config.get(key, 0)
                 min_val, max_val = 0.01, 1.0
                 if key == "user_seed":
                     min_val, max_val = 0, 99999
@@ -527,83 +704,164 @@ class MainWindow(QMainWindow):
                     max_val = 4
                 elif key in ["noise_scale", "noise_amplitude", "noise_scatter"]:
                     max_val = 10
-                elif key in ["equator_anomoly_count", "polar_anomoly_count"]:
+                elif key in ["equator_anomaly_count", "polar_anomaly_count"]:
                     min_val, max_val = 0, 10
                 elif key in ["fractal_octaves"]:
                     min_val, max_val = 1, 8
                 slider.setRange(int(min_val * 100), int(max_val * 100))
                 slider.setValue(int(value * 100))
                 slider.valueChanged.connect(
-                    lambda val, c=category, k=key: update_value(c, k, val / 100)
+                    lambda val, k=key: update_value(k, val / 100)
                 )
                 slider_vars[key] = slider
+            else:
+                print(f"Warning: Slider '{slider_name}' not found in UI")
 
         # Connect reset buttons
-        reset_buttons = [
-            "zoom_reset", "squircle_exponent_reset", "noise_factor_reset",
-            "noise_scale_reset", "noise_amplitude_reset", "noise_scatter_reset",
-            "biome_prelin_reset", "biome_swap_reset", "biome_fractal_reset",
-            "brightness_factor_reset", "saturation_factor_reset", "tint_factor_reset",
-            "detail_smoothness_reset", "detail_strength_decay_reset", "edge_blend_radius_reset",
-            "perlin_noise_reset", "swap_factor_reset", "fractal_octaves_reset",
-            "roughness_noise_scale_reset", "roughness_base_reset", "normal_strength_reset",
-            "fade_intensity_reset", "fade_spread_reset",
-            "equator_bias_reset", "pole_bias_reset", "balanced_bias_reset",
-            "anomoly_count_reset", "anomoly_scale_reset",
-            "distortion_influence_reset", "distortion_scale_reset", "biome_distortion_reset",
-        ]
         for button_name in reset_buttons:
             button = getattr(self, button_name, None)
-            if button:
+            key = slider_mappings.get(button_name.replace("_reset", ""), None)
+            if button and key:
                 button.clicked.connect(
-                    lambda _, c=category, k=key: reset_to_defaults(c, k)
+                    lambda checked=False, k=key: self.reset_to_defaults(k)
+                )
+            else:
+                print(
+                    f"Error: Button '{button_name}' or key '{key}' not found in UI or mappings"
                 )
 
+        # Connect special reset buttons
+        special_reset_buttons = {
+            "anomaly_count_reset": reset_anomaly_counts,
+            "anomaly_scale_reset": reset_anomaly_scales,
+            "equator_bias_reset": reset_equator_bias,
+            "pole_bias_reset": reset_pole_bias,
+            "balanced_bias_reset": reset_balanced_bias,
+        }
+        for button_name, reset_func in special_reset_buttons.items():
+            button = getattr(self, button_name, None)
+            if button:
+                button.clicked.connect(reset_func)
+            else:
+                print(f"Error: Special reset button '{button_name}' not found in UI")
+
+        # Connect bias buttons
+        saved_light_bias = config.get("light_bias", "light_bias_cc")
+        saved_biome_bias = config.get("biome_bias", "biome_bias_cc")
+        bias_buttons = [
+            "biome_bias_nw",
+            "biome_bias_nn",
+            "biome_bias_ne",
+            "biome_bias_ww",
+            "biome_bias_cc",
+            "biome_bias_ee",
+            "biome_bias_sw",
+            "biome_bias_ss",
+            "biome_bias_se",
+            "light_bias_nw",
+            "light_bias_nn",
+            "light_bias_ne",
+            "light_bias_ww",
+            "light_bias_cc",
+            "light_bias_ee",
+            "light_bias_sw",
+            "light_bias_ss",
+            "light_bias_se",
+        ]
+        for button_name in bias_buttons:
+            button = getattr(self, button_name, None)
+            if button:
+                if button_name.startswith("light_bias_"):
+                    button.setChecked(button_name == saved_light_bias)
+                else:
+                    button.setChecked(button_name == saved_biome_bias)
+                button.toggled.connect(
+                    lambda checked, name=button_name: update_bias_selection(
+                        self, name, checked
+                    )
+                )
+            else:
+                print(f"Warning: Bias button '{button_name}' not found in UI")
+
         # Setup seed display
-        self.seed_display.display(config["global_seed"]["user_seed"])
+        self.seed_display.display(config["user_seed"])
         self.user_seed.valueChanged.connect(
             lambda val: (
-                update_value("global_seed", "user_seed", val / 100),
-                self.seed_display.display(val / 100)
+                update_value("user_seed", int(val)),
+                self.seed_display.display(int(val)),
             )
         )
 
     def change_theme(self, theme_name):
-        """Apply the selected theme."""
-        self.setStyleSheet(self.themes.get(theme_name, ""))
+        """Apply the selected theme and update stdout."""
+        if theme_name in self.themes:
+            self.setStyleSheet(self.themes[theme_name])
+            message = f"Applied theme: {theme_name}"
+        else:
+            self.setStyleSheet(self.themes.get("Sci-Fi Light", ""))
+            message = f"Error: Theme '{theme_name}' not found in themes"
+
+        self.stdout_widget.appendPlainText(message)
 
     def refresh_images(self):
-        """Refresh image displays."""
         for i, image_file in enumerate(IMAGE_FILES):
             output_image = PNG_OUTPUT_DIR / image_file
             self.image_labels[i].setPixmap(
                 QPixmap(str(output_image))
                 if output_image.exists()
-                else self.default_image
+                else QPixmap(str(DEFAULT_IMAGE_PATH))  # Explicitly use default.png
             )
+
+    def refresh_ui_from_config(self):
+        """Refresh the entire UI to reflect current config values."""
+        for key, slider in slider_vars.items():
+            if slider and key in config:
+                slider.setValue(int(config[key] * 100))
+
+        for key, checkbox in checkbox_vars.items():
+            if checkbox and key in config:
+                checkbox.setChecked(config[key])
+
+        # Update seed display
+        self.seed_display.display(config.get("user_seed", 0))
+
+        # Update bias radio buttons
+        light_bias = config.get("light_bias", "light_bias_cc")
+        biome_bias = config.get("biome_bias", "biome_bias_cc")
+
+        for name in [
+            "biome_bias_nw",
+            "biome_bias_nn",
+            "biome_bias_ne",
+            "biome_bias_ww",
+            "biome_bias_cc",
+            "biome_bias_ee",
+            "biome_bias_sw",
+            "biome_bias_ss",
+            "biome_bias_se",
+            "light_bias_nw",
+            "light_bias_nn",
+            "light_bias_ne",
+            "light_bias_ww",
+            "light_bias_cc",
+            "light_bias_ee",
+            "light_bias_sw",
+            "light_bias_ss",
+            "light_bias_se",
+        ]:
+            button = getattr(self, name, None)
+            if button:
+                button.setChecked(
+                    name == light_bias
+                    if name.startswith("light_bias_")
+                    else name == biome_bias
+                )
 
     def save_and_continue(self):
         """Save config and start PlanetBiomes."""
-        set_seed()
         save_config()
-        start_processing(self)
-        start_planet_biomes()
+        start_planet_biomes(self)
 
-    def cancel_and_exit(self):
-        """Terminate subprocess and exit."""
-        cleanup_and_exit()
-
-    def open_output_folder(self):
-        """Open the output directory in the file explorer."""
-        if PNG_OUTPUT_DIR.exists():
-            if sys.platform == "win32":
-                os.startfile(PNG_OUTPUT_DIR)
-            elif sys.platform == "darwin":
-                subprocess.run(["open", PNG_OUTPUT_DIR])
-            else:
-                subprocess.run(["xdg-open", PNG_OUTPUT_DIR])
-        else:
-            print(f"Output directory {PNG_OUTPUT_DIR} does not exist.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

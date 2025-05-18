@@ -1,0 +1,146 @@
+{
+    "Starfield": {
+        "background": "#121416",
+        "color": "#c9d1d9",
+        "font_family": "{primary}, {secondary}, monospace",
+        "button_color": "#2a2f37",
+        "border_color": "#3c4450",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Exo 2",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#4d7aa9",
+        "highlight": "#94c9ff",
+        "disabled_color": "#5a5f66"
+    },
+    "Cyberpunk": {
+        "background": "#0a0f1a",
+        "color": "#ff007f",
+        "font_family": "{primary}, {secondary}, monospace",
+        "button_color": "#2c2f3b",
+        "border_color": "#ffcc00",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Exo 2",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#33ff99",
+        "highlight": "#00ffff",
+        "disabled_color": "#5a5f66"
+    },
+    "Dune": {
+        "background": "#c7a469",
+        "color": "#4e3b31",
+        "font_family": "{primary}, {secondary}, serif",
+        "button_color": "#deb887",
+        "border_color": "#8b5e3c",
+        "fonts": {
+            "primary": "Garamond",
+            "secondary": "Orbitron",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#a67c52",
+        "highlight": "#ffcc99",
+        "disabled_color": "#6f4f2f"
+    },
+    "Mass Effect": {
+        "background": "#002244",
+        "color": "#ffffff",
+        "font_family": "{primary}, {secondary}, monospace",
+        "button_color": "#003366",
+        "border_color": "#3399ff",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Exo 2",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#66ccff",
+        "highlight": "#99ddff",
+        "disabled_color": "#334455"
+    },
+    "Alien": {
+        "background": "#1a0f00",
+        "color": "#ffcc00",
+        "font_family": "{secondary}, monospace",
+        "button_color": "#331a00",
+        "border_color": "#ff9900",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Courier New",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#ffaa00",
+        "highlight": "#ffff66",
+        "disabled_color": "#664400"
+    },
+    "Portal": {
+        "background": "#f0f0f0",
+        "color": "#202020",
+        "font_family": "{primary}, sans-serif",
+        "button_color": "#ffffff",
+        "border_color": "#cccccc",
+        "fonts": {
+            "primary": "Segoe UI",
+            "secondary": "Arial",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#007acc",
+        "highlight": "#3399ff",
+        "disabled_color": "#aaaaaa"
+    },
+    "The Expanse": {
+        "background": "#121212",
+        "color": "#dddddd",
+        "font_family": "{secondary}, monospace",
+        "button_color": "#1e1e1e",
+        "border_color": "#555555",
+        "fonts": {
+            "primary": "Consolas",
+            "secondary": "Courier New",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#3a86ff",
+        "highlight": "#90caf9",
+        "disabled_color": "#333333"
+    },
+    "TRON": {
+        "background": "#0d1117",
+        "color": "#39ff14",
+        "font_family": "{primary}, {secondary}, monospace",
+        "button_color": "#111a24",
+        "border_color": "#00ff99",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Exo 2",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#00ff99",
+        "highlight": "#66ffcc",
+        "disabled_color": "#2a3b3b"
+    },
+    "No Man's Sky": {
+        "background": "#e8f0ff",
+        "color": "#002244",
+        "font_family": "{primary}, {secondary}, sans-serif",
+        "button_color": "#d0e0ff",
+        "border_color": "#6699cc",
+        "fonts": {
+            "primary": "Orbitron",
+            "secondary": "Exo 2",
+            "size_small": "12px",
+            "size_large": "14px"
+        },
+        "accent": "#005577",
+        "highlight": "#2277bb",
+        "disabled_color": "#aaccee"
+    }
+}

@@ -21,11 +21,18 @@ BASE_DIR = (
     if hasattr(sys, "_MEIPASS")
     else Path(__file__).parent.parent.resolve()
 )
+
+# File paths
 CONFIG_PATH = BASE_DIR / "config" / "custom_config.json"
 TEMPLATE_PATH = BASE_DIR / "assets" / "PlanetBiomes.biom"
 CSV_PATH = BASE_DIR / "csv" / "PlanetBiomes.csv"
 PREVIEW_PATH = BASE_DIR / "csv" / "preview.csv"
-OUTPUT_DIR = BASE_DIR / "Output" / "planetdata" / "biomemaps"
+
+# Custom user input path
+INPUT_DIR = BASE_DIR / "input"
+
+# Outputs
+OUTPUT_DIR = BASE_DIR / "output" / "planetdata" / "biomemaps"
 
 # .biom structure
 CsSF_Biom = Struct(
@@ -47,7 +54,7 @@ CsSF_Biom = Struct(
 
 
 def load_json(path: Path) -> Dict:
-    """Load config.json with nested categories intact."""
+    """Load config.json."""
     try:
         with open(path, "r") as f:
             return json.load(f)
@@ -58,8 +65,6 @@ def load_json(path: Path) -> Dict:
 
 # Load and use config
 config = load_json(CONFIG_PATH)
-# print(config["enable_noise"])
-print(config.get("user_seed", 0))
 
 
 def load_biomes(
@@ -91,12 +96,12 @@ def load_biomes(
         return plugin, planet_data, life, nolife, ocean
 
 
-def get_seed(config: Dict, use_random: bool = False) -> int:
-    """Return either a random seed or the user-defined seed from config.
-    If use_random is True, also store the seed in user_seed."""
+def get_seed(config):
+    """Return either a random seed or the user-defined seed from config."""
+    use_random = config.get("use_random", False)
     if use_random:
         seed = random.randint(0, 99999)
-        config["user_seed"] = seed  # store it for future reuse
+        config["user_seed"] = seed
         return seed
     return int(config.get("user_seed", 0))
 
@@ -157,10 +162,7 @@ def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
 
 def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     """Generate smooth noise normalized to 0..1."""
-    seed = get_seed(
-        config.get("some_values", {}),
-        config.get("some_values", {}).get("use_random", False),
-    )
+    seed = get_seed(config)
     np.random.seed(seed)
     noise = np.random.rand(*shape)
     noise = gaussian_filter(noise, sigma=16)
@@ -172,7 +174,7 @@ def generate_combined_pattern(shape: Tuple[int, int], config: Dict) -> np.ndarra
     """Generate combined base pattern plus noise (if enabled)."""
     base_pattern = generate_base_pattern(shape)
 
-    if not config.get("some_values", {}).get("enable_noise", True):
+    if not config.get("enable_noise", True):
         return base_pattern
 
     noise = generate_noise(shape, config)
@@ -265,7 +267,7 @@ def main():
     preview = "--preview" in sys.argv
     print("Running in preview mode" if preview else "Generating full biome set...")
     config = load_json(CONFIG_PATH)
-    biome_cfg = config.get("some_values", {})
+    biome_cfg = config
     biome_csv = PREVIEW_PATH if preview else CSV_PATH
 
     plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
@@ -278,9 +280,7 @@ def main():
         print(f"Processing: {planet} ({len(biomes)} biomes)")
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
-        zone_weights = [
-            config.get("Zone Weight", {}).get(f"zone_0{i}", 1.0) for i in range(7)
-        ]
+        zone_weights = [config.get(f"zone_0{i}", 1.0) for i in range(7)]
         pattern = generate_combined_pattern((GRID_SIZE[1], GRID_SIZE[0]), biome_cfg)
         remapped_pattern = remap_biome_weights(pattern, zone_weights)
         inst.overwrite(biomes, remapped_pattern)
@@ -293,7 +293,7 @@ def main():
         inst.save(out_dir / f"{planet}.biom")
 
     subprocess.run(["python", str(BASE_DIR / "src" / "PlanetTextures.py")], check=True)
-    print("Biome processing complete.")
+    print("Biome processing complete.", flush=True)
 
 
 if __name__ == "__main__":
