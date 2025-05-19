@@ -3,27 +3,24 @@ import subprocess
 import psutil
 import sys
 from pathlib import Path
+from PlanetConstants import BASE_DIR, SCRIPT_DIR
 
 
-# Determine base directory depending on execution mode
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
+# --- Core directories ---
+bundle_dir = getattr(sys, "_MEIPASS", None)
+if bundle_dir:
+    BASE_DIR = Path(bundle_dir).resolve()
 else:
-    BASE_DIR = Path(__file__).parent.parent.resolve()
+    BASE_DIR = Path(__file__).resolve().parent
+
 
 RESTART_PLANET_PAINTER = True
 
 
 class ZeroPlanetWorks:
     def __init__(self, restart_on_finish=True):
-        self.base_dir = self.get_base_dir()
+        self.script_dir = SCRIPT_DIR
         self.restart_planet_painter = restart_on_finish
-
-    @staticmethod
-    def get_base_dir():
-        if getattr(sys, "frozen", False):
-            return Path(sys._MEIPASS).resolve()
-        return Path(__file__).parent.parent.resolve()
 
     def is_process_running(self, process_name):
         for proc in psutil.process_iter(["name", "cmdline"]):
@@ -44,7 +41,7 @@ class ZeroPlanetWorks:
             "PlanetPainter.py"
         ):
             print("Restarting PlanetPainter...")
-            subprocess.run(["python", str(self.base_dir / "PlanetPainter.py")])
+            subprocess.run([sys.executable, str(self.script_dir / "PlanetPainter.py")])
 
         sys.stdout.flush()
 

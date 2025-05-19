@@ -1,16 +1,7 @@
 import json
 import sys
 from pathlib import Path
-
-# Determine base directory depending on execution mode
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
-else:
-    BASE_DIR = Path(__file__).parent.parent.resolve()
-
-CONFIG_DIR = BASE_DIR / "config"
-DEFAULT_THEME_PATH = CONFIG_DIR / "themes_config.json"
-CUSTOM_THEME_PATH = CONFIG_DIR / "custom_themes_config.json"
+from PlanetConstants import BASE_DIR, CONFIG_DIR, THEME_PATH, DEFAULT_THEME_PATH
 
 DEFAULT_THEMES = {
     "Light": {
@@ -72,13 +63,13 @@ def load_theme():
     """Load theme from custom or default JSON file, or create a default theme file if none exists."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    if CUSTOM_THEME_PATH.exists():
+    if THEME_PATH.exists():
         try:
-            with open(CUSTOM_THEME_PATH, "r") as theme_file:
+            with open(THEME_PATH, "r") as theme_file:
                 return json.load(theme_file)
         except json.JSONDecodeError as e:
             print(
-                f"Error: Invalid JSON in {CUSTOM_THEME_PATH}. Falling back to default themes. {e}"
+                f"Error: Invalid JSON in {THEME_PATH}. Falling back to default themes. {e}"
             )
             return DEFAULT_THEMES
 

@@ -25,9 +25,10 @@ Dependencies:
 
 from pathlib import Path
 from construct import Struct, Const, Rebuild, this, len_
-from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8
+from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Array
 from scipy.ndimage import gaussian_filter
 import numpy as np
+from typing import Dict, List, Set, Tuple, NamedTuple, cast
 import colorsys
 import argparse
 import subprocess
@@ -35,24 +36,39 @@ import json
 import csv
 import sys
 from PIL import Image, ImageEnhance
+from PlanetConstants import (
+    # Core Dependencies
+    TEXCONV_PATH,
+    # Core directories
+    BASE_DIR,
+    CONFIG_DIR,
+    INPUT_DIR,
+    OUTPUT_DIR,
+    ASSETS_DIR,
+    SCRIPT_DIR,
+    CSV_DIR,
+    IMAGE_DIR,
+    TEXTURE_OUTPUT_DIR,
+    PNG_OUTPUT_DIR,
+    # Config and data files
+    CONFIG_PATH,
+    DEFAULT_CONFIG_PATH,
+    CSV_PATH,
+    PREVIEW_PATH,
+    # Script and template paths
+    SCRIPT_PATH,
+    TEMPLATE_PATH,
+    PREVIEW_BIOME_PATH,
+    # UI and static assets
+    UI_PATH,
+    DEFAULT_IMAGE_PATH,
+    GIF_PATHS,
+    IMAGE_FILES,
+    # Logic/data maps
+    BOOLEAN_KEYS,
+    PROCESSING_MAP,
+)
 
-# Determine base directory depending on execution mode
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
-else:
-    BASE_DIR = Path(__file__).parent.parent.resolve()
-
-SCRIPT_DIR = BASE_DIR / "src"
-CONFIG_DIR = BASE_DIR / "config"
-ASSETS_DIR = BASE_DIR / "assets"
-CSV_DIR = BASE_DIR / "csv"
-OUTPUT_DIR = BASE_DIR / "output"
-TEXTURE_OUTPUT_DIR = OUTPUT_DIR / "textures"
-
-# File paths
-CONFIG_PATH = CONFIG_DIR / "custom_config.json"
-BIOMES_CSV_PATH = CSV_DIR / "Biomes.csv"
-TEXCONV_PATH = BASE_DIR / "textconv" / "texconv.exe"
 
 # Grid constants
 GRID_SIZE = [256, 256]
@@ -61,22 +77,35 @@ GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 # Global configuration
 config = {}
 
+
+class CsSF_BiomContainer(NamedTuple):
+    magic: int
+    numBiomes: int
+    biomeIds: List[int]
+    biomeGridN: List[int]
+    resrcGridN: List[int]
+    biomeGridS: List[int]
+    resrcGridS: List[int]
+
+
 # Define .biom file structure
 CsSF_Biom = Struct(
     "magic" / Const(0x105, UInt16),
     "_numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
-    "biomeIds" / UInt32[this._numBiomes],
+    "biomeIds" / Array(this._numBiomes, UInt32),
     Const(2, UInt32),
-    Const(GRID_SIZE, UInt32[2]),
+    Const(GRID_SIZE[0], UInt32),
+    Const(GRID_SIZE[1], UInt32),
     Const(GRID_FLATSIZE, UInt32),
-    "biomeGridN" / UInt32[GRID_FLATSIZE],
+    "biomeGridN" / Array(GRID_FLATSIZE, UInt32),
     Const(GRID_FLATSIZE, UInt32),
-    "resrcGridN" / UInt8[GRID_FLATSIZE],
-    Const(GRID_SIZE, UInt32[2]),
+    "resrcGridN" / Array(GRID_FLATSIZE, UInt8),
+    Const(GRID_SIZE[0], UInt32),
+    Const(GRID_SIZE[1], UInt32),
     Const(GRID_FLATSIZE, UInt32),
-    "biomeGridS" / UInt32[GRID_FLATSIZE],
+    "biomeGridS" / Array(GRID_FLATSIZE, UInt32),
     Const(GRID_FLATSIZE, UInt32),
-    "resrcGridS" / UInt8[GRID_FLATSIZE],
+    "resrcGridS" / Array(GRID_FLATSIZE, UInt8),
 )
 
 
@@ -118,7 +147,7 @@ def load_biom_file(filepath):
     plugin_name = biom_path.parent.name
 
     with open(filepath, "rb") as f:
-        data = CsSF_Biom.parse_stream(f)
+        data = cast(CsSF_BiomContainer, CsSF_Biom.parse_stream(f))
 
     biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(
         GRID_SIZE[1], GRID_SIZE[0]
@@ -573,7 +602,7 @@ def main():
     parser.add_argument("--preview", action="store_true", help="Run in preview mode")
     args = parser.parse_args()
 
-    TEXTURE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.preview and args.biom_file:
         biom_files = [Path(args.biom_file)]
@@ -601,7 +630,7 @@ def main():
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
 
-    biome_colors = load_biome_colors(BIOMES_CSV_PATH, used_biome_ids)
+    biome_colors = load_biome_colors(CSV_PATH, used_biome_ids)
     if not biome_colors:
         raise ValueError("No valid biome colors loaded from Biomes.csv")
 
@@ -627,18 +656,18 @@ def main():
                 for texture_type in texture_types:
                     # Save PNG
                     png_filename = f"{planet_name}_{hemisphere}_{texture_type}.png"
-                    png_path = TEXTURE_OUTPUT_DIR / png_filename
+                    png_path = PNG_OUTPUT_DIR / png_filename
                     maps[texture_type].save(png_path)
 
                     if not once_per_run:
                         print("Permits approved, site secured.")
                         once_per_run = True
-                    
+
                     print(f"Saved PNG: {png_path}", file=sys.stderr)
 
                     # Skip DDS conversion in preview mode
                     if not args.preview:
-                        texture_output_dir = TEXTURE_OUTPUT_DIR
+                        texture_output_dir = PNG_OUTPUT_DIR
                         texture_path = convert_png_to_dds(
                             png_path, texture_output_dir, plugin_name, texture_type
                         )
@@ -664,7 +693,7 @@ def main():
             print(f"Error processing {biom_path.name}: {e}")
             traceback.print_exc()
 
-    subprocess.run(["python", str(BASE_DIR / "src" / "PlanetMaterials.py")], check=True)
+    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.py")], check=True)
     sys.stdout.flush()
     sys.exit()
 

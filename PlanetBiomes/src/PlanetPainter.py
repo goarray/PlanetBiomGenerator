@@ -22,91 +22,54 @@ import subprocess
 from pathlib import Path
 
 # Third Party Libraries
+from typing import cast
 import numpy as np
-from PyQt6.uic import loadUi
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSplashScreen, QPushButton
+from PyQt6.uic.load_ui import loadUi
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QSplashScreen,
+    QLabel,
+    QPushButton,
+    QPlainTextEdit,
+    QComboBox,
+    QLCDNumber,
+    QSlider,
+)
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie
 from themes import THEMES
-
-# Determine base directory depending on execution mode
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys._MEIPASS).resolve()  # PyInstaller temp directory
-else:
-    BASE_DIR = Path(__file__).parent.parent.resolve()
-
-# Directory Paths
-CONFIG_DIR = BASE_DIR / "config"
-IMAGE_DIR = BASE_DIR / "assets" / "images"
-PNG_OUTPUT_DIR = BASE_DIR / "output" / "textures"
-INPUT_DIR = BASE_DIR / "input"
-OUTPUT_DIR = BASE_DIR / "output"
-
-# File Paths
-UI_PATH = Path(__file__).parent / "mainwindow.ui"
-SCRIPT_PATH = BASE_DIR / "src" / "PlanetBiomes.py"
-PREVIEW_BIOME_PATH = BASE_DIR / "assets" / "PlanetBiomes.biom"
-CONFIG_PATH = CONFIG_DIR / "custom_config.json"
-DEFAULT_CONFIG_PATH = CONFIG_DIR / "default_config.json"
-DEFAULT_IMAGE_PATH = IMAGE_DIR / "default.png"
-GIF_PATHS = {
-    1: IMAGE_DIR / "progress_1.gif",
-    2: IMAGE_DIR / "progress_2.gif",
-    3: IMAGE_DIR / "progress_3.gif",
-}
-
-# Image files for display
-IMAGE_FILES = [
-    "preview_North_albedo.png",
-    "preview_North_normal.png",
-    "preview_North_rough.png",
-    "preview_North_alpha.png",
-]
-
-# Configuration keys
-BOOLEAN_KEYS = {
-    "enable_equator_drag",
-    "enable_pole_drag",
-    "enable_equator_intrusion",
-    "enable_pole_intrusion",
-    "apply_distortion",
-    "apply_resource_gradient",
-    "apply_latitude_blending",
-    "keep_pngs_after_conversion",
-    "enable_noise",
-    "enable_anomalies",
-    "enable_biases",
-    "use_random",
-    "enable_texture_light",
-    "enable_texture_edges",
-    "enable_basic_filters",
-    "enable_texture_anomalies",
-    "process_images",
-    "enable_texture_noise",
-    "upscale_image",
-    "enable_texture_preview",
-    "output_csv_files",
-    "output_dds_files",
-    "output_mat_files",
-    "output_biom_files",
-    "enable_random_drag",
-    "random_distortion",
-}
-
-
-PROCESSING_MAP = {
-    "Permits closed, loan secured.": [0],
-    "Terraforming complete.": [1],
-    "Ore distributed.": [2],
-    "Landscaping complete.": [3],
-    "don't panic!": [0, 1, 2, 3],
-}
+from PlanetConstants import (
+    # Core directories
+    BASE_DIR,
+    CONFIG_DIR,
+    INPUT_DIR,
+    OUTPUT_DIR,
+    IMAGE_DIR,
+    PNG_OUTPUT_DIR,
+    # Config and data files
+    CONFIG_PATH,
+    DEFAULT_CONFIG_PATH,
+    CSV_PATH,
+    PREVIEW_PATH,
+    # Script and template paths
+    SCRIPT_PATH,
+    TEMPLATE_PATH,
+    PREVIEW_BIOME_PATH,
+    # UI and static assets
+    UI_PATH,
+    DEFAULT_IMAGE_PATH,
+    GIF_PATHS,
+    IMAGE_FILES,
+    # Logic/data maps
+    BOOLEAN_KEYS,
+    PROCESSING_MAP,
+)
 
 # Global declarations
 config = {}
 checkbox_vars = {}
 slider_vars = {}
-planet_biomes_process = None
 process_list = []
 
 
@@ -276,11 +239,23 @@ def update_bias_selection(self, button_name, is_checked):
                     btn.setChecked(btn_name == button_name)
 
 
+# At the module level
+planet_biomes_process: QProcess | None = None
+
+
+def get_planet_biomes_process() -> QProcess:
+    """Retrieve the planet_biomes_process, ensuring it's initialized."""
+    global planet_biomes_process
+    if planet_biomes_process is None:
+        raise RuntimeError("planet_biomes_process is not initialized")
+    return planet_biomes_process
+
+
 def start_planet_biomes(main_window, mode=""):
     """Start PlanetBiomes.py asynchronously, handle modes, and update UI."""
+    global planet_biomes_process, process_list
     main_window.stdout_widget.clear()
     main_window.stderr_widget.clear()
-    global planet_biomes_process, process_list
 
     if not SCRIPT_PATH.exists():
         main_window.stderr_widget.appendPlainText(
@@ -295,8 +270,9 @@ def start_planet_biomes(main_window, mode=""):
     # Save config to ensure latest settings are used
     save_config()
 
+    # Initialize planet_biomes_process
     planet_biomes_process = QProcess()
-    planet_biomes_process.setProgram("python")
+    planet_biomes_process.setProgram(sys.executable)
     args = [str(SCRIPT_PATH)]
     if mode:
         if "--preview" in mode:
@@ -310,6 +286,11 @@ def start_planet_biomes(main_window, mode=""):
 
     # Handle output for image updates
     def handle_output():
+        if planet_biomes_process is None:
+            main_window.stderr_widget.appendPlainText(
+                "Error: planet_biomes_process is not initialized"
+            )
+            return
         output = planet_biomes_process.readAllStandardOutput().data().decode()
         main_window.stdout_widget.appendPlainText(output)
         updated = False
@@ -348,6 +329,11 @@ def start_planet_biomes(main_window, mode=""):
             )
 
     def handle_error():
+        if planet_biomes_process is None:
+            main_window.stderr_widget.appendPlainText(
+                "Error: planet_biomes_process is not initialized"
+            )
+            return
         error_output = planet_biomes_process.readAllStandardError().data().decode()
         if error_output:
             main_window.stderr_widget.appendPlainText(f"{error_output}")
@@ -366,7 +352,7 @@ def start_planet_biomes(main_window, mode=""):
     )
     planet_biomes_process.errorOccurred.connect(
         lambda error: main_window.stderr_widget.appendPlainText(
-            f"Error: {planet_biomes_process.errorString()}"
+            f"Error: {planet_biomes_process.errorString() if planet_biomes_process else 'Process not initialized'}"
         )
     )
 
@@ -429,38 +415,42 @@ def start_processing(main_window):
 
 
 class MainWindow(QMainWindow):
+
+    albedo_preview_image: QLabel
+    normal_preview_image: QLabel
+    rough_preview_image: QLabel
+    alpha_preview_image: QLabel
+    stdout_widget: QPlainTextEdit
+    preview_command_button: QPushButton
+    halt_command_button: QPushButton
+    exit_command_button: QPushButton
+    reset_command_button: QPushButton
+    themes_dropdown: QComboBox
+    open_output_button: QPushButton
+    open_input_button: QPushButton
+    seed_display: QLCDNumber
+    user_seed: QSlider
+
     def __init__(self):
         super().__init__()
-        # Determine the path to mainwindow.ui
+
+        # Determine base directory based on whether we're running as a PyInstaller bundle
         if getattr(sys, "frozen", False):
-            # Running as a PyInstaller bundle
-            base_path = sys._MEIPASS
+            base_dir = sys._MEIPASS  # type: ignore[attr-defined]
         else:
-            # Running as a regular Python script
-            base_path = os.path.dirname(__file__)
-        ui_path = os.path.join(base_path, "src", "mainwindow.ui")
-        loadUi(ui_path, self)
+            base_dir = os.path.dirname(os.path.abspath(__file__))
 
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        if getattr(sys, 'frozen', False):
-            # Running as a bundled executable
-            BASE_DIR = sys._MEIPASS
-        else:
-            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-        UI_PATH = os.path.join(BASE_DIR, "mainwindow.ui")
-        loadUi(str(UI_PATH), self)
-
+        # Path to mainwindow.ui
+        loadUi(UI_PATH, self)
         self.slider_mappings = {}
         self.checkbox_mappings = {}
 
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
         config = load_config()
+        print(f"DEBUG: Available themes: {self.themes.keys()}")
         theme = config.get("theme", "Starfield")
+        print(f"DEBUG: Loaded theme from config: {theme}")
 
         self.image_labels = [
             self.albedo_preview_image,
@@ -752,7 +742,7 @@ class MainWindow(QMainWindow):
                 min_val, max_val = 0.01, 1.0
                 if key == "user_seed":
                     min_val, max_val = 0, 99999
-                elif key in ["zoom", "squircle_exponent"]:
+                elif key in ["squircle_exponent"]:
                     max_val = 4
                 elif key in ["noise_scale", "noise_amplitude", "noise_scatter"]:
                     max_val = 10
