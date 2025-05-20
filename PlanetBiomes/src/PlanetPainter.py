@@ -19,6 +19,7 @@ import sys
 import os
 import csv
 import json
+import random
 import subprocess
 from pathlib import Path
 
@@ -161,11 +162,13 @@ def load_config():
 
 
 def save_config():
-    """Save current configuration to JSON file."""
-    if CONFIG_PATH.exists():
-        os.remove(CONFIG_PATH)
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=4)
+    """Save current configuration to JSON file with error handling."""
+    try:
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config, f, indent=4)
+        print(f"Config saved successfully to {CONFIG_PATH}", file=sys.stderr)
+    except Exception as e:
+        print(f"Error saving JSON: {e}", file=sys.stderr)
 
 
 def update_value(key, val, index=None):
@@ -223,15 +226,24 @@ def update_selected_plugin(index):
     save_config()  # Ensure changes are saved
 
 
-def get_seed():
-    """Retrieve user seed from `_config.json`."""
-    try:
-        with open(CONFIG_PATH, "r") as f:
-            config = json.load(f)
-        return int(config.get("user_seed", 0))
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Error loading config. Using default seed: 0")
-        return 0
+def get_seed(config) -> int:
+    """Return either a random seed or the user-defined seed from config."""
+    use_random = config.get("use_random", False)
+
+    if use_random:
+        seed = random.randint(0, 99999)
+        config["user_seed"] = seed
+        save_config()
+    else:
+        seed = int(config.get("user_seed", 0))
+
+    return seed
+
+
+def update_seed_display(main_window, config):
+    """Update the seed display widget with the current seed value."""
+    seed = config.get("user_seed", "N/A")
+    main_window.seed_display.display(seed)
 
 
 def update_bias_selection(self, button_name, is_checked):
@@ -301,6 +313,9 @@ def start_planet_biomes(main_window, mode=""):
             f"Error: PlanetBiomes.py not found at {SCRIPT_PATH}"
         )
         return
+    seed = get_seed(config)
+    update_seed_display(main_window, config)
+    main_window.stdout_widget.appendPlainText(f"Using seed: {seed}")
 
     # Disable upscaling for preview mode
     if "--preview" in mode:
@@ -389,7 +404,7 @@ def start_planet_biomes(main_window, mode=""):
     # Connect signals
     planet_biomes_process.readyReadStandardOutput.connect(handle_output)
     planet_biomes_process.readyReadStandardError.connect(handle_error)
-    seed = get_seed()
+    seed = get_seed(config)
 
     planet_biomes_process.finished.connect(
         lambda exit_code: main_window.stdout_widget.appendPlainText(
