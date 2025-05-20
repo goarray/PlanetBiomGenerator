@@ -11,8 +11,10 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
 from PlanetConstants import (
     BASE_DIR,
+    BIOM_DIR,
     SCRIPT_DIR,
     INPUT_DIR,
+    PLUGINS_DIR,
     OUTPUT_DIR,
     CONFIG_PATH,
     TEMPLATE_PATH,
@@ -73,14 +75,47 @@ def load_json(path: Path) -> Dict:
         return {}
 
 
+def save_json(path: Path, data: dict):
+    """Save dictionary data to a JSON file."""
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4)
+        print(f"Config saved successfully to {path}", file=sys.stderr)
+    except Exception as e:
+        print(f"Error saving JSON: {e}")
+
+
 # Load and use config
 config = load_json(CONFIG_PATH)
 theme = config.get("theme", "Starfield")
+plugin_name = config.get("plugin_name", "default_plugin")
 
 
 def load_biomes(
     input_path: Path,
 ) -> Tuple[str, Dict[str, List[int]], Set[int], Set[int], Set[int]]:
+    # Respect preview mode immediately
+    if config.get("enable_preview_mode", False):
+        input_path = PREVIEW_PATH
+        csv_files = [PREVIEW_PATH]
+        config["plugin_index"] = ["preview.csv"]
+    else:
+        csv_files = list(INPUT_DIR.glob("*.csv"))
+        if not csv_files:
+            csv_files.append(PREVIEW_PATH)
+            config["enable_preview_mode"] = True
+        else:
+            config["plugin_index"] = [f.name for f in csv_files]
+            selected_index = min(
+                config.get("plugin_selected", 0), max(len(csv_files) - 1, 0)
+            )
+            selected_index = max(0, selected_index)
+            input_path = csv_files[selected_index]
+            config["enable_preview_mode"] = input_path == PREVIEW_PATH
+
+    print(f"DEBUG: input_path = {input_path}")
+    print(f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}")
+
     with open(input_path, newline="") as f:
         plugin = f.readline().strip().rstrip(",")
         reader = csv.DictReader(
@@ -361,16 +396,38 @@ class BiomFile:
 
 def main():
     print("=== Starting PlanetBiomes ===", flush=True)
+    global plugin_name
+
+    # Debug: Check if "--preview" is being detected in sys.argv
+    print(f"Command-line args: {sys.argv}")
     preview = "--preview" in sys.argv
+    print(f"Preview mode: {preview}")
+
     config = load_json(CONFIG_PATH)
+    print(
+        f"Loaded config: {config}"
+    )  # Debug: Print config to confirm it loads properly
+
     biome_cfg = config
     biome_csv = PREVIEW_PATH if preview else INPUT_DIR
+    print(f"Biome CSV path: {biome_csv}")  # Debug: Confirm correct path selection
 
     plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
-    out_dir = OUTPUT_DIR / plugin
+    print(f"Plugin Name from CSV: {plugin}")  # Debug: Check the extracted plugin name
+
+    config["plugin_name"] = plugin  # Set new active plugin
+    save_json(CONFIG_PATH, config)
+    print(f"Updated plugin name in config: {config['plugin_name']}")
+
+    out_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
+    print(
+        f"Output directory path: {out_dir}"
+    )  # Debug: Check if correct output path is set
     out_dir.mkdir(parents=True, exist_ok=True)
+
     template = BiomFile()
     template.load(TEMPLATE_PATH)
+    print(f"Template loaded successfully from: {TEMPLATE_PATH}")
 
     for planet, biomes in planets.items():
         print(f"Location: {planet}. approved for ({len(biomes)}) biomes.")

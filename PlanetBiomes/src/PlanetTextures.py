@@ -35,6 +35,7 @@ import subprocess
 import json
 import csv
 import sys
+import shutil
 from PIL import Image, ImageEnhance
 from PlanetConstants import (
     # Core Dependencies
@@ -43,9 +44,13 @@ from PlanetConstants import (
     BASE_DIR,
     CONFIG_DIR,
     INPUT_DIR,
+    BIOM_DIR,  # BIOM_DIR = "planetdata/biomemaps"
+    # plugin_name in _congif.json > "plugin_name": "preview.esm"
     OUTPUT_DIR,
+    TEMP_DIR,
     ASSETS_DIR,
     SCRIPT_DIR,
+    PLUGINS_DIR,  # PLUGINS_DIR = BASE_DIR / "Plugins"
     CSV_DIR,
     IMAGE_DIR,
     TEXTURE_OUTPUT_DIR,
@@ -109,13 +114,14 @@ CsSF_Biom = Struct(
 )
 
 
-def load_config(config_path):
-    with open(config_path, "r") as f:
+def load_config():
+    """Load plugin_name from config.json."""
+    with open(CONFIG_PATH, "r") as f:
         return json.load(f)
 
 
-# Initialize configuration
-config = load_config(CONFIG_PATH)
+config = load_config()
+plugin_name = config.get("plugin_name", "default_plugin")
 
 
 def load_biome_colors(csv_path, used_biome_ids, saturate_factor=None):
@@ -141,12 +147,12 @@ def load_biome_colors(csv_path, used_biome_ids, saturate_factor=None):
     return biome_colors
 
 
-def load_biom_file(filepath):
-    """Load .biom file and return biome grids as numpy arrays, plus plugin name."""
-    biom_path = Path(filepath)
-    plugin_name = biom_path.parent.name
+def load_biom_file(biom_path):
+    """Load .biom file from the provided path."""
+    if not biom_path.exists():
+        raise FileNotFoundError(f"Biom file not found at: {biom_path}")
 
-    with open(filepath, "rb") as f:
+    with open(biom_path, "rb") as f:
         data = cast(CsSF_BiomContainer, CsSF_Biom.parse_stream(f))
 
     biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(
@@ -156,7 +162,7 @@ def load_biom_file(filepath):
         GRID_SIZE[1], GRID_SIZE[0]
     )
 
-    return biome_grid_n, biome_grid_s, plugin_name
+    return biome_grid_n, biome_grid_s
 
 
 def upscale_image(image, target_size=(1024, 1024)):
@@ -546,7 +552,7 @@ def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
         raise FileNotFoundError(f"texconv.exe not found at {TEXCONV_PATH}")
 
     # Ensure output directory exists
-    texture_output_dir = texture_output_dir / plugin_name
+    texture_output_dir = texture_output_dir
     texture_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Determine DDS format based on texture type
@@ -590,8 +596,10 @@ def convert_png_to_dds(png_path, texture_output_dir, plugin_name, texture_type):
 
 def main():
     """Process .biom files and generate PNG and DDS textures."""
-    print("=== Starting PlanetTextures ===", flush=True)
+    global plugin_name
+    print(f"=== Landscaping permit approved for: {plugin_name} ===", flush=True)
     global _progress_started
+    print("=== Starting PlanetTextures ===", flush=True)
 
     parser = argparse.ArgumentParser(
         description="Generate PNG and DDS textures from .biom files"
@@ -606,14 +614,16 @@ def main():
 
     if args.preview and args.biom_file:
         biom_files = [Path(args.biom_file)]
+        print(f"Preview mode: Processing {biom_files[0]}")
         if not biom_files[0].exists():
             print(f"Error: Provided .biom file not found: {args.biom_file}")
             sys.exit(1)
     else:
         biom_files = [
             f
-            for f in OUTPUT_DIR.rglob("*.biom")
-            if f.parent != OUTPUT_DIR and "assets" not in str(f.parent)
+            for f in (PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name).rglob(
+                "*.biom"
+            )
         ]
         if not biom_files:
             print("No .biom files found in the output directory.")
@@ -621,10 +631,12 @@ def main():
 
     used_biome_ids = set()
     for biom_path in biom_files:
-        plugin_name = biom_path.parent.name
-        print(f"Running environmental anaylisis on {biom_path.name}")
+        planet_name = biom_path.stem  # Still needed for other purposes
+        print(f"Running environmental analysis on {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
+            biome_grid_n, biome_grid_s = load_biom_file(
+                biom_path
+            )  # Pass biom_path directly
             used_biome_ids.update(biome_grid_n.flatten())
             used_biome_ids.update(biome_grid_s.flatten())
         except Exception as e:
@@ -637,9 +649,12 @@ def main():
     keep_pngs = config.get("keep_pngs_after_conversion", True)
 
     for biom_path in biom_files:
+        planet_name = biom_path.stem
         print(f"Distributing labor force {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s, plugin_name = load_biom_file(biom_path)
+            biome_grid_n, biome_grid_s = load_biom_file(
+                biom_path
+            )  # Pass biom_path directly
             maps_n = create_biome_image(biome_grid_n, biome_colors)
             maps_s = create_biome_image(biome_grid_s, biome_colors)
 
@@ -652,34 +667,56 @@ def main():
 
             # Save PNGs and convert to DDS
             texture_types = ["albedo", "normal", "rough", "alpha"]
+            copied_textures = set()
             for hemisphere, maps in [("North", maps_n), ("South", maps_s)]:
+                preview_dir = TEMP_DIR
+                preview_dir.mkdir(parents=True, exist_ok=True)
+
                 for texture_type in texture_types:
-                    # Save PNG
+                    # Save PNG to: /Output/PNGs/{planet_name}/...
+                    temp_filename = f"temp_{texture_type}.png"
                     png_filename = f"{planet_name}_{hemisphere}_{texture_type}.png"
-                    png_path = PNG_OUTPUT_DIR / png_filename
+                    planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
+                    planet_png_dir.mkdir(parents=True, exist_ok=True)
+
+                    png_path = planet_png_dir / png_filename
                     maps[texture_type].save(png_path)
 
+                    if texture_type not in copied_textures:
+                        shutil.copy(png_path, preview_dir / temp_filename)
+                        copied_textures.add(texture_type)
+
                     if not once_per_run:
-                        print("Permits approved, site secured.")
+                        print("Review documentation submitted.")
                         once_per_run = True
 
                     print(f"Saved PNG: {png_path}", file=sys.stderr)
 
                     # Skip DDS conversion in preview mode
                     if not args.preview:
-                        texture_output_dir = PNG_OUTPUT_DIR
+                        # Convert to DDS under: /textures/{plugin_name}/...
+                        texture_output_dir = PLUGINS_DIR / plugin_name / "textures" / plugin_name
+                        texture_output_dir.mkdir(parents=True, exist_ok=True)
+
                         texture_path = convert_png_to_dds(
-                            png_path, texture_output_dir, plugin_name, texture_type
+                        png_path, texture_output_dir, plugin_name, texture_type
+)
+                        print(
+                            f"Converted DDS saved to: {texture_path}", file=sys.stderr
                         )
-                        print(f"Converted DDS saved to: {texture_path}", file=sys.stderr)
 
                         # Optionally delete PNG after DDS conversion
                         if not keep_pngs:
                             try:
                                 png_path.unlink()
-                                print(f"Deleted intermediate PNG: {png_path}", file=sys.stderr)
+                                print(
+                                    f"Deleted intermediate PNG: {png_path}",
+                                    file=sys.stderr,
+                                )
                             except OSError as e:
-                                print(f"Error deleting {png_path}: {e}")
+                                print(
+                                    f"Error deleting {png_path}: {e}", file=sys.stderr
+                                )
 
             print(
                 f"Generated textures for {planet_name} (North and South: albedo, normal, rough, alpha)", file=sys.stderr

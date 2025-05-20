@@ -46,16 +46,21 @@ if bundle_dir:
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+# Base Directories
 SCRIPT_DIR = BASE_DIR / "src"
 CONFIG_DIR = BASE_DIR / "config"
 INPUT_DIR = BASE_DIR / "input"
-OUTPUT_DIR = BASE_DIR / "output"
 ASSETS_DIR = BASE_DIR / "assets"
 CSV_DIR = BASE_DIR / "csv"
 IMAGE_DIR = ASSETS_DIR / "images"
+
+# Output / Created / Temp Directories
+PLUGINS_DIR = BASE_DIR / "Plugins"
+OUTPUT_DIR = BASE_DIR / "output"
+TEMP_DIR = OUTPUT_DIR / "temp"
+BIOM_DIR = Path("planetdata/biomemaps")
 TEXTURE_OUTPUT_DIR = OUTPUT_DIR / "textures"
-PNG_OUTPUT_DIR = TEXTURE_OUTPUT_DIR / "PNGs"
+PNG_OUTPUT_DIR = OUTPUT_DIR / "PNGs"
 
 # --- Config and data files ---
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
@@ -77,6 +82,12 @@ UI_PATH = SCRIPT_DIR / "mainwindow.ui"
 DEFAULT_IMAGE_PATH = IMAGE_DIR / "default.png"
 TEXCONV_PATH = BASE_DIR / "textconv" / "texconv.exe"
 
+FOLDER_PATHS = {
+    "Plugins Folder": PLUGINS_DIR,
+    "Output Folder": PNG_OUTPUT_DIR,
+    "Input Folder": INPUT_DIR,
+}
+
 GIF_PATHS = {
     1: IMAGE_DIR / "progress_1.gif",
     2: IMAGE_DIR / "progress_2.gif",
@@ -84,10 +95,10 @@ GIF_PATHS = {
 }
 
 IMAGE_FILES = [
-    "preview_North_albedo.png",
-    "preview_North_normal.png",
-    "preview_North_rough.png",
-    "preview_North_alpha.png",
+    "temp_albedo.png",
+    "temp_normal.png",
+    "temp_rough.png",
+    "temp_alpha.png",
 ]
 
 # --- Configuration flags ---
@@ -111,7 +122,7 @@ BOOLEAN_KEYS = {
     "process_images",
     "enable_texture_noise",
     "upscale_image",
-    "enable_texture_preview",
+    "enable_preview_mode",
     "output_csv_files",
     "output_dds_files",
     "output_mat_files",

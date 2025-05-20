@@ -17,6 +17,7 @@ Dependencies:
 # Standard Libraries
 import sys
 import os
+import csv
 import json
 import subprocess
 from pathlib import Path
@@ -45,16 +46,17 @@ from PlanetConstants import (
     CONFIG_DIR,
     INPUT_DIR,
     OUTPUT_DIR,
-    IMAGE_DIR,
+    PLUGINS_DIR,
     PNG_OUTPUT_DIR,
     # Config and data files
     CONFIG_PATH,
     DEFAULT_CONFIG_PATH,
-    CSV_PATH,
+    TEMP_DIR,
+    CSV_DIR,
     PREVIEW_PATH,
     # Script and template paths
     SCRIPT_PATH,
-    TEMPLATE_PATH,
+    FOLDER_PATHS,
     PREVIEW_BIOME_PATH,
     # UI and static assets
     UI_PATH,
@@ -77,6 +79,7 @@ def load_config():
     """Load configuration from custom or default JSON file."""
     global config
     config_path = CONFIG_PATH if CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
+
     try:
         with open(config_path, "r") as f:
             raw_config = json.load(f)
@@ -126,7 +129,7 @@ def load_config():
             "enable_texture_anomalies": False,
             "process_images": False,
             "enable_texture_noise": False,
-            "enable_texture_preview": False,
+            "enable_preview_mode": False,
             "enable_random_drag": False,
             "random_distortion": False,
             "enable_edge_blending": False,
@@ -183,6 +186,42 @@ def update_value(key, val, index=None):
             return
 
     save_config()
+
+
+def update_selected_plugin(index):
+    if "plugin_index" not in config or not config["plugin_index"]:
+        print("plugin_index missing or empty, restoring fallback list.")
+        config["plugin_index"] = ["preview.csv"]
+        config["plugin_selected"] = 0
+    config["plugin_selected"] = index
+    selected_csv = config["plugin_index"][index]  # Get selected CSV file name
+
+    # ✅ Correctly set csv_path for preview.csv vs. user-provided files
+    if selected_csv == "preview.csv":
+        csv_path = CSV_DIR / selected_csv  # ✅ Use CSV_DIR for preview.csv
+    else:
+        csv_path = (
+            INPUT_DIR / selected_csv
+        )  # ✅ Use INPUT_DIR for user-selected plugins
+
+    config["enable_preview_mode"] = selected_csv == "preview.csv"
+
+    try:
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            first_row = next(reader, None)  # Get first row
+            if first_row and len(first_row) > 0:
+                config["plugin_name"] = first_row[0].strip()  # First column
+            else:
+                config["plugin_name"] = "Unknown"
+    except FileNotFoundError:
+        print(f"Error: CSV file {csv_path} not found.")
+        config["plugin_name"] = "Unknown"
+
+    update_value("enable_preview_mode", config["enable_preview_mode"])
+
+    save_config()  # Ensure changes are saved
+
 
 def get_seed():
     """Retrieve user seed from `_config.json`."""
@@ -274,6 +313,7 @@ def start_planet_biomes(main_window, mode=""):
     planet_biomes_process = QProcess()
     planet_biomes_process.setProgram(sys.executable)
     args = [str(SCRIPT_PATH)]
+    print(f"Mode argument received: {mode}")
     if mode:
         if "--preview" in mode:
             args.extend([str(PREVIEW_BIOME_PATH), "--preview"])
@@ -299,26 +339,34 @@ def start_planet_biomes(main_window, mode=""):
             if message in output:
                 main_window.stderr_widget.appendPlainText(message)
                 for index in indices:
-                    output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
+                    output_image = TEMP_DIR / IMAGE_FILES[index]
                     if output_image.exists():
                         pixmap = QPixmap(str(output_image)).scaled(
                             main_window.image_labels[index].width(),
                             main_window.image_labels[index].height(),
                             Qt.AspectRatioMode.KeepAspectRatio,
                         )
+                        # Stop any running GIF
+                        if main_window.image_labels[index].movie():
+                            main_window.image_labels[index].movie().stop()
+                            main_window.image_labels[index].setMovie(None)
                         main_window.image_labels[index].setPixmap(pixmap)
-                updated = True
+                        updated = True
 
         # Fallback: refresh all images if a completion-like message is detected
         if not updated and "complete" in output.lower():
             for index in range(len(IMAGE_FILES)):
-                output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
+                output_image = TEMP_DIR / IMAGE_FILES[index]
                 if output_image.exists():
                     pixmap = QPixmap(str(output_image)).scaled(
                         main_window.image_labels[index].width(),
                         main_window.image_labels[index].height(),
                         Qt.AspectRatioMode.KeepAspectRatio,
                     )
+                    # Stop any running GIF
+                    if main_window.image_labels[index].movie():
+                        main_window.image_labels[index].movie().stop()
+                        main_window.image_labels[index].setMovie(None)
                     main_window.image_labels[index].setPixmap(pixmap)
 
         if "Visual inspection" in output:
@@ -356,12 +404,14 @@ def start_planet_biomes(main_window, mode=""):
         )
     )
 
-    # Start GIFs for processing
+    # Start GIFs for processing, but only for labels without existing images
     for index in [1, 2, 3]:
-        movie = QMovie(str(GIF_PATHS.get(index)))
-        if movie.isValid():
-            main_window.image_labels[index].setMovie(movie)
-            movie.start()
+        output_image = TEMP_DIR / IMAGE_FILES[index]
+        if not output_image.exists():  # Only set GIF if no image exists
+            movie = QMovie(str(GIF_PATHS.get(index)))
+            if movie.isValid():
+                main_window.image_labels[index].setMovie(movie)
+                movie.start()
 
     main_window.stderr_widget.appendPlainText(
         f"Starting PlanetBiomes.py with args: {args}"
@@ -421,11 +471,15 @@ class MainWindow(QMainWindow):
     rough_preview_image: QLabel
     alpha_preview_image: QLabel
     stdout_widget: QPlainTextEdit
+    stderr_widget: QPlainTextEdit
     preview_command_button: QPushButton
     halt_command_button: QPushButton
     exit_command_button: QPushButton
     reset_command_button: QPushButton
     themes_dropdown: QComboBox
+    plugins_dropdown: QComboBox
+    folders_dropdown: QComboBox
+    open_plugins_button: QPushButton
     open_output_button: QPushButton
     open_input_button: QPushButton
     seed_display: QLCDNumber
@@ -448,9 +502,32 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
         config = load_config()
+
+        csv_files = list(INPUT_DIR.glob("*.csv"))
+        csv_names = [f.name for f in csv_files]
+
+        # Always include preview.csv if it's not already listed
+        if PREVIEW_PATH.name not in csv_names:
+            csv_names.append(PREVIEW_PATH.name)
+
+        config["plugin_index"] = csv_names  # Used by update_selected_plugin
+        config["plugin_list"] = csv_names   # Optional duplicate (can unify later)
+
+        print(f"DEBUG: plugin_index = {config['plugin_index']}")
+
         print(f"DEBUG: Available themes: {self.themes.keys()}")
         theme = config.get("theme", "Starfield")
         print(f"DEBUG: Loaded theme from config: {theme}")
+        plugin_list = config.get("plugin_index", [])  # Get the list or default to empty
+        self.plugins_dropdown.clear()
+        self.plugins_dropdown.addItems(config["plugin_index"])
+        self.plugins_dropdown.setCurrentIndex(config.get("plugin_selected", 0))
+        self.plugins_dropdown.currentIndexChanged.connect(
+            lambda idx: (update_selected_plugin(idx), self.refresh_ui_from_config())
+        )
+        print("DEBUG: Available plugins:")
+        for index, plugin in enumerate(plugin_list):
+            print(f"  [{index}] {plugin}")
 
         self.image_labels = [
             self.albedo_preview_image,
@@ -458,6 +535,8 @@ class MainWindow(QMainWindow):
             self.rough_preview_image,
             self.alpha_preview_image,
         ]
+
+        temp_images = {img.name: img for img in TEMP_DIR.glob("*.png")}  # Fast lookup
         self.default_image = (
             QPixmap(str(DEFAULT_IMAGE_PATH)).scaled(
                 self.image_labels[0].width(),
@@ -468,12 +547,26 @@ class MainWindow(QMainWindow):
             else QPixmap()
         )
 
+        # Set initial images for all labels
+        for i, image_file in enumerate(IMAGE_FILES):
+            image_path = TEMP_DIR / image_file  # Look in TEMP_DIR, not PNG_OUTPUT_DIR
+            pixmap = (
+                QPixmap(str(image_path)).scaled(
+                    self.image_labels[i].width(),
+                    self.image_labels[i].height(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                )
+                if image_path.exists()
+                else self.default_image
+            )
+            self.image_labels[i].setPixmap(pixmap)
+
         message = f"Available themes: {', '.join(self.themes.keys())}"
         self.stdout_widget.appendPlainText(message)
 
         # Connect signals
         self.preview_command_button.clicked.connect(
-            lambda: start_planet_biomes(self, "--preview")
+            lambda: start_planet_biomes(self, "--preview" if config.get("enable_preview_mode") else "")
         )
         self.halt_command_button.clicked.connect(cancel_processing)
         self.exit_command_button.clicked.connect(cancel_and_exit)
@@ -488,13 +581,25 @@ class MainWindow(QMainWindow):
 
         self.themes_dropdown.currentTextChanged.connect(self.change_theme)
 
-        self.open_output_button.clicked.connect(lambda: self.open_folder(PNG_OUTPUT_DIR))
-        self.open_input_button.clicked.connect(lambda: self.open_folder(INPUT_DIR))
+        for label, path in FOLDER_PATHS.items():
+            self.folders_dropdown.addItem(label, path)
+        self.folders_dropdown.currentIndexChanged.connect(self.open_selected_folder)
 
         # Map checkboxes and sliders to config
         self.setup_config_controls()
 
         self.change_theme(theme)
+
+        message = "Available plugins:\n"
+        for index, plugin in enumerate(plugin_list):
+            message += f"  [{index}] {plugin}\n"
+        self.stderr_widget.appendPlainText(message)
+
+    def open_selected_folder(self, index):
+        folder_path = self.folders_dropdown.itemData(index)
+        if folder_path:
+            self.open_folder(folder_path)
+        self.folders_dropdown.setCurrentIndex(0)
 
     def reset_to_defaults(self, key):
         """Reset a single setting to its default using update_value() and update UI sliders."""
@@ -584,10 +689,46 @@ class MainWindow(QMainWindow):
 
             # Update seed display
             self.seed_display.display(config.get("user_seed", 0))
+            self.refresh_plugin_list()
+            plugin_name = config.get("plugin_name", "preview.csv")
+            if "plugin_index" in config and plugin_name in config["plugin_index"]:
+                config["plugin_selected"] = config["plugin_index"].index(plugin_name)
+            else:
+                config["plugin_selected"] = -1
+
+            self.plugins_dropdown.setCurrentIndex(config["plugin_selected"])
+
             self.refresh_ui_from_config()
+            save_config()
 
         except FileNotFoundError:
             print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
+
+    def refresh_plugin_list(self):
+        """Scan for CSVs and update plugin list in config and dropdown."""
+        global config
+
+        csv_files = list(INPUT_DIR.glob("*.csv"))
+        csv_names = [f.name for f in csv_files]
+
+        # Always include preview.csv if not already
+        if PREVIEW_PATH.name not in csv_names:
+            csv_names.append(PREVIEW_PATH.name)
+
+        config["plugin_index"] = csv_names
+        config["plugin_list"] = csv_names  # Optional, depending on what you're using
+
+        # Reset selected plugin
+        config["plugin_selected"] = 0
+        config["plugin_name"] = csv_names[0].replace(".csv", ".esm")
+        config["enable_preview_mode"] = csv_names[0] == PREVIEW_PATH.name
+
+        # Refresh dropdown UI
+        self.plugins_dropdown.blockSignals(True)
+        self.plugins_dropdown.clear()
+        self.plugins_dropdown.addItems(csv_names)
+        self.plugins_dropdown.setCurrentIndex(0)
+        self.plugins_dropdown.blockSignals(False)
 
     def open_folder(self, directory):
         """Open the specified directory in the file explorer."""
@@ -618,7 +759,7 @@ class MainWindow(QMainWindow):
             "process_images": "process_images",
             "enable_texture_noise": "enable_texture_noise",
             "upscale_image": "upscale_image",
-            "enable_texture_preview": "enable_texture_preview",
+            "enable_preview_mode": "enable_preview_mode",
             "output_csv_files": "output_csv_files",
             "output_dds_files": "output_dds_files",
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
@@ -854,14 +995,17 @@ class MainWindow(QMainWindow):
 
     def refresh_images(self):
         for i, image_file in enumerate(IMAGE_FILES):
-            output_image = PNG_OUTPUT_DIR / image_file
+            output_image = TEMP_DIR / image_file  # Use TEMP_DIR
             pixmap = (
                 QPixmap(str(output_image))
                 if output_image.exists()
                 else QPixmap(str(DEFAULT_IMAGE_PATH))
             )
-
-            # Scale while keeping aspect ratio
+            # Clear any running GIFs
+            movie = self.image_labels[i].movie()
+            if movie is not None:
+                movie.stop()
+            self.image_labels[i].setMovie(None)
             self.image_labels[i].setPixmap(
                 pixmap.scaled(
                     self.image_labels[i].width(),

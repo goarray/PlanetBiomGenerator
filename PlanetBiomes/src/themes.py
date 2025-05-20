@@ -97,37 +97,54 @@ FONT_PRIMARY = theme_data.get("fonts", {}).get("primary", "Orbitron")
 FONT_SECONDARY = theme_data.get("fonts", {}).get("secondary", "Exo 2")
 FONT_SIZE_SMALL = theme_data.get("fonts", {}).get("size_small", "12px")
 FONT_SIZE_LARGE = theme_data.get("fonts", {}).get("size_large", "14px")
+raw_size = theme_data.get("slider_handle_height", 10)
+SLIDER_HANDLE_HEIGHT = int(raw_size) if isinstance(raw_size, (int, float, str)) else 14
+SLIDER_HANDLE_RADIUS = SLIDER_HANDLE_HEIGHT // 2
+SLIDER_HANDLE_WIDTH = theme_data.get("slider_handle_width", 20)
+SLIDER_HANDLE_MARGIN = theme_data.get("slider_handle_margin", -5)
 
-# Generate final Qt style sheet dictionary
 THEMES = {
     theme_name: f"""
         QMainWindow, QWidget {{
-            background-color: {theme['background']}; 
-            color: {theme['color']}; 
-            font-family: {theme['font_family'].format(primary=FONT_PRIMARY, secondary=FONT_SECONDARY)};
+            background-color: {theme.get('background', '#1e1e1e')}; 
+            color: {theme.get('color', '#ffffff')}; 
+            font-family: {theme.get('font_family', '{primary}, sans-serif').format(primary=FONT_PRIMARY, secondary=FONT_SECONDARY)};
             font-size: {theme.get('fonts', {}).get('size_small', FONT_SIZE_SMALL)};
         }}
 
+        QLineEdit, QTextEdit, QPlainTextEdit {{
+            background-color: {theme.get('input_background', theme.get('button_color', '#2a2b2f'))};
+            color: {theme.get('color', '#ffffff')};
+            border: 1px solid {theme.get('input_border', theme.get('border_color', '#6e9bac'))};
+            border-radius: {theme.get('border_radius', 5)}px;
+        }}
+
         QPushButton {{
-            background-color: {theme['button_color']}; 
-            border: 1px solid {theme['border_color']}; 
+            background-color: {theme.get('button_color', '#2c2e33')}; 
+            color: {theme.get('color', '#ffffff')};
+            selection-color: {theme.get('selection_color', '#ffffff')};
+            border: {theme.get('border_width', 1)}px {theme.get('border_style', 'solid')} {theme.get('border_color', '#6e9bac')};
             font-size: {theme.get('fonts', {}).get('size_large', FONT_SIZE_LARGE)};
             padding: 5px;
+            border-radius: {theme.get('border_radius', 5)}px;
         }}
 
         QPushButton:hover {{
-            background-color: {theme['border_color']};
+            background-color: {theme.get('button_hover_color', theme['button_color'])};
+            border: 1px solid {theme.get('hover_border_color', theme['color'])};
+            color: {theme.get('hover_text_color', theme['color'])};
+            font-weight: {theme.get('hover_font_weight', 'bold')};
         }}
 
         QPushButton.primary {{
-            background-color: {theme['border_color']};
-            color: {theme['background']};
-            border: 2px solid {theme['color']};
+            background-color: {theme.get('primary_hover_color', theme.get('button_hover_color', '#00ffff'))};
+            color: {theme.get('background', '#1e1e1e')};
+            border: 2px solid {theme.get('color', '#ffffff')};
             font-weight: bold;
         }}
 
         QPushButton.danger {{
-            background-color: #cc0000;
+            background-color: {theme.get('danger_hover_color', '#ff4c4c')};
             color: white;
             border: 1px solid #990000;
         }}
@@ -135,66 +152,111 @@ THEMES = {
         QPushButton.flat {{
             background-color: transparent;
             border: none;
-            color: {theme['color']};
+            color: {theme.get('color', '#ffffff')};
+        }}
+
+        QSlider::handle:horizontal {{
+            width: {SLIDER_HANDLE_WIDTH}px;
+            height: {SLIDER_HANDLE_HEIGHT}px;
+            background: {theme['color']};
+            border: 1px solid {theme['background']};
+            border-radius: {SLIDER_HANDLE_RADIUS}px;
+            margin: {SLIDER_HANDLE_MARGIN}px 0;
+        }}
+
+        QSlider::handle:vertical {{
+            width: {SLIDER_HANDLE_WIDTH}px;
+            height: {SLIDER_HANDLE_HEIGHT}px;
+            background: {theme['color']};
+            border: 1px solid {theme['background']};
+            border-radius: {SLIDER_HANDLE_RADIUS}px;
+            margin: 0 {SLIDER_HANDLE_MARGIN}px;
         }}
 
         QSlider::groove:horizontal {{
             height: 6px;
-            background: {theme['border_color']};
+            background: {theme.get('border_color', '#6e9bac')};
             margin: 2px 0;
+            border-radius: 3px;
+        }}
+
+        QSlider::sub-page:horizontal {{
+            background: {theme.get('primary_hover_color', '#00FFFF')};
+            border-radius: 3px;
+        }}
+
+        QSlider::sub-page:vertical {{
+            background: {theme.get('primary_hover_color', '#00FFFF')};
             border-radius: 3px;
         }}
 
         QSlider::groove:vertical {{
             width: 6px;
-            background: {theme['border_color']};
+            background: {theme.get('border_color', '#6e9bac')};
             margin: 0 2px;
             border-radius: 3px;
         }}
 
-        QSlider::handle:horizontal {{
-            width: 14px;
-            height: 14px;
-            background: {theme['color']};
-            border: 1px solid {theme['background']};
-            border-radius: 7px;
-            margin: -5px 0;
-        }}
-
-        QSlider::handle:vertical {{
-            width: 14px;
-            height: 14px;
-            background: {theme['color']};
-            border: 1px solid {theme['background']};
-            border-radius: 7px;
-            margin: 0 -5px;
-        }}
-
         QCheckBox, QRadioButton {{
             spacing: 5px;
-            color: {theme['color']};
+            color: {theme.get('color', '#ffffff')};
         }}
+
         QCheckBox::indicator, QRadioButton::indicator {{
             width: 14px;
             height: 14px;
         }}
-        QCheckBox::indicator:checked, QRadioButton::indicator:checked {{
-            background-color: {theme['color']};
-            border: 1px solid {theme['border_color']};
+
+        QCheckBox::indicator:checked {{
+            background-color: {theme.get('checkbox_checked_color', theme.get('selection_color', '#00ffff'))};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
         }}
+
+        QRadioButton::indicator:checked {{
+            background-color: {theme.get('radio_checked_color', theme.get('selection_color', '#00ffff'))};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+        }}
+
         QCheckBox::indicator:unchecked, QRadioButton::indicator:unchecked {{
-            background-color: {theme['button_color']};
-            border: 1px solid {theme['border_color']};
+            background-color: {theme.get('button_color', '#2c2e33')};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
         }}
+
         QComboBox {{
             padding: 3px;
-            border: 1px solid {theme['border_color']};
-            background-color: {theme['button_color']};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            background-color: {theme.get('button_color', '#2c2e33')};
+            color: {theme.get('color', '#ffffff')};
         }}
+
         QComboBox QAbstractItemView {{
-            background-color: {theme['button_color']};
-            selection-background-color: {theme['border_color']};
-            color: {theme['color']};
+            background-color: {theme.get('button_color', '#2c2e33')};
+            selection-background-color: {theme.get('border_color', '#6e9bac')};
+            selection-color: {theme.get('hover_text_color', '#ffffff')};
+            color: {theme.get('color', '#ffffff')};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+        }}
+
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: {theme.get('button_hover_color', '#3a3f44')};
+            color: {theme.get('hover_text_color', '#ffffff')};
+            font-weight: {theme.get('hover_font_weight', 'bold')};
+        }}
+
+        QToolTip {{
+            background-color: {theme.get('tooltip_background', '#33363a')};
+            color: {theme.get('tooltip_color', '#d9f6ff')};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            padding: 4px;
+            border-radius: 4px;
+        }}
+
+        QLabel#Header {{
+            font-size: 16px;
+            font-weight: bold;
+            color: {theme.get('header_color', theme.get('color', '#ffffff'))};
+            background-color: {theme.get('header_background', theme.get('background', '#262729'))};
+            padding: 5px;
         }}
     """
     for theme_name, theme in theme_data.items()
