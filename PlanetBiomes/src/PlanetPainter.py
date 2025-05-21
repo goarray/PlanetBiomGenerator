@@ -22,6 +22,7 @@ import json
 import random
 import subprocess
 from pathlib import Path
+from typing import Dict
 
 # Third Party Libraries
 from typing import cast
@@ -90,12 +91,11 @@ def load_config():
             "user_seed": 1234567,
             "zoom": 1.0,
             "squircle_exponent": 2.0,
-            "noise_factor": 0.5,
             "noise_scale": 0.1,
             "noise_amplitude": 0.1,
             "enable_equator_drag": False,
             "enable_pole_drag": False,
-            "apply_distortion": False,
+            "enable_distortion": False,
             "enable_noise": False,
             "enable_anomalies": False,
             "enable_biases": False,
@@ -118,8 +118,6 @@ def load_config():
             "polar_anomaly_count": 0.5,
             "polar_anomaly_scale": 0.5,
             "distortion_scale": 0.5,
-            "distortion_influence": 0.5,
-            "biome_distortion": 0.5,
             "noise_scatter": 0.5,
             "biome_perlin": 0.5,
             "biome_swap": 0.5,
@@ -199,13 +197,12 @@ def update_selected_plugin(index):
     config["plugin_selected"] = index
     selected_csv = config["plugin_index"][index]  # Get selected CSV file name
 
-    # ✅ Correctly set csv_path for preview.csv vs. user-provided files
     if selected_csv == "preview.csv":
-        csv_path = CSV_DIR / selected_csv  # ✅ Use CSV_DIR for preview.csv
+        csv_path = CSV_DIR / selected_csv
     else:
         csv_path = (
             INPUT_DIR / selected_csv
-        )  # ✅ Use INPUT_DIR for user-selected plugins
+        )
 
     config["enable_preview_mode"] = selected_csv == "preview.csv"
 
@@ -292,6 +289,28 @@ def update_bias_selection(self, button_name, is_checked):
 
 # At the module level
 planet_biomes_process: QProcess | None = None
+
+
+def apply_bias(bias_type: str) -> Dict[str, float]:
+    """Adjust biome zone values with a single-direction bias."""
+    if bias_type == "set_equator_bias":
+        # Strongest at the equator (zone_00), fading toward the poles
+        zone_values = [0.85, 0.6, 0.4, 0.2, 0.1, 0.05, 0.01]
+    elif bias_type == "set_polar_bias":
+        # Strongest at the poles (zone_06), fading toward the equator
+        zone_values = [0.01, 0.05, 0.1, 0.2, 0.4, 0.6, 0.85]
+    else:  # Balanced bias
+        zone_values = [0.5] * 7  # Uniform values for a neutral effect
+
+    return {f"zone_0{i}": zone_values[i] for i in range(7)}
+
+
+def update_ui_bias(bias_type: str):
+    """Apply bias settings to UI sliders."""
+    new_values = apply_bias(bias_type)
+    for key, slider in slider_vars.items():
+        if key in new_values:
+            slider.setValue(int(new_values[key] * 100))
 
 
 def get_planet_biomes_process() -> QProcess:
@@ -491,6 +510,9 @@ class MainWindow(QMainWindow):
     halt_command_button: QPushButton
     exit_command_button: QPushButton
     reset_command_button: QPushButton
+    set_equator_bias_button: QPushButton
+    set_balanced_bias_button: QPushButton
+    set_polar_bias_button: QPushButton
     themes_dropdown: QComboBox
     plugins_dropdown: QComboBox
     folders_dropdown: QComboBox
@@ -502,6 +524,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.slider_vars = {}
 
         # Determine base directory based on whether we're running as a PyInstaller bundle
         if getattr(sys, "frozen", False):
@@ -587,6 +610,9 @@ class MainWindow(QMainWindow):
         self.exit_command_button.clicked.connect(cancel_and_exit)
         self.reset_command_button.clicked.connect(self.reset_all_to_defaults)
         self.themes_dropdown.addItems(self.themes.keys())
+        self.set_equator_bias_button.clicked.connect(self.set_equator_bias)
+        self.set_polar_bias_button.clicked.connect(self.set_polar_bias)
+        self.set_balanced_bias_button.clicked.connect(self.set_balanced_bias)
 
         # Populate themes dropdown
         self.themes_dropdown.clear()  # Clear any existing items
@@ -757,11 +783,35 @@ class MainWindow(QMainWindow):
         else:
             print(f"Error: Directory {directory} does not exist.")
 
+    def set_equator_bias(self):
+        bias_values = apply_bias("set_equator_bias")
+        for zone in bias_values:
+            self.slider_vars[zone].setValue(
+                int(bias_values[zone] * 100)
+            )
+
+    def set_polar_bias(self):
+        bias_values = apply_bias("set_polar_bias")
+        for zone in bias_values:
+            self.slider_vars[zone].setValue(int(bias_values[zone] * 100))
+
+    def set_balanced_bias(self):
+        bias_values = apply_bias("set_balanced_bias")
+        for zone in bias_values:
+            self.slider_vars[zone].setValue(int(bias_values[zone] * 100))
+
     def setup_config_controls(self):
         """Map UI controls to configuration keys."""
+        self.slider_vars["zone_00"] = self.findChild(QSlider, "zone_00")
+        self.slider_vars["zone_01"] = self.findChild(QSlider, "zone_01")
+        self.slider_vars["zone_02"] = self.findChild(QSlider, "zone_02")
+        self.slider_vars["zone_03"] = self.findChild(QSlider, "zone_03")
+        self.slider_vars["zone_04"] = self.findChild(QSlider, "zone_04")
+        self.slider_vars["zone_05"] = self.findChild(QSlider, "zone_05")
+        self.slider_vars["zone_06"] = self.findChild(QSlider, "zone_06")
         checkbox_mappings = {
             "enable_noise": "enable_noise",
-            "apply_distortion": "apply_distortion",
+            "enable_distortion": "enable_distortion",
             "enable_biases": "enable_biases",
             "enable_anomalies": "enable_anomalies",
             "use_random": "use_random",
@@ -787,7 +837,6 @@ class MainWindow(QMainWindow):
         slider_mappings = {
             "zoom": "zoom",
             "squircle_exponent": "squircle_exponent",
-            "noise_factor": "noise_factor",
             "noise_scale": "noise_scale",
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
@@ -810,8 +859,6 @@ class MainWindow(QMainWindow):
             "polar_anomaly_count": "polar_anomaly_count",
             "polar_anomaly_scale": "polar_anomaly_scale",
             "distortion_scale": "distortion_scale",
-            "distortion_influence": "distortion_influence",
-            "biome_distortion": "biome_distortion",
             "noise_scatter": "noise_scatter",
             "biome_perlin": "biome_perlin",
             "biome_swap": "biome_swap",
@@ -828,7 +875,6 @@ class MainWindow(QMainWindow):
         reset_buttons = [
             "zoom_reset",
             "squircle_exponent_reset",
-            "noise_factor_reset",
             "noise_scale_reset",
             "noise_amplitude_reset",
             "noise_scatter_reset",
@@ -849,9 +895,7 @@ class MainWindow(QMainWindow):
             "normal_strength_reset",
             "fade_intensity_reset",
             "fade_spread_reset",
-            "distortion_influence_reset",
             "distortion_scale_reset",
-            "biome_distortion_reset",
         ]
 
         # Custom reset functions for grouped settings
@@ -864,21 +908,6 @@ class MainWindow(QMainWindow):
             print("Resetting anomaly scales")
             self.reset_to_defaults("equator_anomaly_scale")
             self.reset_to_defaults("polar_anomaly_scale")
-
-        def reset_equator_bias():
-            print("Resetting equator bias")
-            for zone in ["zone_00", "zone_01", "zone_02"]:  # Adjust zones as needed
-                self.reset_to_defaults(zone)
-
-        def reset_pole_bias():
-            print("Resetting pole bias")
-            for zone in ["zone_03", "zone_04"]:  # Adjust zones as needed
-                self.reset_to_defaults(zone)
-
-        def reset_balanced_bias():
-            print("Resetting balanced bias")
-            for zone in ["zone_05", "zone_06"]:  # Adjust zones as needed
-                self.reset_to_defaults(zone)
 
         # Connect checkboxes
         for checkbox_name, key in checkbox_mappings.items():
@@ -895,22 +924,20 @@ class MainWindow(QMainWindow):
             slider = getattr(self, slider_name, None)
             if slider:
                 value = config.get(key, 0)
-                min_val, max_val = 0.01, 1.0
+
+                # Define special value handling separately if needed
                 if key == "user_seed":
                     min_val, max_val = 0, 99999
-                elif key in ["squircle_exponent"]:
-                    max_val = 4
-                elif key in ["noise_scale", "noise_amplitude", "noise_scatter"]:
-                    max_val = 10
-                elif key in ["equator_anomaly_count", "polar_anomaly_count"]:
-                    min_val, max_val = 0, 10
-                elif key in ["fractal_octaves"]:
-                    min_val, max_val = 1, 8
+                if key == "distortion_scale":
+                    min_val, max_val = 0.04, 1 # Anything lower and we run out of memory
+                else:
+                    min_val, max_val = 0.01, 1.0
+
+                # Set slider properties
                 slider.setRange(int(min_val * 100), int(max_val * 100))
                 slider.setValue(int(value * 100))
-                slider.valueChanged.connect(
-                    lambda val, k=key: update_value(k, val / 100)
-                )
+                slider.valueChanged.connect(lambda val, k=key: update_value(k, val / 100))
+
                 slider_vars[key] = slider
             else:
                 print(f"Warning: Slider '{slider_name}' not found in UI")
@@ -932,9 +959,6 @@ class MainWindow(QMainWindow):
         special_reset_buttons = {
             "anomaly_count_reset": reset_anomaly_counts,
             "anomaly_scale_reset": reset_anomaly_scales,
-            "equator_bias_reset": reset_equator_bias,
-            "pole_bias_reset": reset_pole_bias,
-            "balanced_bias_reset": reset_balanced_bias,
         }
         for button_name, reset_func in special_reset_buttons.items():
             button = getattr(self, button_name, None)

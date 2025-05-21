@@ -24,6 +24,7 @@ from PlanetConstants import (
 # Third Party Libraries
 import scipy.ndimage
 import numpy as np
+from PIL import Image
 from scipy.ndimage import gaussian_filter, distance_transform_edt
 from construct import Struct, Const, Rebuild, this, len_
 from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Array
@@ -167,54 +168,59 @@ def generate_base_pattern(shape: Tuple[int, int]) -> np.ndarray:
     dist_to_edge = np.minimum(dist_x, dist_y)
 
     # Normalize so perimeter=0, center=1
-    base_pattern = dist_to_edge / dist_to_edge.max()
+    if dist_to_edge.size == 0:
+        raise ValueError("dist_to_edge array is empty! Check input shape.")
+
+    base_pattern = dist_to_edge / (dist_to_edge.max() + 1e-6)
 
     return base_pattern
 
 
-def zoom_and_fill(
-    grid: np.ndarray, zoom_factor: float, target_shape: Tuple[int, int]
+def add_distortion(
+    grid: np.ndarray, distortion_factor: float, target_shape: Tuple[int, int]
 ) -> np.ndarray:
     """Scales the grid and fills or crops to match target_shape, centering the result."""
     target_h, target_w = target_shape[1], target_shape[0]
 
     # Scale grid using interpolation
-    zoomed_grid = scipy.ndimage.zoom(grid, zoom_factor, order=1)  # Linear interpolation
+    distorted_grid = scipy.ndimage.zoom(
+        grid, distortion_factor, order=1
+    )  # Linear interpolation
 
     # Initialize output grid
     filled_grid = np.zeros((target_h, target_w), dtype=np.float32)
 
     # Get shapes
-    zoomed_h, zoomed_w = zoomed_grid.shape
+    distorted_h, distorted_w = distorted_grid.shape
 
-    if zoom_factor < 1:
-        # Zoomed grid is smaller; center it in the output grid
-        h_offset = (target_h - zoomed_h) // 2
-        w_offset = (target_w - zoomed_w) // 2
+    if distortion_factor < 1:
+        # distortion grid is finer; center it in the output grid
+        h_offset = (target_h - distorted_h) // 2
+        w_offset = (target_w - distorted_w) // 2
 
         # Ensure offsets are non-negative
         h_offset = max(0, h_offset)
         w_offset = max(0, w_offset)
 
         # Calculate the region to copy
-        h_end = min(h_offset + zoomed_h, target_h)
-        w_end = min(w_offset + zoomed_w, target_w)
-        copy_h = min(zoomed_h, target_h - h_offset)
-        copy_w = min(zoomed_w, target_w - w_offset)
+        h_end = min(h_offset + distorted_h, target_h)
+        w_end = min(w_offset + distorted_w, target_w)
+        copy_h = min(distorted_h, target_h - h_offset)
+        copy_w = min(distorted_w, target_w - w_offset)
 
         if copy_h > 0 and copy_w > 0:
-            filled_grid[h_offset:h_end, w_offset:w_end] = zoomed_grid[:copy_h, :copy_w]
+            filled_grid[h_offset:h_end, w_offset:w_end] = distorted_grid[:copy_h, :copy_w]
 
-        # For zoom_factor < 1, extrapolate the outer regions using the edge values
+        # For distortion_factor < 1, extrapolate the outer regions using the edge values
         # to simulate the distortion dying off naturally
         if copy_h > 0 and copy_w > 0:
-            # Get the edge values of the zoomed grid
+            # Get the edge values of the distorted grid
             edge_value = np.mean(
                 [
-                    zoomed_grid[0, :].mean(),  # Top edge
-                    zoomed_grid[-1, :].mean(),  # Bottom edge
-                    zoomed_grid[:, 0].mean(),  # Left edge
-                    zoomed_grid[:, -1].mean(),  # Right edge
+                    distorted_grid[0, :].mean(),  # Top edge
+                    distorted_grid[-1, :].mean(),  # Bottom edge
+                    distorted_grid[:, 0].mean(),  # Left edge
+                    distorted_grid[:, -1].mean(),  # Right edge
                 ]
             )
             # Fill the outer regions with a smooth transition to the edge value
@@ -227,22 +233,22 @@ def zoom_and_fill(
                 1 - fade[mask]
             )  # Smooth fade to edge value
     else:
-        # Zoomed grid is larger; crop to center it
-        h_offset = (zoomed_h - target_h) // 2
-        w_offset = (zoomed_w - target_w) // 2
+        # distorted grid is larger; crop to center it
+        h_offset = (distorted_h - target_h) // 2
+        w_offset = (distorted_w - target_w) // 2
 
         # Ensure offsets are non-negative
         h_offset = max(0, h_offset)
         w_offset = max(0, w_offset)
 
-        # Crop the zoomed grid to fit target size
-        h_end = min(h_offset + target_h, zoomed_h)
-        w_end = min(w_offset + target_w, zoomed_w)
+        # Crop the distorted grid to fit target size
+        h_end = min(h_offset + target_h, distorted_h)
+        w_end = min(w_offset + target_w, distorted_w)
         copy_h = min(target_h, h_end - h_offset)
         copy_w = min(target_w, w_end - w_offset)
 
         if copy_h > 0 and copy_w > 0:
-            filled_grid[:copy_h, :copy_w] = zoomed_grid[
+            filled_grid[:copy_h, :copy_w] = distorted_grid[
                 h_offset : h_offset + copy_h, w_offset : w_offset + copy_w
             ]
 
@@ -250,62 +256,137 @@ def zoom_and_fill(
 
 
 def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
+    # Normalize grid
     grid = np.clip(grid, 0.0, 1.0)
 
-    weights_arr = np.array(weights, dtype=np.float32)
+    # Normalize weights (inverted and softened)
     weights_arr = np.array(weights, dtype=np.float32)
     weights_arr = (1.0 / (weights_arr + 1e-6)) ** 0.5
     weights_arr = weights_arr / weights_arr.sum()
 
+    # Build cumulative distribution function
     cdf = np.cumsum(weights_arr)
-    cdf = np.insert(cdf, 0, 0.0)
+    cdf = np.insert(cdf, 0, 0.0)  # Add 0.0 at start
 
-    remapped = np.zeros_like(grid, dtype=np.float32)
+    # Remap each grid value through the CDF
+    remapped = np.interp(grid, np.linspace(0.0, 1.0, len(cdf)), cdf)
 
-    n_biomes = len(weights)
-
-    for i in range(n_biomes):
-        input_lower = i / n_biomes
-        input_upper = (
-            (i + 1) / n_biomes if i < n_biomes - 1 else 1.0
-        )
-        output_lower = cdf[i]
-        output_upper = cdf[i + 1]
-
-        mask = (grid >= input_lower) & (grid <= input_upper)
-
-        if mask.any():
-            normalized = (grid[mask] - input_lower) / (input_upper - input_lower)
-            remapped[mask] = output_lower + normalized * (output_upper - output_lower)
-
-    center_mask = grid == 0.0
-    remapped[center_mask] = 0.0
+    # Optional: Lock pole center to 0 (if needed)
+    remapped[grid == 0.0] = 0.0
 
     return remapped
 
 
-def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
-    """Generate smooth noise normalized to 0..1."""
+def generate_distortion(shape: Tuple[int, int], config: Dict) -> np.ndarray:
+    """Generate smooth distortion normalized to 0..1."""
     seed = get_seed(config)
     np.random.seed(seed)
+    distortion = np.random.rand(*shape)
+    distortion = gaussian_filter(distortion, sigma=16)
+    distortion = (distortion - distortion.min()) / (distortion.max() - distortion.min())
+    return distortion
+
+
+def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
+    """Generate smooth noise with configurable parameters, normalized to 0..1."""
+    if not config.get("enable_noise", True):
+        return np.zeros(shape, dtype=np.float32)
+
+    seed = get_seed(config)
+    np.random.seed(seed)
+
+    # Retrieve noise parameters from config with defaults
+    noise_scale = config.get("noise_scale", 0.5)
+    noise_amplitude = config.get("noise_amplitude", 0.5)
+    biome_perlin = config.get("biome_perlin", 0.5)
+    noise_scatter = config.get("noise_scatter", 0.5)
+    biome_swap = config.get("biome_swap", 0.5)
+    biome_fractal = config.get("biome_fractal", 0.5)
+
+    # Initialize noise array
     noise = np.random.rand(*shape)
-    noise = gaussian_filter(noise, sigma=16)
-    noise = (noise - noise.min()) / (noise.max() - noise.min())
+
+    # Apply Perlin-like smoothing with configurable scale
+    noise = gaussian_filter(noise, sigma=16 * noise_scale)
+
+    # Apply fractal noise by layering multiple scales
+    for i in range(1, int(3 * biome_fractal) + 1):
+        scale = noise_scale * (2**i)
+        amplitude = noise_amplitude / (2**i)
+        layer = gaussian_filter(np.random.rand(*shape), sigma=16 * scale)
+        noise += amplitude * layer
+
+    # Apply scatter effect
+    if noise_scatter > 0:
+        scatter = np.random.rand(*shape) * noise_scatter
+        noise = noise + scatter
+        noise = np.clip(noise, 0, 1)
+
+    # Apply biome swap effect (randomly swap small patches)
+    if biome_swap > 0:
+        swap_mask = np.random.rand(*shape) < biome_swap * 0.1
+        swap_noise = np.random.rand(*shape)
+        noise[swap_mask] = swap_noise[swap_mask]
+
+    # Normalize to 0..1
+    noise = (noise - noise.min()) / (noise.max() - noise.min() + 1e-6)
+
+    # Apply Perlin weight
+    noise = noise * biome_perlin + (1 - biome_perlin) * np.random.rand(*shape)
+
+    # Final amplitude adjustment
+    noise = noise * noise_amplitude
+
     return noise
 
 
+def stitch_hemispheres(
+    grid_north: np.ndarray, grid_south: np.ndarray, blend_strength: float = 1.0
+) -> np.ndarray:
+    """Blend the hemispheres smoothly at the equator with adjustable transition strength."""
+    height, width = grid_north.shape
+
+    # Create a vertical transition mask with adjustable blend_strength
+    y = np.linspace(0, 1, height) ** blend_strength  # ✅ Adjust blending curve
+    mask = np.tile(y[:, np.newaxis], (1, width))  # Expand mask across width
+
+    # Blend the grids using the mask
+    stitched_grid = grid_north * (1 - mask) + grid_south * mask
+
+    return stitched_grid
+
+
 def generate_combined_pattern(shape: Tuple[int, int], config: Dict) -> np.ndarray:
-    """Generate combined base pattern plus noise (if enabled)."""
+    """Generate combined base pattern plus optional transformations based on config."""
     base_pattern = generate_base_pattern(shape)
 
-    if not config.get("enable_noise", True):
-        return base_pattern
+    # Apply distortion if enabled
+    if config.get("enable_distortion", False):
+        distortion = generate_distortion(shape, config)
+        base_pattern += distortion
 
-    noise = generate_noise(shape, config)
-    combined = base_pattern + noise
-    combined = (combined - combined.min()) / (combined.max() - combined.min())
+    # Apply additional effects based on config
+    if config.get("enable_noise", False):
+        base_pattern += generate_noise(shape, config)
+
+    if config.get("enable_smoothing", False):
+        base_pattern = gaussian_filter(base_pattern, sigma=8)
+
+    grid_north = generate_base_pattern((shape[0] // 2, shape[1]))
+    grid_south = generate_base_pattern((shape[0] // 2, shape[1]))
+
+    print(f"DEBUG: grid_north range = ({grid_north.min()}, {grid_north.max()})")
+    print(f"DEBUG: grid_south range = ({grid_south.min()}, {grid_south.max()})")
+
+    if config.get("stitch_hemispheres", False):
+        base_pattern = stitch_hemispheres(grid_north, grid_south)
+
+    # Normalize after applying transformations
+    combined = (base_pattern - base_pattern.min()) / (
+        base_pattern.max() - base_pattern.min()
+    )
+
     return combined
-
 
 def assign_biomes(grid: np.ndarray, biome_ids: List[int]) -> np.ndarray:
     if len(biome_ids) == 1:
@@ -440,11 +521,11 @@ def main():
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
 
-        # Step 1: Determine the initial grid size based on zoom_factor
-        zoom_factor = biome_cfg["zoom"]
-        if zoom_factor < 1:
+        # Step 1: Determine the initial grid size based on distortion_scale
+        distortion_factor = biome_cfg["distortion_scale"]
+        if distortion_factor < 1:
             # Use a larger grid to capture the full distortion
-            scale_factor = 1 / zoom_factor  # e.g., 2.0 for zoom_factor=0.5
+            scale_factor = 1 / distortion_factor # e.g., 2.0 for distortion_scale=0.5
             grid_h = int(GRID_SIZE[1] * scale_factor)
             grid_w = int(GRID_SIZE[0] * scale_factor)
         else:
@@ -453,24 +534,28 @@ def main():
         # Step 2: Generate Combined Biome Pattern on the larger grid
         pattern = generate_combined_pattern((grid_h, grid_w), biome_cfg)
 
+        # Step 3: Apply Distortion first
+        distorted_pattern = add_distortion(
+            pattern, distortion_factor, (GRID_SIZE[1], GRID_SIZE[0])
+        )
+
         # Step 3: Apply Weights (Distortion) on the larger grid
         enable_biases = config.get("enable_biases", False)
         zone_weights = [config.get(f"zone_0{i}", 1.0) for i in range(7)]
 
         if enable_biases:
             remapped_pattern = remap_biome_weights(
-                pattern, zone_weights
-            )  # Apply weights on larger grid
+                distorted_pattern, zone_weights
+            )
         else:
-            remapped_pattern = pattern  # Keep pattern unchanged if biases are off
-
-        # Step 4: Zoom to target GRID_SIZE
-        zoomed_pattern = zoom_and_fill(
-            remapped_pattern, zoom_factor, (GRID_SIZE[1], GRID_SIZE[0])
-        )
+            remapped_pattern = distorted_pattern
+        
+        Image.fromarray((pattern * 255).astype(np.uint8)).save("raw_pattern.png")
+        Image.fromarray((distorted_pattern * 255).astype(np.uint8)).save("distorted.png")
+        Image.fromarray((remapped_pattern * 255).astype(np.uint8)).save("remapped.png")
 
         # Step 5: Assign Biomes
-        inst.overwrite(biomes, zoomed_pattern)
+        inst.overwrite(biomes, remapped_pattern)
 
         # Step 6: Assign Resources
         inst.resrcGridN = assign_resources(
