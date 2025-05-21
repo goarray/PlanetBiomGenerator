@@ -3,3 +3,6 @@ output/
 Plugins/
 src/__pycache__/
 src/temp.py/
+PlanetBiomes/distorted.png
+PlanetBiomes/raw_pattern.png
+PlanetBiomes/remapped.png

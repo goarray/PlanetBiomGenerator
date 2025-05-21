@@ -549,10 +549,6 @@ def main():
             )
         else:
             remapped_pattern = distorted_pattern
-        
-        Image.fromarray((pattern * 255).astype(np.uint8)).save("raw_pattern.png")
-        Image.fromarray((distorted_pattern * 255).astype(np.uint8)).save("distorted.png")
-        Image.fromarray((remapped_pattern * 255).astype(np.uint8)).save("remapped.png")
 
         # Step 5: Assign Biomes
         inst.overwrite(biomes, remapped_pattern)
