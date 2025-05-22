@@ -9,7 +9,10 @@ import subprocess
 import random
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
+from PlanetTextures import load_biome_colors
 from PlanetConstants import (
+    TEMP_DIR,
+    CSV_PATH,
     BASE_DIR,
     BIOM_DIR,
     SCRIPT_DIR,
@@ -548,6 +551,62 @@ def assign_resources(
     return out
 
 
+def save_biome_grid(
+    grid: np.ndarray,
+    biome_colors: dict[int, tuple[int, int, int]],
+    path_out: str,
+    suffix: str = "",
+):
+    """Save biome grid as a color PNG image based on biome_colors mapping."""
+    biome_path = os.path.join(path_out, "temp_biome.png")
+    os.makedirs(path_out, exist_ok=True)
+
+    h, w = grid.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+
+    for y in range(h):
+        for x in range(w):
+            form_id = int(grid[y, x])
+            color = biome_colors.get(form_id, (128, 128, 128))  # fallback: neutral gray
+            color_image[y, x] = color
+
+    image = Image.fromarray(color_image, mode="RGB")
+    image.save(biome_path)
+    print(f"Biome color grid saved to: {biome_path}")
+
+
+def save_resource_grid(resource_grid: np.ndarray, path_out: str):
+    """Save resource grid as a color PNG image with distinct resource band colors."""
+    resource_path = os.path.join(path_out, "temp_resource.png")
+    os.makedirs(path_out, exist_ok=True)
+
+    # Color mapping: 0–4 (life group), 80–84 (nolife group), 8 (ocean), 88 (mixed)
+    color_map = {
+        0: (128, 0, 0),  # Maroon
+        1: (255, 0, 0),  # Red
+        2: (255, 128, 0),  # Orange
+        3: (255, 204, 0),  # Mustard
+        4: (255, 255, 0),  # Bright Yellow
+        8: (0, 0, 0),  # Ocean (Black)
+        80: (153, 204, 255),  # Light Blue
+        81: (0, 255, 255),  # Cyan
+        82: (0, 128, 255),  # Blue
+        83: (0, 200, 0),  # Green
+        84: (0, 255, 0),  # Bright Green
+        88: (255, 255, 255),  # None (White)
+    }
+
+    h, w = resource_grid.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+
+    for key, rgb in color_map.items():
+        color_image[resource_grid == key] = rgb
+
+    resource_image = Image.fromarray(color_image, mode="RGB")
+    resource_image.save(resource_path)
+    print(f"Resource grid saved to: {resource_path}")
+
+
 class BiomFile:
     biomeIds: List[int]
     biomeGridN: np.ndarray
@@ -651,6 +710,12 @@ def main():
         inst.resrcGridS = assign_resources(
             inst.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]), life, nolife, ocean
         ).flatten()
+
+        save_resource_grid(inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR))
+
+        used_biome_ids = set(inst.biomeGridN.flatten()) | set(inst.biomeGridS.flatten())
+        biome_colors = load_biome_colors(str(CSV_PATH), used_biome_ids)
+        save_biome_grid(inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), biome_colors, str(TEMP_DIR))
 
         inst.save(out_dir / f"{planet}.biom")
 

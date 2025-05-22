@@ -95,11 +95,19 @@ GIF_PATHS = {
 }
 
 IMAGE_FILES = [
-    "temp_albedo.png",
-    "temp_normal.png",
-    "temp_rough.png",
-    "temp_alpha.png",
+    "temp_color.png",
+    "temp_biome.png",
+    "temp_surface.png",
+    "temp_resource.png",
+    "temp_ocean.png",
 ]
+PROCESSING_MAP = {
+    "Processing color map": [0],
+    "Processing biome map": [1],
+    "Processing surface map": [2],
+    "Processing resource map": [3],
+    "Processing ocean mask": [4],
+}
 
 # --- Configuration flags ---
 BOOLEAN_KEYS = {
@@ -129,15 +137,6 @@ BOOLEAN_KEYS = {
     "output_biom_files",
     "enable_seed_anomalies",
     "random_distortion",
-}
-
-# --- Textual progress mapping ---
-PROCESSING_MAP = {
-    "Permits closed, loan secured.": [0],
-    "Terraforming complete.": [1],
-    "Ore distributed.": [2],
-    "Landscaping complete.": [3],
-    "don't panic!": [0, 1, 2, 3],
 }
 
 def load_config(path=CONFIG_PATH):

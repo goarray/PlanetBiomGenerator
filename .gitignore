@@ -1,3 +1,6 @@
 PlanetBiomes/distorted.png
 PlanetBiomes/raw_pattern.png
 PlanetBiomes/remapped.png
+PlanetBiomes/csv/BlockPatterns.csv
+PlanetBiomes/csv/PatternToBiome.py
+PlanetBiomes/csv/Biomes - Copy.csv

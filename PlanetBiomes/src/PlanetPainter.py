@@ -88,56 +88,35 @@ def load_config():
     except FileNotFoundError:
         print(f"Error: Config file {config_path} not found. Creating default config.")
         raw_config = {
-            "user_seed": 1234567,
-            "zoom_factor": 1.0,
-            "squircle_factor": 2.0,
-            "noise_scale": 0.1,
-            "noise_amplitude": 0.1,
-            "enable_equator_anomalies": False,
-            "enable_polar_anomalies": False,
-            "enable_distortion": False,
-            "enable_noise": False,
-            "enable_anomalies": False,
-            "enable_biases": False,
-            "brightness_factor": 1.0,
-            "saturation_factor": 1.0,
-            "edge_blend_radius": 0.5,
-            "detail_smoothness": 0.5,
-            "detail_strength_decay": 0.5,
-            "normal_strength": 0.5,
-            "roughness_base": 0.5,
-            "roughness_noise_scale": 0.5,
-            "fade_intensity": 0.5,
-            "fade_spread": 0.5,
-            "perlin_noise": 0.5,
-            "swap_factor": 0.5,
-            "fractal_octaves": 0.5,
-            "tint_factor": 0.5,
-            "equator_anomaly_count": 0.5,
-            "equator_anomaly_scale": 0.5,
-            "polar_anomaly_count": 0.5,
-            "polar_anomaly_scale": 0.5,
-            "distortion_scale": 0.5,
-            "noise_scatter": 0.5,
-            "biome_perlin": 0.5,
-            "biome_swap": 0.5,
-            "biome_fractal": 0.5,
-            "enable_texture_light": False,
-            "enable_texture_edges": False,
-            "enable_basic_filters": False,
-            "enable_texture_anomalies": False,
-            "process_images": False,
-            "enable_texture_noise": False,
-            "enable_preview_mode": False,
-            "enable_seed_anomalies": False,
-            "random_distortion": False,
-            "enable_edge_blending": False,
-            "upscale_image": False,
-            "keep_pngs_after_conversion": False,
-            "output_csv_files": False,
-            "output_dds_files": False,
-            "output_mat_files": False,
-            "output_biom_files": False,
+            "_program_options": "Pluging related options",
+            "plugin_selected": 1,
+            "plugin_index": ["preview.csv"],
+            "plugin_name": "preview.esm",
+            "enable_preview_mode": True,
+            "_theme_group": "Parameters related to themes",
+            "theme": "Starfield",
+            "_biome_toggles_group": "Biome-related options",
+            "enable_noise": True,
+            "enable_distortion": True,
+            "enable_biases": True,
+            "enable_anomalies": True,
+            "_generation_seed_group": "Random seed settings",
+            "use_random": False,
+            "user_seed": 8437,
+            "_biome_basic_group": "Basic biome parameters",
+            "zoom_factor": 0.64,
+            "squircle_factor": 0.28,
+            "_biome_noise_group": "Noise configuration",
+            "noise_scale": 0.57,
+            "noise_amplitude": 0.17,
+            "noise_scatter": 0.54,
+            "biome_perlin": 0.57,
+            "biome_swap": 0.56,
+            "biome_fractal": 0.57,
+            "_biome_bias_group": "Bias settings for different zones",
+            "set_equator_bias": "Button used to adjust to an equator bias",
+            "set_balanced_bias": "Button used to adjust to an equator bias",
+            "set_polar_bias": "Button used to adjust to an equator bias",
             "zone_00": 0.5,
             "zone_01": 0.5,
             "zone_02": 0.5,
@@ -145,11 +124,55 @@ def load_config():
             "zone_04": 0.5,
             "zone_05": 0.5,
             "zone_06": 0.5,
-            "light_bias": "light_bias_cc",
+            "_biome_distortion_group": "Distortion settings",
+            "random_distortion": False,
+            "distortion_scale": 0.28,
             "biome_bias": "biome_bias_cc",
-            "enable_normal": False,
-            "enable_roung": False,
-            "enable_alpha": False
+            "_biome_anomaly_group": "Anomaly settings",
+            "enable_equator_anomalies": True,
+            "enable_seed_anomalies": True,
+            "enable_polar_anomalies": True,
+            "equator_anomaly_count": 0.57,
+            "equator_anomaly_scale": 0.6,
+            "polar_anomaly_count": 0.52,
+            "polar_anomaly_scale": 0.53,
+            "_file_toggles_group": "File output settings",
+            "output_biom_files": False,
+            "keep_pngs_after_conversion": True,
+            "output_dds_files": False,
+            "output_mat_files": False,
+            "output_csv_files": False,
+            "enable_output_log": False,
+            "_texture_toggles_group": "Texture processing toggles",
+            "upscale_image": False,
+            "process_images": True,
+            "enable_texture_light": True,
+            "enable_basic_filters": True,
+            "enable_texture_edges": True,
+            "enable_texture_noise": True,
+            "enable_texture_anomalies": False,
+            "_texture_basics_group": "Texture basics",
+            "texture_brightness": 0.73,
+            "texture_saturation": 0.42,
+            "texture_edges": 0.38,
+            "texture_contrast": 0.5,
+            "texture_tint": 0.49,
+            "_texture_noise_group": "Noise parameters for textures",
+            "texture_roughness": 0.83,
+            "texture_roughness_base": 0.85,
+            "texture_noise": 0.5,
+            "texture_perlin": 1.0,
+            "texture_swap": 0.5,
+            "texture_fractal": 1.0,
+            "_texture_lighting_group": "Lighting settings",
+            "fade_intensity": 0.5,
+            "fade_spread": 0.5,
+            "light_bias": "light_bias_cc",
+            "_image_options_group": "Other image options",
+            "enable_surface": True,
+            "enable_resource": False,
+            "enable_ocean": False,
+            "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(DEFAULT_CONFIG_PATH, "w") as f:
@@ -442,7 +465,7 @@ def start_planet_biomes(main_window, mode=""):
     )
 
     # Start GIFs for processing, but only for labels without existing images
-    for index in [1, 2, 3]:
+    for index in [1, 2, 3, 4]:
         output_image = TEMP_DIR / IMAGE_FILES[index]
         if not output_image.exists():  # Only set GIF if no image exists
             movie = QMovie(str(GIF_PATHS.get(index)))
@@ -503,10 +526,11 @@ def start_processing(main_window):
 
 class MainWindow(QMainWindow):
 
-    albedo_preview_image: QLabel
-    normal_preview_image: QLabel
-    rough_preview_image: QLabel
-    alpha_preview_image: QLabel
+    color_preview_image: QLabel
+    biome_preview_image: QLabel
+    surface_preview_image: QLabel
+    resource_preview_image: QLabel
+    ocean_preview_image: QLabel
     stdout_widget: QPlainTextEdit
     stderr_widget: QPlainTextEdit
     preview_command_button: QPushButton
@@ -571,13 +595,13 @@ class MainWindow(QMainWindow):
             print(f"  [{index}] {plugin}")
 
         self.image_labels = [
-            self.albedo_preview_image,
-            self.normal_preview_image,
-            self.rough_preview_image,
-            self.alpha_preview_image,
+            self.color_preview_image,
+            self.biome_preview_image,
+            self.surface_preview_image,
+            self.resource_preview_image,
+            self.ocean_preview_image,
         ]
 
-        temp_images = {img.name: img for img in TEMP_DIR.glob("*.png")}  # Fast lookup
         self.default_image = (
             QPixmap(str(DEFAULT_IMAGE_PATH)).scaled(
                 self.image_labels[0].width(),
@@ -589,18 +613,18 @@ class MainWindow(QMainWindow):
         )
 
         # Set initial images for all labels
-        for i, image_file in enumerate(IMAGE_FILES):
-            image_path = TEMP_DIR / image_file  # Look in TEMP_DIR, not PNG_OUTPUT_DIR
+        for image_file, label in zip(IMAGE_FILES, self.image_labels):
+            image_path = TEMP_DIR / image_file
             pixmap = (
                 QPixmap(str(image_path)).scaled(
-                    self.image_labels[i].width(),
-                    self.image_labels[i].height(),
+                    label.width(),
+                    label.height(),
                     Qt.AspectRatioMode.KeepAspectRatio,
                 )
                 if image_path.exists()
                 else self.default_image
-            )
-            self.image_labels[i].setPixmap(pixmap)
+    )
+            label.setPixmap(pixmap)
 
         message = f"Available themes: {', '.join(self.themes.keys())}"
         self.stdout_widget.appendPlainText(message)
@@ -835,9 +859,9 @@ class MainWindow(QMainWindow):
             "output_biom_files": "output_biom_files",
             "enable_seed_anomalies": "enable_seed_anomalies",
             "random_distortion": "random_distortion",
-            "enable_normal": "enable_normal",
-            "enable_rough": "enable_rough",
-            "enable_alpha": "enable_alpha",
+            "enable_surface": "enable_surface",
+            "enable_resource": "enable_resource",
+            "enable_ocean": "enable_ocean",
         }
 
         slider_mappings = {
@@ -846,20 +870,8 @@ class MainWindow(QMainWindow):
             "noise_scale": "noise_scale",
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
-            "brightness_factor": "brightness_factor",
-            "saturation_factor": "saturation_factor",
-            "edge_blend_radius": "edge_blend_radius",
-            "detail_smoothness": "detail_smoothness",
-            "detail_strength_decay": "detail_strength_decay",
-            "normal_strength": "normal_strength",
-            "roughness_base": "roughness_base",
-            "roughness_noise_scale": "roughness_noise_scale",
             "fade_intensity": "fade_intensity",
             "fade_spread": "fade_spread",
-            "perlin_noise": "perlin_noise",
-            "swap_factor": "swap_factor",
-            "fractal_octaves": "fractal_octaves",
-            "tint_factor": "tint_factor",
             "equator_anomaly_count": "equator_anomaly_count",
             "equator_anomaly_scale": "equator_anomaly_scale",
             "polar_anomaly_count": "polar_anomaly_count",
@@ -876,29 +888,38 @@ class MainWindow(QMainWindow):
             "zone_04": "zone_04",
             "zone_05": "zone_05",
             "zone_06": "zone_06",
+            "texture_brightness": "texture_brightness",
+            "texture_saturation": "texture_saturation",
+            "texture_edges": "texture_edges",
+            "texture_contrast": "texture_contrast",
+            "texture_tint": "texture_tint",
+            "texture_roughness": "texture_roughness",
+            "texture_roughness_base": "texture_roughness_base",
+            "texture_noise": "texture_noise",
+            "texture_perlin": "texture_perlin",
+            "texture_swap": "texture_swap",
+            "texture_fractal": "texture_fractal",
         }
 
         reset_buttons = [
-            "zoom_factor_reset",
-            "squircle_factor_reset",
             "noise_scale_reset",
             "noise_amplitude_reset",
             "noise_scatter_reset",
-            "biome_perlin_reset",  # Fixed typo from "biome_prelin_reset"
+            "biome_perlin_reset",
             "biome_swap_reset",
-            "biome_fractal_reset",  # Fixed typo from "biome_fractal_reset"
-            "brightness_factor_reset",
-            "saturation_factor_reset",
-            "tint_factor_reset",
+            "biome_fractal_reset",
+            "texture_brightness_reset",
+            "texture_saturation_reset",
+            "texture_tint_reset",
             "detail_smoothness_reset",
             "detail_strength_decay_reset",
-            "edge_blend_radius_reset",
-            "perlin_noise_reset",
-            "swap_factor_reset",
-            "fractal_octaves_reset",
-            "roughness_noise_scale_reset",
-            "roughness_base_reset",
-            "normal_strength_reset",
+            "texture_edges_reset",
+            "texture_perlin_reset",
+            "texture_swap_reset",
+            "texture_fractal_reset",
+            "texture_roughness_reset",
+            "texture_roughness_base_reset",
+            "surface_strength_reset",
             "fade_intensity_reset",
             "fade_spread_reset",
             "distortion_scale_reset",
