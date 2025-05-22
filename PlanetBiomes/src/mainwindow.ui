@@ -82,7 +82,7 @@
             </property>
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="text">
@@ -100,7 +100,7 @@
             </property>
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="text">
@@ -109,7 +109,7 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QSlider" name="zoom">
+           <widget class="QSlider" name="zoom_factor">
             <property name="minimumSize">
              <size>
               <width>0</width>
@@ -128,7 +128,7 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QSlider" name="squircle_exponent">
+           <widget class="QSlider" name="squircle_factor">
             <property name="minimumSize">
              <size>
               <width>0</width>
@@ -207,6 +207,9 @@
             <property name="accessibleName">
              <string>Seed Value</string>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::Shape::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>7</number>
             </property>
@@ -225,7 +228,7 @@
          </property>
          <property name="font">
           <font>
-           <strikeout>true</strikeout>
+           <strikeout>false</strikeout>
           </font>
          </property>
          <property name="title">
@@ -857,7 +860,7 @@
          </property>
          <property name="font">
           <font>
-           <strikeout>true</strikeout>
+           <strikeout>false</strikeout>
           </font>
          </property>
          <property name="title">
@@ -868,17 +871,17 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_9">
           <item row="0" column="0">
-           <widget class="QCheckBox" name="enable_equator_drag">
+           <widget class="QCheckBox" name="enable_equator_anomalies">
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="toolTip">
              <string>Enables biome distortion centered near the equator.</string>
             </property>
             <property name="accessibleName">
-             <string>Equator Drag Enabled</string>
+             <string>Equator Anomalies Enabled</string>
             </property>
             <property name="text">
              <string>Equator</string>
@@ -886,10 +889,10 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QCheckBox" name="enable_random_drag">
+           <widget class="QCheckBox" name="enable_seed_anomalies">
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="text">
@@ -898,10 +901,10 @@
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QCheckBox" name="enable_pole_drag">
+           <widget class="QCheckBox" name="enable_polar_anomalies">
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="toolTip">
@@ -932,7 +935,7 @@
            <widget class="QPushButton" name="anomaly_count_reset">
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="text">
@@ -970,7 +973,7 @@
            <widget class="QPushButton" name="anomaly_scale_reset">
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <strikeout>false</strikeout>
              </font>
             </property>
             <property name="text">
@@ -1112,7 +1115,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QGroupBox" name="preview_images_group">
+         <widget class="QGroupBox" name="albedo_preview_group">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -1127,6 +1130,9 @@
           </property>
           <property name="title">
            <string>temp_albedo.png</string>
+          </property>
+          <property name="checkable">
+           <bool>false</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
            <item row="0" column="0">
@@ -1200,6 +1206,12 @@
            <property name="text">
             <string>_normal</string>
            </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
           </widget>
           <widget class="QCheckBox" name="enable_rough">
            <property name="geometry">
@@ -1217,6 +1229,9 @@
            </property>
            <property name="text">
             <string>_rough</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
           <widget class="QLabel" name="rough_preview_image">
@@ -1273,6 +1288,9 @@
            </property>
            <property name="text">
             <string>_alpha</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
           <widget class="QLabel" name="alpha_preview_image">
@@ -1813,27 +1831,7 @@ Planet</string>
             <string>Texture Toggles</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_14">
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="upscale_image">
-              <property name="toolTip">
-               <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Upscale Image</string>
-              </property>
-              <property name="text">
-               <string>1024x1024</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="enable_preview_mode">
-              <property name="text">
-               <string>Preview</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QCheckBox" name="process_images">
               <property name="toolTip">
                <string>Enables full texture processing (elevation, normal, rough, etc.).</string>
@@ -1846,46 +1844,7 @@ Planet</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="enable_texture_light">
-              <property name="font">
-               <font>
-                <strikeout>true</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Enable Light</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="enable_basic_filters">
-              <property name="text">
-               <string>Enable Basic</string>
-              </property>
-             </widget>
-            </item>
             <item row="2" column="1">
-             <widget class="QCheckBox" name="enable_texture_edges">
-              <property name="toolTip">
-               <string>Enables blending at biome edges for smooth transitions.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Edge Blending Enabled</string>
-              </property>
-              <property name="text">
-               <string>Enable Edges</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QCheckBox" name="enable_texture_noise">
-              <property name="text">
-               <string>Enable Noise</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
              <widget class="QCheckBox" name="enable_texture_anomalies">
               <property name="font">
                <font>
@@ -1897,79 +1856,37 @@ Planet</string>
               </property>
              </widget>
             </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="enable_preview_mode">
+              <property name="text">
+               <string>Preview</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QCheckBox" name="upscale_image">
+              <property name="toolTip">
+               <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Upscale Image</string>
+              </property>
+              <property name="text">
+               <string>1024x1024</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="texture_basics_group">
+          <widget class="QGroupBox" name="enable_basic_filters">
            <property name="title">
             <string>Texture Basics</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_13">
-            <item row="0" column="0">
-             <widget class="QPushButton" name="brightness_factor_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Brightness</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QPushButton" name="detail_strength_decay_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>true</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Contrast</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="saturation_factor_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Saturation</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QSlider" name="brightness_factor">
+            <item row="4" column="0">
+             <widget class="QSlider" name="tint_factor">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -1981,12 +1898,6 @@ Planet</string>
                 <width>0</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="toolTip">
-               <string>Adjusts brightness of the albedo texture.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Brightness</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
@@ -2018,6 +1929,68 @@ Planet</string>
               </property>
              </widget>
             </item>
+            <item row="0" column="2">
+             <widget class="QPushButton" name="saturation_factor_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Saturation</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="tint_factor_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>true</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Tint</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="brightness_factor_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Brightness</string>
+              </property>
+             </widget>
+            </item>
             <item row="1" column="2">
              <widget class="QSlider" name="saturation_factor">
               <property name="sizePolicy">
@@ -2043,8 +2016,8 @@ Planet</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
-             <widget class="QPushButton" name="tint_factor_reset">
+            <item row="0" column="1">
+             <widget class="QPushButton" name="detail_strength_decay_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -2063,74 +2036,12 @@ Planet</string>
                </font>
               </property>
               <property name="text">
-               <string>Tint</string>
+               <string>Contrast</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QPushButton" name="detail_smoothness_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>true</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Smooth</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QPushButton" name="edge_blend_radius_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Edges</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QSlider" name="tint_factor">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QSlider" name="detail_smoothness">
+            <item row="1" column="0">
+             <widget class="QSlider" name="brightness_factor">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -2144,17 +2055,17 @@ Planet</string>
                </size>
               </property>
               <property name="toolTip">
-               <string>Controls smoothness of terrain detail.</string>
+               <string>Adjusts brightness of the albedo texture.</string>
               </property>
               <property name="accessibleName">
-               <string>Detail Smoothness</string>
+               <string>Brightness</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="3" column="2">
+            <item row="4" column="1">
              <widget class="QSlider" name="edge_blend_radius">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -2179,11 +2090,44 @@ Planet</string>
               </property>
              </widget>
             </item>
+            <item row="3" column="1">
+             <widget class="QPushButton" name="edge_blend_radius_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Edges</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2" rowspan="2">
+             <widget class="QCheckBox" name="enable_texture_edges">
+              <property name="toolTip">
+               <string>Enables blending at biome edges for smooth transitions.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Edge Blending Enabled</string>
+              </property>
+              <property name="text">
+               <string>Enable
+Edges</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="texture_noise_group">
+          <widget class="QGroupBox" name="enable_texture_noise">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -2476,7 +2420,7 @@ Planet</string>
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="texture_light_group">
+          <widget class="QGroupBox" name="enable_texture_light">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>

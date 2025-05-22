@@ -103,8 +103,8 @@ IMAGE_FILES = [
 
 # --- Configuration flags ---
 BOOLEAN_KEYS = {
-    "enable_equator_drag",
-    "enable_pole_drag",
+    "enable_equator_anomalies",
+    "enable_polar_anomalies",
     "enable_equator_intrusion",
     "enable_pole_intrusion",
     "apply_distortion",
@@ -127,7 +127,7 @@ BOOLEAN_KEYS = {
     "output_dds_files",
     "output_mat_files",
     "output_biom_files",
-    "enable_random_drag",
+    "enable_seed_anomalies",
     "random_distortion",
 }
 

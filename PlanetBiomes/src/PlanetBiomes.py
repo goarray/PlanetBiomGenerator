@@ -23,15 +23,22 @@ from PlanetConstants import (
 
 # Third Party Libraries
 import scipy.ndimage
+import noise
+from noise import snoise2
 import numpy as np
 from PIL import Image
-from scipy.ndimage import gaussian_filter, distance_transform_edt
+from scipy.ndimage import (
+    gaussian_filter,
+    distance_transform_edt,
+    gaussian_laplace,
+    zoom,
+)
 from construct import Struct, Const, Rebuild, this, len_
 from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Array
 
 
 # Constants
-GRID_SIZE = [256, 256]
+GRID_SIZE = (256, 256)
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
 
@@ -147,144 +154,98 @@ def get_seed(config):
     """Return either a random seed or the user-defined seed from config."""
     use_random = config.get("use_random", False)
     if use_random:
-        seed = random.randint(0, 99999)
+        seed = random.randint(0, 9999999)
         config["user_seed"] = seed
         return seed
     return int(config.get("user_seed", 0))
 
 
-def generate_base_pattern(shape: Tuple[int, int]) -> np.ndarray:
-    """Generate a square target pattern with values from 0 (perimeter) to 1 (center)."""
-    h, w = shape
-    # Create grid of coordinates normalized to [0,1]
-    y = np.linspace(0, 1, h)[:, None]  # column vector
-    x = np.linspace(0, 1, w)[None, :]  # row vector
-
-    # Distance to nearest edge along x and y
-    dist_x = np.minimum(x, 1 - x)
-    dist_y = np.minimum(y, 1 - y)
-
-    # Use the smaller distance to edges (like a square ring)
-    dist_to_edge = np.minimum(dist_x, dist_y)
-
-    # Normalize so perimeter=0, center=1
-    if dist_to_edge.size == 0:
-        raise ValueError("dist_to_edge array is empty! Check input shape.")
-
-    base_pattern = dist_to_edge / (dist_to_edge.max() + 1e-6)
-
-    return base_pattern
+#############################################################################
 
 
-def add_distortion(
-    grid: np.ndarray, distortion_factor: float, target_shape: Tuple[int, int]
+def generate_hemisphere_patterns(
+    shape: Tuple[int, int], config: Dict
+) -> Tuple[np.ndarray, np.ndarray]:
+    def single_hemi(seed_offset: int) -> np.ndarray:
+        np.random.seed(get_seed(config) + seed_offset)
+        pattern = generate_squircle_pattern(shape, config.get("squircle_factor", 0.5))
+
+        zone_keys = sorted(k for k in config if k.startswith("zone_"))
+        weights = [config[k] for k in zone_keys]
+
+        pattern = tilt_zone_weights(pattern, tilt_factor=config.get("zoom_factor", 1.0))
+
+        if config.get("enable_biases", False):        
+            pattern = remap_biome_weights(pattern, weights)
+
+        if config.get("enable_noise", False):
+            pattern += generate_noise(shape, config)
+
+        if config.get("enable_distortion", False):
+            pattern += generate_distortion(shape, config)
+
+        if config.get("enable_smoothing", False):
+            pattern = gaussian_filter(pattern, sigma=8)
+
+        if config.get("enable_anomalies", False):
+            pattern = apply_anomalies(pattern, config)
+
+        # Normalize before return
+        pattern = (pattern - pattern.min()) / (pattern.max() - pattern.min() + 1e-6)
+        return pattern
+
+    north = single_hemi(0)
+    south = single_hemi(1)
+
+    north, south = stitch_hemispheres(north, blend_px=50)
+
+    return north, south
+
+
+def generate_squircle_pattern(
+    shape: Tuple[int, int], squircle_factor: float
 ) -> np.ndarray:
-    """Scales the grid and fills or crops to match target_shape, centering the result."""
-    target_h, target_w = target_shape[1], target_shape[0]
+    h, w = shape
+    y = np.linspace(-1, 1, h)[:, None]
+    x = np.linspace(-1, 1, w)[None, :]
 
-    # Scale grid using interpolation
-    distorted_grid = scipy.ndimage.zoom(
-        grid, distortion_factor, order=1
-    )  # Linear interpolation
-
-    # Initialize output grid
-    filled_grid = np.zeros((target_h, target_w), dtype=np.float32)
-
-    # Get shapes
-    distorted_h, distorted_w = distorted_grid.shape
-
-    if distortion_factor < 1:
-        # distortion grid is finer; center it in the output grid
-        h_offset = (target_h - distorted_h) // 2
-        w_offset = (target_w - distorted_w) // 2
-
-        # Ensure offsets are non-negative
-        h_offset = max(0, h_offset)
-        w_offset = max(0, w_offset)
-
-        # Calculate the region to copy
-        h_end = min(h_offset + distorted_h, target_h)
-        w_end = min(w_offset + distorted_w, target_w)
-        copy_h = min(distorted_h, target_h - h_offset)
-        copy_w = min(distorted_w, target_w - w_offset)
-
-        if copy_h > 0 and copy_w > 0:
-            filled_grid[h_offset:h_end, w_offset:w_end] = distorted_grid[:copy_h, :copy_w]
-
-        # For distortion_factor < 1, extrapolate the outer regions using the edge values
-        # to simulate the distortion dying off naturally
-        if copy_h > 0 and copy_w > 0:
-            # Get the edge values of the distorted grid
-            edge_value = np.mean(
-                [
-                    distorted_grid[0, :].mean(),  # Top edge
-                    distorted_grid[-1, :].mean(),  # Bottom edge
-                    distorted_grid[:, 0].mean(),  # Left edge
-                    distorted_grid[:, -1].mean(),  # Right edge
-                ]
-            )
-            # Fill the outer regions with a smooth transition to the edge value
-            y = np.linspace(-1, 1, target_h)[:, None]
-            x = np.linspace(-1, 1, target_w)[None, :]
-            dist = np.sqrt(x**2 + y**2)
-            fade = np.clip(dist / dist.max(), 0, 1)
-            mask = filled_grid == 0  # Where the grid hasn't been filled
-            filled_grid[mask] = edge_value * (
-                1 - fade[mask]
-            )  # Smooth fade to edge value
+    # Map squircle_factor from [0, 1] to n:
+    # n = 10 for square, n = 2 for circle, n = 1 for diamond
+    if squircle_factor <= 0.5:
+        n = 10 - squircle_factor * 16  # 10 → 2 as squircle_factor goes 0 → 0.5
     else:
-        # distorted grid is larger; crop to center it
-        h_offset = (distorted_h - target_h) // 2
-        w_offset = (distorted_w - target_w) // 2
+        n = 2 - (squircle_factor - 0.5) * 2  # 2 → 1 as squircle_factor goes 0.5 → 1
 
-        # Ensure offsets are non-negative
-        h_offset = max(0, h_offset)
-        w_offset = max(0, w_offset)
+    dist = (np.abs(x) ** n + np.abs(y) ** n) ** (1 / n)
+    pattern = 1 - dist
+    pattern = np.clip(pattern, 0, 1)
+    pattern = (pattern - pattern.min()) / (pattern.max() - pattern.min() + 1e-6)
 
-        # Crop the distorted grid to fit target size
-        h_end = min(h_offset + target_h, distorted_h)
-        w_end = min(w_offset + target_w, distorted_w)
-        copy_h = min(target_h, h_end - h_offset)
-        copy_w = min(target_w, w_end - w_offset)
-
-        if copy_h > 0 and copy_w > 0:
-            filled_grid[:copy_h, :copy_w] = distorted_grid[
-                h_offset : h_offset + copy_h, w_offset : w_offset + copy_w
-            ]
-
-    return filled_grid
+    return pattern
 
 
 def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
     # Normalize grid
     grid = np.clip(grid, 0.0, 1.0)
 
-    # Normalize weights (inverted and softened)
+    # Convert weights to numpy array
     weights_arr = np.array(weights, dtype=np.float32)
-    weights_arr = (1.0 / (weights_arr + 1e-6)) ** 0.5
-    weights_arr = weights_arr / weights_arr.sum()
 
-    # Build cumulative distribution function
-    cdf = np.cumsum(weights_arr)
-    cdf = np.insert(cdf, 0, 0.0)  # Add 0.0 at start
+    # Invert weights so that lower weights get more area
+    inv_weights = 1.0 / (weights_arr + 1e-6)
+    inv_weights = inv_weights / inv_weights.sum()
 
-    # Remap each grid value through the CDF
+    # Build cumulative distribution function (CDF)
+    cdf = np.cumsum(inv_weights)
+    cdf = np.insert(cdf, 0, 0.0)
+
+    # Remap grid using the inverted CDF
     remapped = np.interp(grid, np.linspace(0.0, 1.0, len(cdf)), cdf)
 
-    # Optional: Lock pole center to 0 (if needed)
+    # Lock pole center if needed
     remapped[grid == 0.0] = 0.0
 
     return remapped
-
-
-def generate_distortion(shape: Tuple[int, int], config: Dict) -> np.ndarray:
-    """Generate smooth distortion normalized to 0..1."""
-    seed = get_seed(config)
-    np.random.seed(seed)
-    distortion = np.random.rand(*shape)
-    distortion = gaussian_filter(distortion, sigma=16)
-    distortion = (distortion - distortion.min()) / (distortion.max() - distortion.min())
-    return distortion
 
 
 def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
@@ -307,7 +268,7 @@ def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     noise = np.random.rand(*shape)
 
     # Apply Perlin-like smoothing with configurable scale
-    noise = gaussian_filter(noise, sigma=16 * noise_scale)
+    noise = gaussian_filter(noise, sigma=64 * noise_scale)
 
     # Apply fractal noise by layering multiple scales
     for i in range(1, int(3 * biome_fractal) + 1):
@@ -340,59 +301,214 @@ def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     return noise
 
 
+def polar_projection_correction(grid_shape=(256, 256)) -> np.ndarray:
+    h, w = grid_shape
+    cy, cx = h // 2, w // 2
+    y, x = np.ogrid[:h, :w]
+    r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+    r_norm = r / r.max()
+
+    # Inverse projection correction: outer edges (equator) need stronger weight
+    correction = 1 / (r_norm + 0.01)  # Add epsilon to avoid divide by zero
+    correction /= correction.max()  # Normalize to 0–1
+
+    return correction
+
+
+def generate_distortion(shape: tuple[int, int], config: dict) -> np.ndarray:
+    """Generate contrast-preserving distortion with large-scale disturbances."""
+    h, w = shape
+    scale = np.clip(config.get("distortion_scale", 0.5), 0.0, 1.0)
+
+    # Initialize random number generator
+    seed = get_seed(config)
+    rng = np.random.default_rng(seed)
+
+    # Generate low-frequency simplex noise for large-scale distortions
+    freq = 0.02 * (1.0 + scale)  # Lower frequency for larger patterns
+    noise_grid = np.zeros((h, w))
+    for i in range(h):
+        for j in range(w):
+            noise_grid[i, j] = snoise2(
+                i * freq,
+                j * freq,
+                octaves=2,
+                persistence=0.5,
+                lacunarity=2.0,
+                base=seed,
+            )
+
+    # Add a layer of higher-frequency noise for detail
+    high_freq_noise = rng.normal(loc=0.0, scale=0.3, size=(h, w))
+    combined_noise = noise_grid + 0.3 * high_freq_noise  # Blend low and high frequency
+
+    # Apply light smoothing to reduce jaggedness but preserve large features
+    sigma = max(0.5, 3.0 * (1.0 - scale))  # Lower sigma for sharper, larger distortions
+    smoothed_noise = gaussian_filter(combined_noise, sigma=sigma)
+
+    # Normalize to [-1, 1] range
+    smoothed_noise -= smoothed_noise.mean()
+    smoothed_noise /= np.abs(smoothed_noise).max()
+
+    # Scale to desired distortion strength
+    distortion = smoothed_noise * scale
+
+    # Ensure zero-centered output
+    return distortion
+
+
+def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
+    h, w = grid.shape
+    modified_grid = grid.copy()
+
+    # Settings
+    enable_equator_anomalies = config.get("enable_equator_anomalies", False)
+    enable_seed_anomalies = config.get("enable_seed_anomalies", False)
+    enable_polar_anomalies = config.get("enable_polar_anomalies", False)
+    equator_anomaly_count = config.get("equator_anomaly_count", 0.5)
+    equator_anomaly_scale = config.get("equator_anomaly_scale", 0.5)
+    polar_anomaly_count = config.get("polar_anomaly_count", 0.5)
+    polar_anomaly_scale = config.get("polar_anomaly_scale", 0.5)
+
+    seed = get_seed(config)
+    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
+
+    # Utility: Get radial distance (0 = center, 1 = edge)
+    def radial_mask(h, w):
+        y, x = np.ogrid[:h, :w]
+        cy, cx = h // 2, w // 2
+        dist = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        return dist / dist.max()
+
+    radial = radial_mask(h, w)
+
+    def make_mask(center: float, width: float):
+        """Smooth bump centered at radius with adjustable width (0.01 to 1.0)."""
+        d = np.abs(radial - center)
+        falloff = np.clip(1.0 - (d / width) ** 2, 0.0, 1.0)
+        return falloff
+
+    # 1. Equator anomaly (centered at 0.5 radius)
+    if enable_equator_anomalies:
+        equator_mask = make_mask(center=0.5, width=equator_anomaly_scale)
+        equator_noise = gaussian_filter(np.random.randn(h, w), sigma=8)
+        boosted_equator_strength = equator_anomaly_count
+        modified_grid += equator_mask * equator_noise * boosted_equator_strength
+
+    # 2. Polar anomaly (centered at 0.0)
+    if enable_polar_anomalies:
+        polar_mask = make_mask(center=0.0, width=polar_anomaly_scale)
+        polar_noise = gaussian_filter(np.random.randn(h, w), sigma=8)
+        boosted_polar_strength = polar_anomaly_count
+        modified_grid += polar_mask * polar_noise * boosted_polar_strength
+
+    # 3. Seed-based variant (randomized masks + noise scales)
+    if enable_seed_anomalies:
+
+        def normalize_seed(seed: int, min_val=0.1, max_val=1.0) -> float:
+            return min_val + (seed % 1000) / 1000 * (max_val - min_val)
+
+        equator_strength = normalize_seed(seed, 0.2, 1.0)
+        equator_width = normalize_seed(seed + 1, 0.2, 0.7)
+        polar_strength = normalize_seed(seed + 2, 0.2, 1.0)
+        polar_width = normalize_seed(seed + 3, 0.2, 0.7)
+
+        equator_mask = make_mask(0.5, equator_width)
+        equator_noise = gaussian_filter(rng.normal(size=(h, w)), sigma=[3, 3])
+        modified_grid += equator_mask * equator_noise * equator_strength
+
+        polar_mask = make_mask(0.0, polar_width)
+        polar_noise = gaussian_filter(rng.normal(size=(h, w)), sigma=3)
+        modified_grid += polar_mask * polar_noise * polar_strength
+
+    return np.clip(modified_grid, 0, 1)
+
+
+def tilt_zone_weights(grid: np.ndarray, tilt_factor: float) -> np.ndarray:
+    center = np.array(grid.shape) / 2
+    y_indices, x_indices = np.indices(grid.shape)
+    distances = np.sqrt((x_indices - center[1]) ** 2 + (y_indices - center[0]) ** 2)
+    distances /= distances.max()
+
+    middle_ring = 0.5
+    distance_from_middle = np.abs(distances - middle_ring)
+
+    # Invert and scale the bias effect
+    bias_strength = 1.0 - distance_from_middle * 2.0
+    bias_strength = np.clip(bias_strength, 0.0, 1.0)
+
+    if tilt_factor < 0.5:
+        # Favor edges: invert and scale
+        weight_map = 1.0 - bias_strength * (1.0 - 2 * tilt_factor)
+    elif tilt_factor > 0.5:
+        # Favor center: scale bias toward center
+        weight_map = 1.0 + bias_strength * (2 * (tilt_factor - 0.5))
+    else:
+        weight_map = np.ones_like(grid)  # Neutral
+
+    skewed = grid * weight_map
+    return np.clip(skewed, 0.0, 1.0)
+
+
+import numpy as np
+
+
 def stitch_hemispheres(
-    grid_north: np.ndarray, grid_south: np.ndarray, blend_strength: float = 1.0
-) -> np.ndarray:
-    """Blend the hemispheres smoothly at the equator with adjustable transition strength."""
-    height, width = grid_north.shape
+    north: np.ndarray, blend_px: int = 8, blend_strength: float = 0.5
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Blend edges of the north hemisphere with its horizontal mirror,
+    and force seamless left-right wrapping.
 
-    # Create a vertical transition mask with adjustable blend_strength
-    y = np.linspace(0, 1, height) ** blend_strength  # ✅ Adjust blending curve
-    mask = np.tile(y[:, np.newaxis], (1, width))  # Expand mask across width
+    Returns north and south (mirror of north).
+    """
+    h, w = north.shape
+    blend_strength = np.clip(blend_strength, 0.01, 1.0)
 
-    # Blend the grids using the mask
-    stitched_grid = grid_north * (1 - mask) + grid_south * mask
+    # Mirror for equator blending
+    mirror = np.fliplr(north)
 
-    return stitched_grid
+    # Distance from edge (top, bottom, left, right)
+    y = np.minimum(np.arange(h), np.arange(h)[::-1]).reshape(-1, 1)
+    x = np.minimum(np.arange(w), np.arange(w)[::-1]).reshape(1, -1)
+    dist_to_edge = np.minimum(y, x)
+
+    # Weight map: 1 at edge, 0 in center
+    weight = np.clip(1.0 - dist_to_edge / blend_px, 0, 1) ** (1.0 / blend_strength)
+
+    # Equator-blend with mirror
+    north_blended = (1 - weight) * north + weight * mirror
+
+    # --- Force left-right wraparound ---
+    # Average left and right edge columns
+    left_col = north_blended[:, 0]
+    right_col = north_blended[:, -1]
+    avg_col = (left_col + right_col) / 2
+
+    north_blended[:, 0] = avg_col
+    north_blended[:, -1] = avg_col
+
+    # Optionally smooth inward by one pixel
+    if blend_px > 1:
+        north_blended[:, 1] = (north_blended[:, 1] + avg_col) / 2
+        north_blended[:, -2] = (north_blended[:, -2] + avg_col) / 2
+
+    # South is flipped version of north
+    south = np.fliplr(north_blended)
+
+    return north_blended, south
 
 
-def generate_combined_pattern(shape: Tuple[int, int], config: Dict) -> np.ndarray:
-    """Generate combined base pattern plus optional transformations based on config."""
-    base_pattern = generate_base_pattern(shape)
+######################################################################################
 
-    # Apply distortion if enabled
-    if config.get("enable_distortion", False):
-        distortion = generate_distortion(shape, config)
-        base_pattern += distortion
-
-    # Apply additional effects based on config
-    if config.get("enable_noise", False):
-        base_pattern += generate_noise(shape, config)
-
-    if config.get("enable_smoothing", False):
-        base_pattern = gaussian_filter(base_pattern, sigma=8)
-
-    grid_north = generate_base_pattern((shape[0] // 2, shape[1]))
-    grid_south = generate_base_pattern((shape[0] // 2, shape[1]))
-
-    print(f"DEBUG: grid_north range = ({grid_north.min()}, {grid_north.max()})")
-    print(f"DEBUG: grid_south range = ({grid_south.min()}, {grid_south.max()})")
-
-    if config.get("stitch_hemispheres", False):
-        base_pattern = stitch_hemispheres(grid_north, grid_south)
-
-    # Normalize after applying transformations
-    combined = (base_pattern - base_pattern.min()) / (
-        base_pattern.max() - base_pattern.min()
-    )
-
-    return combined
 
 def assign_biomes(grid: np.ndarray, biome_ids: List[int]) -> np.ndarray:
     if len(biome_ids) == 1:
         return np.full(GRID_FLATSIZE, biome_ids[0], dtype=np.uint32)
     epsilon = 1e-6
     grid = np.clip(grid, 0, 1 - epsilon)
+    grid = np.power(grid, 1.5)
     mapped = np.zeros(GRID_FLATSIZE, dtype=np.uint32)
     n_biomes = len(biome_ids)
     for y in range(GRID_SIZE[1]):
@@ -468,10 +584,10 @@ class BiomFile:
         with open(path, "wb") as f:
             CsSF_Biom.build_stream(obj, f)
 
-    def overwrite(self, biome_ids: List[int], grid: np.ndarray):
-        """Replace biomes using either noise or structured grid."""
-        self.biomeGridN = assign_biomes(grid, biome_ids)
-        self.biomeGridS = assign_biomes(grid, biome_ids)
+    def overwrite(self, biome_ids: List[int], grid_n: np.ndarray, grid_s: np.ndarray):
+        """Replace biomes using separate grids for north and south hemispheres."""
+        self.biomeGridN = assign_biomes(grid_n, biome_ids)
+        self.biomeGridS = assign_biomes(grid_s, biome_ids)
         self.biomeIds = list(set(biome_ids))
 
 
@@ -521,37 +637,12 @@ def main():
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
 
-        # Step 1: Determine the initial grid size based on distortion_scale
-        distortion_factor = biome_cfg["distortion_scale"]
-        if distortion_factor < 1:
-            # Use a larger grid to capture the full distortion
-            scale_factor = 1 / distortion_factor # e.g., 2.0 for distortion_scale=0.5
-            grid_h = int(GRID_SIZE[1] * scale_factor)
-            grid_w = int(GRID_SIZE[0] * scale_factor)
-        else:
-            grid_h, grid_w = GRID_SIZE[1], GRID_SIZE[0]
-
-        # Step 2: Generate Combined Biome Pattern on the larger grid
-        pattern = generate_combined_pattern((grid_h, grid_w), biome_cfg)
-
-        # Step 3: Apply Distortion first
-        distorted_pattern = add_distortion(
-            pattern, distortion_factor, (GRID_SIZE[1], GRID_SIZE[0])
+        north_pattern, south_pattern = generate_hemisphere_patterns(
+            (GRID_SIZE), biome_cfg
         )
 
-        # Step 3: Apply Weights (Distortion) on the larger grid
-        enable_biases = config.get("enable_biases", False)
-        zone_weights = [config.get(f"zone_0{i}", 1.0) for i in range(7)]
-
-        if enable_biases:
-            remapped_pattern = remap_biome_weights(
-                distorted_pattern, zone_weights
-            )
-        else:
-            remapped_pattern = distorted_pattern
-
         # Step 5: Assign Biomes
-        inst.overwrite(biomes, remapped_pattern)
+        inst.overwrite(biomes, north_pattern, south_pattern)
 
         # Step 6: Assign Resources
         inst.resrcGridN = assign_resources(

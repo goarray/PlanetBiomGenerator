@@ -41,7 +41,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie
-from themes import THEMES
+from PlanetThemes import THEMES
 from PlanetConstants import (
     # Core directories
     BASE_DIR,
@@ -89,12 +89,12 @@ def load_config():
         print(f"Error: Config file {config_path} not found. Creating default config.")
         raw_config = {
             "user_seed": 1234567,
-            "zoom": 1.0,
-            "squircle_exponent": 2.0,
+            "zoom_factor": 1.0,
+            "squircle_factor": 2.0,
             "noise_scale": 0.1,
             "noise_amplitude": 0.1,
-            "enable_equator_drag": False,
-            "enable_pole_drag": False,
+            "enable_equator_anomalies": False,
+            "enable_polar_anomalies": False,
             "enable_distortion": False,
             "enable_noise": False,
             "enable_anomalies": False,
@@ -129,7 +129,7 @@ def load_config():
             "process_images": False,
             "enable_texture_noise": False,
             "enable_preview_mode": False,
-            "enable_random_drag": False,
+            "enable_seed_anomalies": False,
             "random_distortion": False,
             "enable_edge_blending": False,
             "upscale_image": False,
@@ -147,6 +147,9 @@ def load_config():
             "zone_06": 0.5,
             "light_bias": "light_bias_cc",
             "biome_bias": "biome_bias_cc",
+            "enable_normal": False,
+            "enable_roung": False,
+            "enable_alpha": False
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(DEFAULT_CONFIG_PATH, "w") as f:
@@ -815,8 +818,8 @@ class MainWindow(QMainWindow):
             "enable_biases": "enable_biases",
             "enable_anomalies": "enable_anomalies",
             "use_random": "use_random",
-            "enable_equator_drag": "enable_equator_drag",
-            "enable_pole_drag": "enable_pole_drag",
+            "enable_equator_anomalies": "enable_equator_anomalies",
+            "enable_polar_anomalies": "enable_polar_anomalies",
             "enable_texture_light": "enable_texture_light",
             "enable_texture_edges": "enable_texture_edges",
             "enable_basic_filters": "enable_basic_filters",
@@ -830,13 +833,16 @@ class MainWindow(QMainWindow):
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
             "output_mat_files": "output_mat_files",
             "output_biom_files": "output_biom_files",
-            "enable_random_drag": "enable_random_drag",
+            "enable_seed_anomalies": "enable_seed_anomalies",
             "random_distortion": "random_distortion",
+            "enable_normal": "enable_normal",
+            "enable_rough": "enable_rough",
+            "enable_alpha": "enable_alpha",
         }
 
         slider_mappings = {
-            "zoom": "zoom",
-            "squircle_exponent": "squircle_exponent",
+            "zoom_factor": "zoom_factor",
+            "squircle_factor": "squircle_factor",
             "noise_scale": "noise_scale",
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
@@ -873,8 +879,8 @@ class MainWindow(QMainWindow):
         }
 
         reset_buttons = [
-            "zoom_reset",
-            "squircle_exponent_reset",
+            "zoom_factor_reset",
+            "squircle_factor_reset",
             "noise_scale_reset",
             "noise_amplitude_reset",
             "noise_scatter_reset",
@@ -925,18 +931,23 @@ class MainWindow(QMainWindow):
             if slider:
                 value = config.get(key, 0)
 
+                min_val, max_val = 0.1, 1
                 # Define special value handling separately if needed
                 if key == "user_seed":
-                    min_val, max_val = 0, 99999
-                if key == "distortion_scale":
-                    min_val, max_val = 0.04, 1 # Anything lower and we run out of memory
+                    slider.setRange(0, 9999999)
+                    slider.setValue(int(value))
+                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 else:
-                    min_val, max_val = 0.01, 1.0
+                    if key == "noise_amplitude":
+                        max_val = 0.25
+                    if key == "distortion_scale":
+                        max_val = 0.5
 
-                # Set slider properties
-                slider.setRange(int(min_val * 100), int(max_val * 100))
-                slider.setValue(int(value * 100))
-                slider.valueChanged.connect(lambda val, k=key: update_value(k, val / 100))
+                    slider.setRange(int(min_val * 100), int(max_val * 100))
+                    slider.setValue(int(value * 100))
+                    slider.valueChanged.connect(
+                        lambda val, k=key: update_value(k, val / 100)
+                    )
 
                 slider_vars[key] = slider
             else:
