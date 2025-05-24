@@ -34,14 +34,15 @@ from PyQt6.QtWidgets import (
     QSplashScreen,
     QLabel,
     QPushButton,
-    QPlainTextEdit,
+    QTextEdit,
     QComboBox,
     QLCDNumber,
     QSlider,
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
-from PyQt6.QtGui import QPixmap, QFont, QMovie
+from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
+from PlanetNewsfeed import handle_news
 from PlanetConstants import (
     # Core directories
     BASE_DIR,
@@ -86,7 +87,9 @@ def load_config():
         with open(config_path, "r") as f:
             raw_config = json.load(f)
     except FileNotFoundError:
-        print(f"Error: Config file {config_path} not found. Creating default config.")
+        handle_news(
+            None, "error", f"Error: Config file {config_path} not found. Creating default config."
+        )
         raw_config = {
             "_program_options": "Pluging related options",
             "plugin_selected": 1,
@@ -190,9 +193,15 @@ def save_config():
     try:
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f, indent=4)
-        print(f"Config saved successfully to {CONFIG_PATH}", file=sys.stderr)
+        handle_news(
+            None, "info",
+            f"Config saved successfully to {CONFIG_PATH}"
+        )
     except Exception as e:
-        print(f"Error saving JSON: {e}", file=sys.stderr)
+        handle_news(
+            None, "error",
+            f"Error saving JSON: {e}"
+        )
 
 
 def update_value(key, val, index=None):
@@ -302,7 +311,7 @@ def update_bias_selection(self, button_name, is_checked):
             if key in config:
                 del config[key]
         save_config()
-        print(f"{bias_type} Updated: {button_name}")
+        handle_news(None, "info", f"{bias_type} Updated: {button_name}")
 
         # Update UI for the respective bias group
         group_prefix = "light_bias_" if bias_type == "light_bias" else "biome_bias_"
@@ -354,13 +363,14 @@ def start_planet_biomes(main_window, mode=""):
     main_window.stderr_widget.clear()
 
     if not SCRIPT_PATH.exists():
-        main_window.stderr_widget.appendPlainText(
+        main_window.stderr_widget.insertPlainText(
             f"Error: PlanetBiomes.py not found at {SCRIPT_PATH}"
         )
+        main_window.stderr_widget.moveCursor(QTextCursor.MoveOperation.End)
         return
     seed = get_seed(config)
     update_seed_display(main_window, config)
-    main_window.stdout_widget.appendPlainText(f"Using seed: {seed}")
+    handle_news(main_window, "success", f"Permit application: {seed} received.")
 
     # Disable upscaling for preview mode
     if "--preview" in mode:
@@ -387,17 +397,22 @@ def start_planet_biomes(main_window, mode=""):
     # Handle output for image updates
     def handle_output():
         if planet_biomes_process is None:
-            main_window.stderr_widget.appendPlainText(
-                "Error: planet_biomes_process is not initialized"
+            handle_news(
+                main_window, "error", "Error: planet_biomes_process is not initialized"
             )
             return
+
         output = planet_biomes_process.readAllStandardOutput().data().decode()
-        main_window.stdout_widget.appendPlainText(output)
         updated = False
+
+        for line in output.splitlines():
+            handle_news(
+                main_window, "success", line
+            )  # assumes success-type lines for stdout
 
         for message, indices in PROCESSING_MAP.items():
             if message in output:
-                main_window.stderr_widget.appendPlainText(message)
+                handle_news(main_window, "debug", message)
                 for index in indices:
                     output_image = TEMP_DIR / IMAGE_FILES[index]
                     if output_image.exists():
@@ -406,14 +421,12 @@ def start_planet_biomes(main_window, mode=""):
                             main_window.image_labels[index].height(),
                             Qt.AspectRatioMode.KeepAspectRatio,
                         )
-                        # Stop any running GIF
                         if main_window.image_labels[index].movie():
                             main_window.image_labels[index].movie().stop()
                             main_window.image_labels[index].setMovie(None)
                         main_window.image_labels[index].setPixmap(pixmap)
                         updated = True
 
-        # Fallback: refresh all images if a completion-like message is detected
         if not updated and "complete" in output.lower():
             for index in range(len(IMAGE_FILES)):
                 output_image = TEMP_DIR / IMAGE_FILES[index]
@@ -423,7 +436,6 @@ def start_planet_biomes(main_window, mode=""):
                         main_window.image_labels[index].height(),
                         Qt.AspectRatioMode.KeepAspectRatio,
                     )
-                    # Stop any running GIF
                     if main_window.image_labels[index].movie():
                         main_window.image_labels[index].movie().stop()
                         main_window.image_labels[index].setMovie(None)
@@ -432,19 +444,18 @@ def start_planet_biomes(main_window, mode=""):
         if "Visual inspection" in output:
             output_dir = Path(OUTPUT_DIR)
             num_files = sum(1 for f in output_dir.rglob("*") if f.is_file())
-            main_window.stdout_widget.appendPlainText(
-                f"Forms filed correctly: {num_files}"
-            )
+            handle_news(main_window, "success", f"Forms filed correctly: {num_files}")
 
     def handle_error():
         if planet_biomes_process is None:
-            main_window.stderr_widget.appendPlainText(
-                "Error: planet_biomes_process is not initialized"
+            handle_news(
+                main_window, "error", "Error: planet_biomes_process is not initialized"
             )
             return
+
         error_output = planet_biomes_process.readAllStandardError().data().decode()
-        if error_output:
-            main_window.stderr_widget.appendPlainText(f"{error_output}")
+        for line in error_output.splitlines():
+            handle_news(main_window, "error", line)
 
     # Connect signals
     planet_biomes_process.readyReadStandardOutput.connect(handle_output)
@@ -452,20 +463,27 @@ def start_planet_biomes(main_window, mode=""):
     seed = get_seed(config)
 
     planet_biomes_process.finished.connect(
-        lambda exit_code: main_window.stdout_widget.appendPlainText(
-            f"Permit {seed} closed, don't panic!"
-            if exit_code == 0
-            else f"Permit denied, code {exit_code}: Construction halted."
+        lambda exit_code: handle_news(
+            main_window,
+            "success" if exit_code == 0 else "error",
+            (
+                f"Permit {seed} complete!\nDon't panic!"
+                if exit_code == 0
+                else f"Permit denied, code {exit_code}: Construction halted."
+            ),
         )
     )
+
     planet_biomes_process.errorOccurred.connect(
-        lambda error: main_window.stderr_widget.appendPlainText(
-            f"Error: {planet_biomes_process.errorString() if planet_biomes_process else 'Process not initialized'}"
+        lambda _: handle_news(
+            main_window,
+            "error",
+            f"Error: {planet_biomes_process.errorString() if planet_biomes_process else 'Process not initialized'}",
         )
     )
 
     # Start GIFs for processing, but only for labels without existing images
-    for index in [1, 2, 3, 4]:
+    for index in [1, 2, 3, 4, 5, 6, 7]:
         output_image = TEMP_DIR / IMAGE_FILES[index]
         if not output_image.exists():  # Only set GIF if no image exists
             movie = QMovie(str(GIF_PATHS.get(index)))
@@ -473,7 +491,7 @@ def start_planet_biomes(main_window, mode=""):
                 main_window.image_labels[index].setMovie(movie)
                 movie.start()
 
-    main_window.stderr_widget.appendPlainText(
+    main_window.stderr_widget.insertPlainText(
         f"Starting PlanetBiomes.py with args: {args}"
     )
     planet_biomes_process.start()
@@ -531,8 +549,11 @@ class MainWindow(QMainWindow):
     surface_preview_image: QLabel
     resource_preview_image: QLabel
     ocean_preview_image: QLabel
-    stdout_widget: QPlainTextEdit
-    stderr_widget: QPlainTextEdit
+    normal_preview_image: QLabel
+    ao_preview_image: QLabel
+    rough_preview_image: QLabel
+    stdout_widget: QTextEdit
+    stderr_widget: QTextEdit
     preview_command_button: QPushButton
     halt_command_button: QPushButton
     exit_command_button: QPushButton
@@ -578,11 +599,11 @@ class MainWindow(QMainWindow):
         config["plugin_index"] = csv_names  # Used by update_selected_plugin
         config["plugin_list"] = csv_names   # Optional duplicate (can unify later)
 
-        print(f"DEBUG: plugin_index = {config['plugin_index']}")
+        handle_news(None, "info", "DEBUG: plugin_index = {config['plugin_index']}")
 
-        print(f"DEBUG: Available themes: {self.themes.keys()}")
+        handle_news(None, "info", "DEBUG: Available themes: {self.themes.keys()}")
         theme = config.get("theme", "Starfield")
-        print(f"DEBUG: Loaded theme from config: {theme}")
+        handle_news(None, "info", "DEBUG: Loaded theme from config: {theme}")
         plugin_list = config.get("plugin_index", [])  # Get the list or default to empty
         self.plugins_dropdown.clear()
         self.plugins_dropdown.addItems(config["plugin_index"])
@@ -590,9 +611,9 @@ class MainWindow(QMainWindow):
         self.plugins_dropdown.currentIndexChanged.connect(
             lambda idx: (update_selected_plugin(idx), self.refresh_ui_from_config())
         )
-        print("DEBUG: Available plugins:")
+        handle_news(None, "info", "DEBUG: Available plugins:")
         for index, plugin in enumerate(plugin_list):
-            print(f"  [{index}] {plugin}")
+            handle_news(None, "info", "  [{index}] {plugin}")
 
         self.image_labels = [
             self.color_preview_image,
@@ -600,6 +621,9 @@ class MainWindow(QMainWindow):
             self.surface_preview_image,
             self.resource_preview_image,
             self.ocean_preview_image,
+            self.normal_preview_image,
+            self.ao_preview_image,
+            self.rough_preview_image,
         ]
 
         self.default_image = (
@@ -627,7 +651,8 @@ class MainWindow(QMainWindow):
             label.setPixmap(pixmap)
 
         message = f"Available themes: {', '.join(self.themes.keys())}"
-        self.stdout_widget.appendPlainText(message)
+        self.stdout_widget.insertPlainText(message)
+        self.stdout_widget.moveCursor(QTextCursor.MoveOperation.End)
 
         # Connect signals
         self.preview_command_button.clicked.connect(
@@ -661,7 +686,7 @@ class MainWindow(QMainWindow):
         message = "Available plugins:\n"
         for index, plugin in enumerate(plugin_list):
             message += f"  [{index}] {plugin}\n"
-        self.stderr_widget.appendPlainText(message)
+        self.stderr_widget.insertPlainText(message)
 
     def open_selected_folder(self, index):
         folder_path = self.folders_dropdown.itemData(index)
@@ -671,7 +696,7 @@ class MainWindow(QMainWindow):
 
     def reset_to_defaults(self, key):
         """Reset a single setting to its default using update_value() and update UI sliders."""
-        print(f"Resetting key: '{key}'")  # Debug print
+        handle_news(None, "info", f"Resetting key: '{key}'")  # Debug print
         try:
             with open(DEFAULT_CONFIG_PATH, "r") as f:
                 default_config = json.load(f)
@@ -944,7 +969,7 @@ class MainWindow(QMainWindow):
                 checkbox.toggled.connect(lambda val, k=key: update_value(k, val))
                 checkbox_vars[key] = checkbox
             else:
-                print(f"Warning: Checkbox '{checkbox_name}' not found in UI")
+                print(f"PlanetPainter: Warning: Checkbox '{checkbox_name}' not found in UI", file=sys.stderr)
 
         # Connect sliders
         for slider_name, key in slider_mappings.items():
@@ -984,7 +1009,7 @@ class MainWindow(QMainWindow):
                 )
             else:
                 print(
-                    f"Error: Button '{button_name}' or key '{key}' not found in UI or mappings"
+                    f"PlanetPainter: Error: Button '{button_name}' or key '{key}' not found in UI or mappings", file=sys.stderr
                 )
 
         # Connect special reset buttons
@@ -997,7 +1022,7 @@ class MainWindow(QMainWindow):
             if button:
                 button.clicked.connect(reset_func)
             else:
-                print(f"Error: Special reset button '{button_name}' not found in UI")
+                print(f"PlanetPainter: Error: Special reset button '{button_name}' not found in UI", file=sys.stderr)
 
         # Connect bias buttons
         saved_light_bias = config.get("light_bias", "light_bias_cc")
@@ -1062,7 +1087,8 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(self.themes.get("Starfield", ""))
             message = f"Error: Theme '{theme_name}' not found in themes"
 
-        self.stdout_widget.appendPlainText(message)
+        self.stdout_widget.insertPlainText(message)
+        self.stdout_widget.moveCursor(QTextCursor.MoveOperation.End)
 
     def refresh_images(self):
         for i, image_file in enumerate(IMAGE_FILES):

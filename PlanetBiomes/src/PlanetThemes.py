@@ -234,7 +234,7 @@ THEMES = {
             selection-background-color: {theme.get('border_color', '#6e9bac')};
             selection-color: {theme.get('hover_text_color', '#ffffff')};
             color: {theme.get('color', '#ffffff')};
-            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            border: {theme.get('background', '#1e1e1e')}; 
         }}
 
         QComboBox QAbstractItemView::item:hover {{
@@ -257,6 +257,51 @@ THEMES = {
             color: {theme.get('header_color', theme.get('color', '#ffffff'))};
             background-color: {theme.get('header_background', theme.get('background', '#262729'))};
             padding: 5px;
+
+        }}
+        
+        QTabWidget::pane {{
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            background: #222;
+            padding: 5px;
+        }}
+
+        QTabBar::tab {{
+            background:{theme.get('background', '#1e1e1e')}; 
+            color: {theme.get('tooltip_color', '#d9f6ff')};
+            padding: 8px 15px;
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            border-bottom: none; /* To blend with the pane */
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin-right: 2px;
+        }}
+
+        QTabBar::tab:selected {{
+            background: {theme.get('button_hover_color', '#3a3f44')};
+            color: {theme.get('hover_text_color', theme['color'])};
+            font-weight: {theme.get('hover_font_weight', 'bold')};
+            border-color: 1px solid {theme.get('border_color', '#6e9bac')};
+        }}
+
+        QTabBar::tab:hover {{
+            background: {theme.get('primary_hover_color', '#00FFFF')};
+            color: {theme.get('hover_text_color', theme['color'])};
+        }}
+
+        /* Scoped styles only for images_tabwidget */
+        QTabWidget#images_tab_widget QTabBar::tab {{
+            font-size: 10px;
+            height: 15px;
+            width: 40px;
+            padding: 3px 6px;
+        }}
+
+        QTabWidget#images_tab_widget::pane {{
+            selection-background-color: {theme.get('border_color', '#6e9bac')};
+            selection-color: {theme.get('hover_text_color', '#ffffff')};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+            background: #1a1a1a;
         }}
     """
     for theme_name, theme in theme_data.items()

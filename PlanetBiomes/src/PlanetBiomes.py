@@ -9,7 +9,8 @@ import subprocess
 import random
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
-from PlanetTextures import load_biome_colors
+from PlanetTextures import load_biome_data
+from PlanetNewsfeed import handle_news
 from PlanetConstants import (
     TEMP_DIR,
     CSV_PATH,
@@ -82,7 +83,7 @@ def load_json(path: Path) -> Dict:
         with open(path, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"Missing config: {path}")
+        handle_news(None, "error", f"Missing config: {path}")
         return {}
 
 
@@ -91,9 +92,9 @@ def save_json(path: Path, data: dict):
     try:
         with open(path, "w") as f:
             json.dump(data, f, indent=4)
-        print(f"Config saved successfully to {path}", file=sys.stderr)
+        handle_news(None, "warn", f"Config saved successfully to {path}")
     except Exception as e:
-        print(f"Error saving JSON: {e}")
+        handle_news(None, "error", f"Error saving JSON: {e}")
 
 
 # Load and use config
@@ -124,8 +125,8 @@ def load_biomes(
             input_path = csv_files[selected_index]
             config["enable_preview_mode"] = input_path == PREVIEW_PATH
 
-    print(f"DEBUG: input_path = {input_path}")
-    print(f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}")
+    handle_news(None, "into", f"PlanetBiomes: Plugin's csv input_path = {input_path}")
+    handle_news(None, "into", f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}")
 
     with open(input_path, newline="") as f:
         plugin = f.readline().strip().rstrip(",")
@@ -572,7 +573,9 @@ def save_biome_grid(
 
     image = Image.fromarray(color_image, mode="RGB")
     image.save(biome_path)
-    print(f"Biome color grid saved to: {biome_path}")
+    handle_news(
+        None, "info", f"Biome color grid saved to: {biome_path}"
+    )
 
 
 def save_resource_grid(resource_grid: np.ndarray, path_out: str):
@@ -604,7 +607,11 @@ def save_resource_grid(resource_grid: np.ndarray, path_out: str):
 
     resource_image = Image.fromarray(color_image, mode="RGB")
     resource_image.save(resource_path)
-    print(f"Resource grid saved to: {resource_path}")
+    handle_news(
+        None,
+        "header",
+        f"PlanetBiomes: Resource grid saved to: {resource_path}"
+    )
 
 
 class BiomFile:
@@ -651,46 +658,64 @@ class BiomFile:
 
 
 def main():
-    print("=== Starting PlanetBiomes ===", flush=True)
+    handle_news(None, "success", f"=== Starting PlanetBiomes ===", flush=True)
     global plugin_name
 
     # Debug: Check if "--preview" is being detected in sys.argv
-    print(f"Command-line args: {sys.argv}")
+    handle_news(
+        None, "debug", f"PlanetBiomes: Command-line args: {sys.argv}"
+    )
     preview = "--preview" in sys.argv
-    print(f"Preview mode: {preview}")
+    handle_news(
+        None, "debug", f"PlanetBiomes: Preview mode: {preview}"
+    )
 
     config = load_json(CONFIG_PATH)
-    print(
-        f"Loaded config: {config}"
+    handle_news(
+        None, "debug", f"PlanetBiomes: Loaded config: {config}"
     )  # Debug: Print config to confirm it loads properly
 
     biome_cfg = config
     biome_csv = PREVIEW_PATH if preview else INPUT_DIR
-    print(f"Biome CSV path: {biome_csv}")  # Debug: Confirm correct path selection
+    handle_news(
+        None, "debug", f"PlanetBiomes: Biome CSV path: {biome_csv}"
+    )  # Debug: Confirm correct path selection
 
     plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
-    print(f"Plugin Name from CSV: {plugin}")  # Debug: Check the extracted plugin name
+    handle_news(
+        None, "debug", f"PlanetBiomes: Plugin Name from CSV: {plugin}"
+    )  # Debug: Check the extracted plugin name
 
     config["plugin_name"] = plugin  # Set new active plugin
     save_json(CONFIG_PATH, config)
-    print(f"Updated plugin name in config: {config['plugin_name']}")
+    handle_news(
+        None,
+        "debug",
+        f"PlanetBiomes: Updated plugin name in config: {config['plugin_name']}"
+    )
 
     out_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
-    print(
-        f"Output directory path: {out_dir}"
+    handle_news(
+        None,
+        "debug",
+        f"PlanetBiomes: Output directory path: {out_dir}"
     )  # Debug: Check if correct output path is set
     out_dir.mkdir(parents=True, exist_ok=True)
 
     template = BiomFile()
     template.load(TEMPLATE_PATH)
-    print(f"Template loaded successfully from: {TEMPLATE_PATH}")
+    handle_news(
+        None,
+        "warn",
+        f"Template loaded successfully from: {TEMPLATE_PATH}"
+    )
 
     for planet, biomes in planets.items():
         print(f"Location: {planet}. approved for ({len(biomes)}) biomes.")
-        print(
-            f"Biom file '{planet}.biom' with {len(biomes)} biomes created in '{out_dir / (planet + '.esm')}'",
-            file=sys.stderr,
-            flush=True,
+        handle_news(
+            None,
+            "info",
+            f"PlanetBiomes: Biom file '{planet}.biom' with {len(biomes)} biomes created in '{out_dir / (planet + '.esm')}'"
         )
 
         inst = BiomFile()
@@ -714,7 +739,8 @@ def main():
         save_resource_grid(inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR))
 
         used_biome_ids = set(inst.biomeGridN.flatten()) | set(inst.biomeGridS.flatten())
-        biome_colors = load_biome_colors(str(CSV_PATH), used_biome_ids)
+        biome_data = load_biome_data(str(CSV_PATH), used_biome_ids)
+        biome_colors = {k: v["color"] for k, v in biome_data.items()}
         save_biome_grid(inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), biome_colors, str(TEMP_DIR))
 
         inst.save(out_dir / f"{planet}.biom")

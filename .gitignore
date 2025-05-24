@@ -4,3 +4,21 @@ PlanetBiomes/remapped.png
 PlanetBiomes/csv/BlockPatterns.csv
 PlanetBiomes/csv/PatternToBiome.py
 PlanetBiomes/csv/Biomes - Copy.csv
+PlanetBiomes/assets/materials/Layered/LayeredMaterials/HoudiniPlanets/HoudiniPlanet_Jemison.mat
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_03_mixed_rough.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_03_mixed_normal.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_03_mixed_ao.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/tilingmetalrough/planetnoiseridgeswirl01_normal.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_10_mixed_normal.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_04_thermal_rough.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_04_thermal_normal.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_04_thermal_ao.dds
+PlanetBiomes/assets/materials/Layered/LayeredMaterials/HoudiniPlanets/HoudiniPlanet_Earth.mat
+PlanetBiomes/assets/materials/Layered/LayeredMaterials/HoudiniPlanets/HoudiniPlanet_Oceanic2_atmosphere.mat
+PlanetBiomes/assets/textures/planets/houdiniplanets/biomemasks/jemison_color.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/biomemasks/jemison_ocean_mask.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/biomemasks/jemison_surface_a_mask.dds
+PlanetBiomes/assets/textures/planets/houdiniplanets/extra/planet_material_warning_color.dds
+PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_surface_a_mask.dds
+PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_ocean_mask.dds
+PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_color.dds

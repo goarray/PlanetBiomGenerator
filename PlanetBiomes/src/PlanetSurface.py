@@ -28,7 +28,7 @@ from PlanetConstants import (
     PLUGINS_DIR,  # PLUGINS_DIR = BASE_DIR / "Plugins"
     CSV_DIR,
     IMAGE_DIR,
-    TEXTURE_OUTPUT_DIR,
+    DDS_OUTPUT_DIR,
     PNG_OUTPUT_DIR,
     # Config and data files
     CONFIG_PATH,

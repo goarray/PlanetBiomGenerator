@@ -1,12 +1,22 @@
-import time
-import subprocess
-import psutil
+import json
 import sys
 from pathlib import Path
-from PlanetConstants import BASE_DIR, SCRIPT_DIR
+import zlib
+import os
+from typing import List, Dict
+import uuid
+from PlanetConstants import (
+    BASE_DIR,
+    CRC_MAP,
+    CONFIG_PATH,
+    PLUGINS_DIR,
+    BIOM_DIR,
+    DDS_OUTPUT_DIR,
+    MAT_OUTPUT_DIR,
+    MATERIAL_PATH,
+)
 
-
-# --- Core directories ---
+# Core directories
 bundle_dir = getattr(sys, "_MEIPASS", None)
 if bundle_dir:
     BASE_DIR = Path(bundle_dir).resolve()
@@ -14,55 +24,83 @@ else:
     BASE_DIR = Path(__file__).resolve().parent
 
 
-RESTART_PLANET_PAINTER = True
+def load_config():
+    """Load configuration from custom_config.json."""
+    with open(CONFIG_PATH, "r") as f:
+        return json.load(f)
 
 
-class ZeroPlanetWorks:
-    def __init__(self, restart_on_finish=True):
-        self.script_dir = SCRIPT_DIR
-        self.restart_planet_painter = restart_on_finish
+def get_planet_material_paths():
+    """Yield (planet_name, texture_path, material_path) for each .biom in the plugin."""
+    config = load_config()
+    plugin_name = config.get("plugin_name", "PLUGINNOTFOUND")
 
-    def is_process_running(self, process_name):
-        for proc in psutil.process_iter(["name", "cmdline"]):
-            try:
-                cmdline = proc.info.get("cmdline")
-                if cmdline and any(process_name in str(arg) for arg in cmdline):
-                    return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-        return False
+    biom_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
+    if not biom_dir.exists():
+        raise FileNotFoundError(f"Expected biom directory not found: {biom_dir}")
 
-    def run_materials_processing(self):
-        print("Materials invoice processing.")
-        time.sleep(2)  # Simulated processing time
-        print("Materials application approved.")
+    biom_files = sorted(biom_dir.glob("*.biom"))
 
-        if self.restart_planet_painter and not self.is_process_running(
-            "PlanetPainter.py"
-        ):
-            print("Restarting PlanetPainter...")
-            subprocess.run([sys.executable, str(self.script_dir / "PlanetPainter.py")])
+    for biom_path in biom_files:
+        planet_name = biom_path.stem
 
-        sys.stdout.flush()
+        texture_path = (
+            DDS_OUTPUT_DIR
+            / plugin_name
+            / "planets"
+            / planet_name
+            / f"{planet_name}_color.dds"
+        )
+        material_path = (
+            PLUGINS_DIR
+            / f"{plugin_name}"
+            / MAT_OUTPUT_DIR
+            / f"{plugin_name}"
+            / "planets"
+            / f"{planet_name}.mat"
+        )
 
-    # Dummy extension methods for future use
-    def check_resources(self):
-        print("Materials shipment received.")
+        print(f"Debug: Material Path {material_path}")
+        print(f"Exists {Path(material_path).exists()}")
 
-    def export_report(self):
-        print("Exporting processing report...")
+        write_material_file(material_path, plugin_name, planet_name)
 
-    def log_status(self, message):
-        print(f"{message}")
+        yield planet_name, texture_path, material_path
+
+
+def write_material_file(material_path, plugin_name, planet_name):
+    """Generate and write a formatted .mat file using placeholders."""
+
+    # Convert string path to Path object if necessary
+    output_path = Path(material_path)
+
+    # Ensure the parent directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Read the template file and replace placeholders
+    template_path = MATERIAL_PATH  # ✅ Your template file location
+    try:
+        with open(template_path, "r") as f:
+            mat_content = f.read()
+
+        # Replace placeholders
+        mat_content = mat_content.replace("plugin_name", plugin_name)
+        mat_content = mat_content.replace("planet_name", planet_name)
+
+        # Write the updated material file
+        with open(output_path, "w") as f:
+            f.write(mat_content)
+
+        print(f"Material file written to: {output_path}")
+
+    except FileNotFoundError:
+        print(f"Template file not found: {template_path}", file=sys.stderr)
 
 
 def main():
-    print("=== Starting PlanetMaterials ===", flush=True)
-    zpw = ZeroPlanetWorks()
-    zpw.log_status("Materialization ordered.")
-    zpw.check_resources()
-    zpw.run_materials_processing()
+    """Run material processing and print results."""
+    print("=== Starting Material Path Processing ===")
 
 
 if __name__ == "__main__":
-    main()
+    main()  #
