@@ -131,7 +131,7 @@ def load_biome_data(
 ) -> dict[int, dict]:
     """Load biome data (colors and heights) from Biomes.csv."""
     biome_data = {}
-    print(f"Loading biome data from {csv_path}")
+    handle_news(None, "info", f"Loading biome data from {csv_path}")
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         expected_columns = {
@@ -159,7 +159,7 @@ def load_biome_data(
             raise ValueError(f"Biomes.csv missing required columns: {missing}")
 
         for i, row in enumerate(reader):
-            print(f"Processing row {i + 1}: {row}")
+            handle_news(None, "info", f"Processing row {i + 1}: {row}")
             try:
                 form_id_str = row.get("FormID")
                 if not form_id_str or not isinstance(form_id_str, str):
@@ -178,9 +178,6 @@ def load_biome_data(
                 form_id = int(form_id_str, 16)
 
                 if used_biome_ids is not None and form_id not in used_biome_ids:
-                    print(
-                        f"Row {i + 1} skipped: FormID {form_id_str} (int: {form_id}) not in used_biome_ids"
-                    )
                     continue
 
                 red = int(row.get("Red", 128))
@@ -195,7 +192,7 @@ def load_biome_data(
                     "category": category,
                 }
 
-                print(
+                handle_news(None, "info",
                     f"Row {i + 1} accepted: FormID {form_id} -> color={red, green, blue}, height={height}, category={category}"
                 )
 
@@ -210,7 +207,7 @@ def load_biome_data(
     if not biome_data:
         handle_news(None, "error", "No valid biome data loaded from Biomes.csv")
     else:
-        print(f"Finished loading {len(biome_data)} biomes.")
+        handle_news(None, "info", f"Finished loading {len(biome_data)} biomes.")
 
     return biome_data
 
@@ -439,64 +436,94 @@ def generate_heightmap(grid, biome_data):
     return Image.fromarray(elevation, mode="L")
 
 
-def generate_rough_map(
-        height_img,
-        biome_grid,
-        biome_data,
-        ocean_img=None,
-        fractal_map=None,
-        base_value=None,
-        noise_scale=None,
-        slope_strength=0.5,
-    ):
+from PIL import Image
+import numpy as np
 
+
+def generate_rough_map(
+    height_img,
+    biome_grid,
+    biome_data,
+    ocean_img=None,
+    fractal_map=None,
+    base_value=None,
+    noise_scale=None,
+    slope_strength=0.5,
+):
+    # Convert height image to normalized array
     height = np.asarray(height_img).astype(np.float32) / 255.0
     H, W = height.shape
     roughness = np.zeros((H, W), dtype=np.float32)
 
-    # Base multiplier fallback
+    # Config fallbacks
     if base_value is None:
-        base_value = 1.0 - config.get("texture_roughness_base", 0.36)
+        base_value = 1.0 - config.get("texture_roughness_base", 0.36)  # e.g., 0.64
     if noise_scale is None:
-        noise_scale = config.get("texture_noise", 0.95)
+        noise_scale = config.get("texture_noise", 0.95) * 0.2  # Reduce noise impact
 
     # 1. Slope roughness (from gradient)
     dy, dx = np.gradient(height)
     slope = np.sqrt(dx**2 + dy**2)
-    slope_roughness = slope * slope_strength
+    slope_roughness = np.clip(slope * slope_strength, 0, 1) * 0.3  # Weight slope at 30%
     roughness += slope_roughness
+    handle_news(None, "info",
+        f"Slope roughness range: {slope_roughness.min():.3f} - {slope_roughness.max():.3f}"
+    )
 
-    # 2. Biome category influence
+    # 2. Biome category influence with height modulation
     biome_rough_lookup = {
-        "canyon": 0.85,
-        "mountain": 0.75,
-        "hills": 0.65,
-        "archipelago": 0.55,
-        "fields": 0.5,
-        "ocean": 0.4,
-        "desert": 0.35,
-        "flat": 0.3,
+        "canyon": 0.35,
+        "mountain": 0.45,
+        "hills": 0.3,
+        "archipelago": 0.4,
+        "fields": 0.2,
+        "ocean": 0.01,
+        "desert": 0.25,
+        "flat": 0.15,
     }
-
     biome_rough_map = np.full_like(roughness, base_value)
     for form_id, info in biome_data.items():
         category = info.get("BiomeCategory", "").lower()
-        weight = biome_rough_lookup.get(category, base_value)
-        biome_rough_map[biome_grid == form_id] = weight
+        base_roughness = biome_rough_lookup.get(category, base_value)
+        if base_roughness is None:
+            base_roughness = base_value or 0.5
+        # Modulate by height to emphasize elevation within biomes
+        mask = biome_grid == form_id
+        biome_rough_map[mask] = base_roughness * (
+            1 + height[mask] * 5
+        )  # Height boosts roughness
+        handle_news(None, "info",
+            f"Biome {form_id} ({category}): roughness {base_roughness}, mask size {np.sum(mask)}"
+        )
 
-    roughness += biome_rough_map
+    roughness += biome_rough_map * 0.5  # Weight biome contribution at 50%
+    handle_news(None, "info",
+        f"Biome roughness range: {biome_rough_map.min():.3f} - {biome_rough_map.max():.3f}"
+    )
 
     # 3. Ocean suppression
-    if ocean_img:
+    if ocean_img is not None:
         ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255.0  # 1.0 = ocean
-        roughness *= 1.0 - ocean_mask * 0.6  # Reduce roughness over water
+        roughness *= np.clip(1.0 - ocean_mask * 0.9, 0, 1)  # Stronger suppression
+        handle_news(None, "info", f"Ocean mask range: {ocean_mask.min():.3f} - {ocean_mask.max():.3f}")
 
     # 4. Fractal noise contribution
     if fractal_map is not None:
-        roughness += noise_scale * fractal_map
+        # Normalize fractal_map to [0, 1] if it's not already
+        fractal_map = (fractal_map - fractal_map.min()) / (
+            fractal_map.max() - fractal_map.min() + 1e-6
+        )
+        roughness += noise_scale * fractal_map * 0.2  # Weight noise at 20%
+        handle_news(None, "info",
+            f"Fractal map range (after norm): {fractal_map.min():.3f} - {fractal_map.max():.3f}"
+        )
 
-    # Final clamp and convert
-    roughness = np.clip(roughness, 0, 1)
+    # Normalize and clamp
+    roughness = np.clip(
+        roughness / (0.3 + 0.5 + 0.2), 0, 1
+    )  # Normalize by total weights
+    handle_news(None, "info", f"Final roughness range: {roughness.min():.3f} - {roughness.max():.3f}")
+
     return Image.fromarray((roughness * 255).astype(np.uint8), mode="L")
 
 
@@ -599,8 +626,8 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
         biome_data=biome_data,
         ocean_img=ocean_image,
         fractal_map=fractal_map,
-        base_value=config.get("texture_base", 0.5),
-        noise_scale=config.get("texture_noise", 0.95),
+        base_value=config.get("texture_roughness_base", 0.2),
+        noise_scale=config.get("texture_roughness", 0.15),
         slope_strength=0.5,
     )
 
@@ -650,7 +677,7 @@ def generate_ao_map(grid, biome_data):
     ao = np.clip((blurred - elevation), 0, 255)
     ao = 255 - (ao / ao.max() * 255)  # Normalize and invert
     ao_image = Image.fromarray(ao.astype(np.uint8), mode="L")
-    print(f"AO map generated: min={ao.min()}, max={ao.max()}, shape={ao.shape}")
+    handle_news(None, "info", f"AO map generated: min={ao.min()}, max={ao.max()}, shape={ao.shape}")
     return ao_image
 
 
@@ -712,16 +739,16 @@ def convert_png_to_dds(
 
 def main():
     global plugin_name
-    print(f"=== Landscaping permit approved for: {plugin_name} ===", flush=True)
+    print(f"Landscaping permit approved for: {plugin_name}", flush=True)
     print("=== Starting PlanetTextures ===", flush=True)
     parser = argparse.ArgumentParser(description="Generate PNG and DDS textures from .biom files")
     parser.add_argument("biom_file", nargs="?", help="Path to the .biom file (for preview mode)")
     parser.add_argument("--preview", action="store_true", help="Run in preview mode")
     args = parser.parse_args()
-    print(f"Arguments: biom_file={args.biom_file}, preview={args.preview}")
+    handle_news(None, "info", f"Arguments: biom_file={args.biom_file}, preview={args.preview}")
 
     PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"PNG output directory: {PNG_OUTPUT_DIR}")
+    handle_news(None, "info", f"PNG output directory: {PNG_OUTPUT_DIR}")
 
     if args.preview and args.biom_file:
         biom_files = [Path(args.biom_file)]
@@ -731,7 +758,7 @@ def main():
             sys.exit(1)
     else:
         biom_files = [f for f in (PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name).rglob("*.biom")]
-        print(f"Found .biom files: {biom_files}")
+        handle_news(None, "info", f"Found .biom files: {biom_files}")
         if not biom_files:
             print("No .biom files found in the output directory.")
             sys.exit(1)
@@ -742,26 +769,26 @@ def main():
             biome_grid_n, biome_grid_s = load_biom_file(biom_path)
             used_biome_ids.update(biome_grid_n.flatten())
             used_biome_ids.update(biome_grid_s.flatten())
-            print(f"Loaded {biom_path.name}: biome IDs = {used_biome_ids}")
+            handle_news(None, "info", f"Loaded {biom_path.name}: biome IDs = {used_biome_ids}")
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
             continue
 
-    print(f"Used biome IDs: {used_biome_ids}")
+    handle_news(None, "info", f"Used biome IDs: {used_biome_ids}")
     biome_data = load_biome_data(CSV_PATH, used_biome_ids)
-    print(f"Loaded biome data: {biome_data}")
+    handle_news(None, "info", f"Loaded biome data: {biome_data}")
     if not biome_data:
         raise ValueError("No valid biome data loaded from Biomes.csv")
 
     keep_pngs = config.get("keep_pngs_after_conversion", True)
     for biom_path in biom_files:
         planet_name = biom_path.stem
-        print(f"Processing {biom_path.name} for planet {planet_name}")
+        handle_news(None, "info", f"Processing blueprint for planet {biom_path.name}")
         try:
             biome_grid_n, biome_grid_s = load_biom_file(biom_path)
-            print(f"Generating textures for {planet_name} North...")
+            handle_news(None, "info", f"Generating textures for {planet_name} North...")
             maps_n = create_biome_image(biome_grid_n, biome_data)
-            print(f"Generating textures for {planet_name} South...")
+            handle_news(None, "info", f"Generating textures for {planet_name} South...")
             maps_s = create_biome_image(biome_grid_s, biome_data)
             maps_n = {k: upscale_image(v) for k, v in maps_n.items()}
             maps_s = {k: upscale_image(v) for k, v in maps_s.items()}

@@ -35,7 +35,7 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout_9">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
@@ -1007,63 +1007,6 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
-       <widget class="QGroupBox" name="groupBox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>140</height>
-         </size>
-        </property>
-        <property name="title">
-         <string>GroupBox</string>
-        </property>
-        <widget class="QTextEdit" name="stderr_widget">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>26</y>
-           <width>480</width>
-           <height>111</height>
-          </rect>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>480</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <family>Fixedsys</family>
-           <pointsize>6</pointsize>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="cursor" stdset="0">
-          <cursorShape>IBeamCursor</cursorShape>
-         </property>
-         <property name="acceptDrops">
-          <bool>false</bool>
-         </property>
-         <property name="placeholderText">
-          <string>Updates...</string>
-         </property>
-        </widget>
-       </widget>
-      </item>
-      <item>
        <widget class="QTabWidget" name="central_widget">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1085,370 +1028,311 @@
         <property name="contextMenuPolicy">
          <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
         </property>
+        <property name="tabPosition">
+         <enum>QTabWidget::TabPosition::South</enum>
+        </property>
+        <property name="tabShape">
+         <enum>QTabWidget::TabShape::Triangular</enum>
+        </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="movable">
          <bool>true</bool>
         </property>
-        <widget class="QWidget" name="color_tab" native="true">
+        <widget class="QWidget" name="tab_14">
          <attribute name="title">
-          <string>Images</string>
+          <string>Textures</string>
          </attribute>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QTabWidget" name="images_tab_widget">
-            <property name="font">
-             <font>
-              <pointsize>8</pointsize>
-              <strikeout>false</strikeout>
-             </font>
-            </property>
-            <property name="layoutDirection">
-             <enum>Qt::LayoutDirection::RightToLeft</enum>
-            </property>
-            <property name="tabPosition">
-             <enum>QTabWidget::TabPosition::South</enum>
-            </property>
-            <property name="tabShape">
-             <enum>QTabWidget::TabShape::Rounded</enum>
-            </property>
-            <property name="currentIndex">
-             <number>7</number>
-            </property>
-            <property name="movable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="tab_8">
-             <attribute name="title">
-              <string>Color</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <item>
-               <widget class="QLabel" name="color_preview_image">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="sizeIncrement">
-                 <size>
-                  <width>100</width>
-                  <height>100</height>
-                 </size>
-                </property>
-                <property name="frameShape">
-                 <enum>QFrame::Shape::NoFrame</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/default.png</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_9">
-             <attribute name="title">
-              <string>Biomes</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_11">
-              <item>
-               <widget class="QLabel" name="biome_preview_image">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_0.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_6">
-             <attribute name="title">
-              <string>Resources</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_12">
-              <item>
-               <widget class="QLabel" name="resource_preview_image">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_1.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_7">
-             <attribute name="title">
-              <string>Normal</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_14">
-              <item>
-               <widget class="QLabel" name="normal_preview_image">
-                <property name="layoutDirection">
-                 <enum>Qt::LayoutDirection::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_3.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_10">
-             <attribute name="title">
-              <string>Surface</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_13">
-              <item>
-               <widget class="QLabel" name="surface_preview_image">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_2.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_11">
-             <attribute name="title">
-              <string>Ambient</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_15">
-              <item>
-               <widget class="QLabel" name="ao_preview_image">
-                <property name="layoutDirection">
-                 <enum>Qt::LayoutDirection::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_3.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_12">
-             <attribute name="title">
-              <string>Ocean</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <item>
-               <widget class="QLabel" name="ocean_preview_image">
-                <property name="layoutDirection">
-                 <enum>Qt::LayoutDirection::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_3.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="tab_13">
-             <attribute name="title">
-              <string>Rough</string>
-             </attribute>
-             <layout class="QHBoxLayout" name="horizontalLayout_16">
-              <item>
-               <widget class="QLabel" name="rough_preview_image">
-                <property name="layoutDirection">
-                 <enum>Qt::LayoutDirection::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap>../assets/images/progress_3.gif</pixmap>
-                </property>
-                <property name="scaledContents">
-                 <bool>true</bool>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab">
-         <attribute name="title">
-          <string>Biomes</string>
-         </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QGroupBox" name="biomes_resources_group">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0" rowspan="3" colspan="3">
+           <widget class="QLabel" name="color_preview_image">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>440</width>
+              <width>351</width>
+              <height>351</height>
+             </size>
+            </property>
+            <property name="sizeIncrement">
+             <size>
+              <width>100</width>
               <height>100</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Shape::NoFrame</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/default.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="biome_preview_image">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_0.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QLabel" name="resource_preview_image">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_1.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QLabel" name="normal_preview_image">
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_3.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="rough_preview_image">
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_3.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="ocean_preview_image">
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_3.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QLabel" name="ao_preview_image">
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_3.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QLabel" name="surface_preview_image">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_2.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="color_tab" native="true">
+         <attribute name="title">
+          <string>Status</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QGroupBox" name="groupBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>471</width>
+              <height>140</height>
+             </size>
+            </property>
+            <property name="title">
+             <string>GroupBox</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_7">
+             <item>
+              <widget class="QTextEdit" name="stderr_widget">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>455</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <family>Fixedsys</family>
+                 <pointsize>6</pointsize>
+                 <bold>false</bold>
+                </font>
+               </property>
+               <property name="cursor" stdset="0">
+                <cursorShape>IBeamCursor</cursorShape>
+               </property>
+               <property name="acceptDrops">
+                <bool>false</bool>
+               </property>
+               <property name="placeholderText">
+                <string>Updates...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="statusout_group">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>471</width>
+              <height>135</height>
              </size>
             </property>
             <property name="font">
              <font>
-              <strikeout>true</strikeout>
+              <bold>true</bold>
              </font>
             </property>
-            <property name="title">
-             <string>Biomes and Resources (NA)</string>
+            <property name="cursor">
+             <cursorShape>IBeamCursor</cursorShape>
             </property>
-            <layout class="QGridLayout" name="gridLayout_4">
-             <item row="0" column="0">
-              <widget class="QCheckBox" name="checkBox">
-               <property name="text">
-                <string>Default</string>
+            <property name="title">
+             <string/>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <item>
+              <widget class="QTextEdit" name="stdout_widget">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="checkBox_3">
-               <property name="text">
-                <string>Selected</string>
+               <property name="minimumSize">
+                <size>
+                 <width>455</width>
+                 <height>190</height>
+                </size>
                </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QCheckBox" name="checkBox_2">
-               <property name="text">
-                <string>Random</string>
+               <property name="font">
+                <font>
+                 <family>Fixedsys</family>
+                 <pointsize>6</pointsize>
+                 <bold>false</bold>
+                </font>
                </property>
-              </widget>
-             </item>
-             <item row="0" column="3">
-              <widget class="QCheckBox" name="checkBox_6">
-               <property name="text">
-                <string>Include Rare Ores</string>
+               <property name="cursor" stdset="0">
+                <cursorShape>IBeamCursor</cursorShape>
                </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QComboBox" name="comboBox">
+               <property name="acceptDrops">
+                <bool>false</bool>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::Shape::StyledPanel</enum>
+               </property>
+               <property name="verticalScrollBarPolicy">
+                <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+               </property>
+               <property name="horizontalScrollBarPolicy">
+                <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+               </property>
                <property name="placeholderText">
-                <string>Biome 01</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QComboBox" name="comboBox_5">
-               <property name="placeholderText">
-                <string>Biome 02</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QComboBox" name="comboBox_9">
-               <property name="placeholderText">
-                <string>Biome 03</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="3">
-              <widget class="QCheckBox" name="checkBox_5">
-               <property name="text">
-                <string>Create Flora CSV</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QComboBox" name="comboBox_2">
-               <property name="placeholderText">
-                <string>Biome 04</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QComboBox" name="comboBox_6">
-               <property name="placeholderText">
-                <string>Biome 05</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QComboBox" name="comboBox_7">
-               <property name="placeholderText">
-                <string>Biome 06</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="3">
-              <widget class="QComboBox" name="comboBox_3">
-               <property name="placeholderText">
-                <string>Biome 07</string>
+                <string>Waiting...</string>
                </property>
               </widget>
              </item>
@@ -1469,208 +1353,235 @@
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_7"/>
         </widget>
-        <widget class="QWidget" name="tab_4">
-         <attribute name="title">
-          <string>System</string>
-         </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_8"/>
-        </widget>
-        <widget class="QWidget" name="tab_5">
-         <attribute name="title">
-          <string>Settings</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <widget class="QGroupBox" name="file_options_group">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>80</height>
-             </size>
-            </property>
-            <property name="title">
-             <string>File Options</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_5">
-             <item row="0" column="2">
-              <widget class="QCheckBox" name="output_mat_files">
-               <property name="font">
-                <font>
-                 <strikeout>true</strikeout>
-                </font>
-               </property>
-               <property name="text">
-                <string>Output .MAT</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="output_dds_files">
-               <property name="text">
-                <string>Output .DDS</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QCheckBox" name="keep_pngs_after_conversion">
-               <property name="toolTip">
-                <string>Keep the PNG files after DDS conversion?</string>
-               </property>
-               <property name="accessibleName">
-                <string>Keep PNGs After Conversion</string>
-               </property>
-               <property name="text">
-                <string>Keep .PNGs</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QCheckBox" name="output_csv_files">
-               <property name="font">
-                <font>
-                 <strikeout>true</strikeout>
-                </font>
-               </property>
-               <property name="text">
-                <string>Create SFTR .csv</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QCheckBox" name="output_biom_files">
-               <property name="text">
-                <string>Output .Biom</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QCheckBox" name="enable_output_log">
-               <property name="font">
-                <font>
-                 <strikeout>true</strikeout>
-                </font>
-               </property>
-               <property name="text">
-                <string>Output .NIF</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="interface_options">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>65</height>
-             </size>
-            </property>
-            <property name="title">
-             <string>Interface Options</string>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_2">
-             <item>
-              <widget class="QComboBox" name="plugins_dropdown">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>35</height>
-                </size>
-               </property>
-               <property name="sizeIncrement">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="placeholderText">
-                <string>Plugin..</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="folders_dropdown">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>35</height>
-                </size>
-               </property>
-               <property name="placeholderText">
-                <string>Folders</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="themes_dropdown">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>35</height>
-                </size>
-               </property>
-               <property name="placeholderText">
-                <string>Themes..</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="statusout_group">
+       <widget class="QGroupBox" name="biomes_resources_group">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
         <property name="minimumSize">
          <size>
-          <width>471</width>
-          <height>135</height>
+          <width>440</width>
+          <height>160</height>
          </size>
         </property>
         <property name="font">
          <font>
-          <bold>true</bold>
+          <strikeout>true</strikeout>
          </font>
         </property>
-        <property name="cursor">
-         <cursorShape>IBeamCursor</cursorShape>
+        <property name="title">
+         <string>Biomes and Resources (NA)</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="2" column="1">
+          <widget class="QComboBox" name="comboBox_5">
+           <property name="placeholderText">
+            <string>Biome 02</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="checkBox_6">
+           <property name="text">
+            <string>Include Rare Ores</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox">
+           <property name="placeholderText">
+            <string>Biome 01</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="comboBox_9">
+           <property name="placeholderText">
+            <string>Biome 03</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QComboBox" name="comboBox_2">
+           <property name="placeholderText">
+            <string>Biome 04</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QComboBox" name="comboBox_6">
+           <property name="placeholderText">
+            <string>Biome 05</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QComboBox" name="comboBox_7">
+           <property name="placeholderText">
+            <string>Biome 06</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QComboBox" name="comboBox_3">
+           <property name="placeholderText">
+            <string>Biome 07</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QRadioButton" name="radioButton">
+           <property name="text">
+            <string>Default</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QRadioButton" name="radioButton_3">
+           <property name="text">
+            <string>Selected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QRadioButton" name="radioButton_2">
+           <property name="text">
+            <string>Random</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="file_options_group">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>80</height>
+         </size>
         </property>
         <property name="title">
-         <string/>
+         <string>File Options</string>
         </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="output_biom_files">
+           <property name="text">
+            <string>Output .Biom</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QCheckBox" name="output_dds_files">
+           <property name="text">
+            <string>Output .DDS</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QCheckBox" name="output_mat_files">
+           <property name="font">
+            <font>
+             <strikeout>true</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Output .MAT</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="keep_pngs_after_conversion">
+           <property name="toolTip">
+            <string>Keep the PNG files after DDS conversion?</string>
+           </property>
+           <property name="accessibleName">
+            <string>Keep PNGs After Conversion</string>
+           </property>
+           <property name="text">
+            <string>Keep .PNGs</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QCheckBox" name="output_csv_files">
+           <property name="font">
+            <font>
+             <strikeout>true</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Create SFTR .csv</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QCheckBox" name="enable_output_log">
+           <property name="font">
+            <font>
+             <strikeout>true</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Output .NIF</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QCheckBox" name="checkBox_5">
+           <property name="text">
+            <string>Create Flora CSV</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="interface_options">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_7">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>71</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Interface Options</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QTextEdit" name="stdout_widget">
+          <widget class="QComboBox" name="themes_dropdown">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>35</height>
+            </size>
+           </property>
+           <property name="placeholderText">
+            <string>Themes..</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="plugins_dropdown">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -1679,34 +1590,31 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>480</width>
+             <width>0</width>
+             <height>35</height>
+            </size>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
              <height>0</height>
             </size>
            </property>
-           <property name="font">
-            <font>
-             <family>Fixedsys</family>
-             <pointsize>6</pointsize>
-             <bold>false</bold>
-            </font>
+           <property name="placeholderText">
+            <string>Plugin..</string>
            </property>
-           <property name="cursor" stdset="0">
-            <cursorShape>IBeamCursor</cursorShape>
-           </property>
-           <property name="acceptDrops">
-            <bool>false</bool>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="verticalScrollBarPolicy">
-            <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
-           </property>
-           <property name="horizontalScrollBarPolicy">
-            <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="folders_dropdown">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>35</height>
+            </size>
            </property>
            <property name="placeholderText">
-            <string>Waiting...</string>
+            <string>Folders</string>
            </property>
           </widget>
          </item>
@@ -2623,50 +2531,29 @@ Edges</string>
          <string>Actions</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="0" column="0" rowspan="3">
-          <widget class="QPushButton" name="preview_command_button">
+         <item row="2" column="1">
+          <widget class="QPushButton" name="exit_command_button">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>60</height>
-            </size>
-           </property>
            <property name="font">
             <font>
              <family>Segoe UI</family>
-             <pointsize>22</pointsize>
+             <pointsize>16</pointsize>
              <bold>true</bold>
-             <kerning>true</kerning>
-             <hintingpreference>PreferDefaultHinting</hintingpreference>
             </font>
            </property>
-           <property name="toolTip">
-            <string>Disables 'Upscale', images output in 256x256.</string>
-           </property>
-           <property name="layoutDirection">
-            <enum>Qt::LayoutDirection::LeftToRight</enum>
-           </property>
-           <property name="autoFillBackground">
-            <bool>false</bool>
-           </property>
            <property name="text">
-            <string>Create
-Planet</string>
+            <string>Exit</string>
            </property>
            <property name="iconSize">
             <size>
-             <width>30</width>
-             <height>30</height>
+             <width>0</width>
+             <height>0</height>
             </size>
-           </property>
-           <property name="autoDefault">
-            <bool>true</bool>
            </property>
            <property name="default">
             <bool>true</bool>
@@ -2740,29 +2627,50 @@ Planet</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QPushButton" name="exit_command_button">
+         <item row="0" column="0" rowspan="3">
+          <widget class="QPushButton" name="preview_command_button">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
            <property name="font">
             <font>
              <family>Segoe UI</family>
-             <pointsize>16</pointsize>
+             <pointsize>22</pointsize>
              <bold>true</bold>
+             <kerning>true</kerning>
+             <hintingpreference>PreferDefaultHinting</hintingpreference>
             </font>
            </property>
+           <property name="toolTip">
+            <string>Disables 'Upscale', images output in 256x256.</string>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
            <property name="text">
-            <string>Exit</string>
+            <string>Create
+Planet</string>
            </property>
            <property name="iconSize">
             <size>
-             <width>0</width>
-             <height>0</height>
+             <width>30</width>
+             <height>30</height>
             </size>
+           </property>
+           <property name="autoDefault">
+            <bool>true</bool>
            </property>
            <property name="default">
             <bool>true</bool>

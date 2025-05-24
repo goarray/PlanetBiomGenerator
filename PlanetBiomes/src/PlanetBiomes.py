@@ -711,7 +711,6 @@ def main():
     )
 
     for planet, biomes in planets.items():
-        print(f"Location: {planet}. approved for ({len(biomes)}) biomes.")
         handle_news(
             None,
             "info",
