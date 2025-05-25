@@ -22,3 +22,13 @@ PlanetBiomes/assets/textures/planets/houdiniplanets/extra/planet_material_warnin
 PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_surface_a_mask.dds
 PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_ocean_mask.dds
 PlanetBiomes/assets/images/textures/planets/houdiniplanets/biomemasks/jemison_color.dds
+PlanetBiomes/csv/blended_biome_colors.png
+PlanetBiomes/csv/natural_palette.csv
+PlanetBiomes/csv/natural_palette.png
+PlanetBiomes/csv/PaletteGenerator.py
+PlanetBiomes/csv/planet_biome_palette.png
+PlanetBiomes/csv/planet_blended_colors.csv
+PlanetBiomes/csv/PlanetColors.csv
+PlanetBiomes/src/BruteHash.py
+PlanetBiomes/assets/BiomesPalette.py
+PlanetBiomes/src/preview.mat

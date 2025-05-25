@@ -55,7 +55,6 @@ from PlanetConstants import (
     PLUGINS_DIR,  # PLUGINS_DIR = BASE_DIR / "Plugins"
     CSV_DIR,
     IMAGE_DIR,
-    DDS_OUTPUT_DIR,
     PNG_OUTPUT_DIR,
     # Config and data files
     CONFIG_PATH,
@@ -330,6 +329,15 @@ def generate_shading(grid, light_source_x=None, light_source_y=None):
     return shading
 
 
+def safe_normalize(arr):
+    min_val = arr.min()
+    max_val = arr.max()
+    range_val = max_val - min_val
+    if range_val == 0:
+        return np.zeros_like(arr)  # or np.full_like(arr, 0.5) if you prefer neutral
+    return (arr - min_val) / range_val
+
+
 def generate_fractal_noise(
     shape, octaves=None, detail_smoothness=None, texture_contrast=None
 ):
@@ -347,9 +355,9 @@ def generate_fractal_noise(
         weight = texture_contrast ** (i * 1.5)
         combined += gaussian_filter(base, sigma=sigma) * weight
 
-    combined = (combined - combined.min()) / (combined.max() - combined.min())
+    combined = safe_normalize(combined)
     combined = np.power(combined, 2)
-    return (combined - combined.min()) / (combined.max() - combined.min())
+    return safe_normalize(combined)
 
 
 def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
@@ -419,7 +427,7 @@ def enhance_brightness(image, bright_factor=None):
     """Enhance image brightness."""
     if bright_factor is None:
         bright_factor = config.get("texture_brightness", 0.74)
-    scaled_factor = bright_factor * 4
+    scaled_factor = bright_factor * 2
     enhancer = ImageEnhance.Brightness(image)
     return enhancer.enhance(scaled_factor)
 
@@ -646,13 +654,17 @@ from scipy.ndimage import sobel
 from PIL import Image
 
 
-def generate_normal_map(height_img, strength=0.5):
+def generate_normal_map(height_img, strength=0.5, invert_height=True):
     # Convert height map to float32 and normalize to [0, 1]
     height = np.asarray(height_img).astype(np.float32) / 255.0
 
+    # Invert height if needed
+    if invert_height:
+        height = 1.0 - height
+
     # Compute gradients using Sobel filter
     dx = sobel(height, axis=1) * strength
-    dy = sobel(height, axis=0) * strength
+    dy = -sobel(height, axis=0) * strength
     dz = np.ones_like(height)  # Z-component for flat surfaces
 
     # Normalize the normal vector
@@ -664,7 +676,7 @@ def generate_normal_map(height_img, strength=0.5):
     # Convert [-1, 1] to [0, 255] for RGB
     r = ((nx + 1) * 0.5 * 255).astype(np.uint8)  # Red = X
     g = ((ny + 1) * 0.5 * 255).astype(np.uint8)  # Green = Y
-    b = ((nz + 1) * 0.5 * 127).astype(np.uint8)  # Blue = Z
+    b = ((nz + 1) * 0.5 * 255).astype(np.uint8)  # Blue = Z, full range
 
     # Stack channels into RGB image
     normal_map = np.stack([r, g, b], axis=-1)
@@ -682,51 +694,55 @@ def generate_ao_map(grid, biome_data):
 
 
 def convert_png_to_dds(
-    png_path, DDS_OUTPUT_DIR, plugin_name, texture_type, dds_name=None
+    png_path, dds_output_dir, plugin_name, texture_type, dds_name=None
 ):
     """Convert a PNG file to DDS using texconv.exe with Starfield-compatible formats."""
     if not TEXCONV_PATH.exists():
         raise FileNotFoundError(f"texconv.exe not found at {TEXCONV_PATH}")
 
-    # Ensure output directory exists
-    DDS_OUTPUT_DIR = DDS_OUTPUT_DIR
-    DDS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    dds_output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine DDS format based on texture type
     format_map = {
         "color": config.get("color_format", "BC7_UNORM"),
         "surface": config.get("surface_format", "BC7_UNORM"),
+        "surface_metal": config.get("surface_format", "BC7_UNORM"),
         "ocean": config.get("ocean_format", "BC4_UNORM"),
+        "ocean_mask": config.get("ocean_format", "BC4_UNORM"),
         "normal": config.get("normal_format", "BC5_SNORM"),
         "rough": config.get("rough_format", "BC4_UNORM"),
         "ao": config.get("ao_format", "BC4_UNORM"),
     }
     dds_format = format_map.get(texture_type, "BC7_UNORM")
 
-    # Construct output DDS path
     texture_filename = dds_name if dds_name else png_path.stem + ".dds"
-    texture_path = DDS_OUTPUT_DIR / texture_filename
+    texture_path = dds_output_dir / texture_filename
 
-    # Build texconv command
+    # Actual output filename from texconv (always .DDS upper-case)
+    texconv_output_name = png_path.stem + ".DDS"
+    texconv_output_path = dds_output_dir / texconv_output_name
+
     cmd = [
         str(TEXCONV_PATH),
         "-f",
         dds_format,
         "-m",
-        "0",  # Generate all mipmaps
-        "-y",  # Overwrite output
+        "0",
+        "-y",
         "-o",
-        str(DDS_OUTPUT_DIR),
+        str(dds_output_dir),
         str(png_path),
     ]
 
-    # Execute texconv
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Rename texconv's output to the desired filename
+        if texconv_output_path.exists() and texconv_output_path != texture_path:
+            texconv_output_path.rename(texture_path)
+
         handle_news(
             None,
             "info",
-            f"Converted {png_path.name} to {texture_path.name} ({dds_format})"
+            f"Converted {png_path.name} to {texture_path.name} ({dds_format})",
         )
         return texture_path
     except subprocess.CalledProcessError as e:
@@ -808,7 +824,12 @@ def main():
                     "rough",
                 ]:
                     temp_filename = f"temp_{texture_type}.png"
-                    png_filename = f"{planet_name}_{hemisphere}_{texture_type}.png"
+                    suffix_map = {
+                        "surface": "surface_metal",
+                        "ocean": "ocean_mask",
+}
+                    suffix = suffix_map.get(texture_type, texture_type)
+                    png_filename = f"{planet_name}_{hemisphere}_{suffix}.png"
                     planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
                     planet_png_dir.mkdir(parents=True, exist_ok=True)
 
@@ -866,18 +887,19 @@ def main():
                             None, "info", f"Combined image saved: {combined_path}"
                         )
 
-                        DDS_OUTPUT_DIR = (
+                        dds_output_dir = (
                             PLUGINS_DIR
                             / plugin_name
                             / "textures"
                             / plugin_name
+                            / "planets"
                             / planet_name
                         )
-                        DDS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                        dds_output_dir.mkdir(parents=True, exist_ok=True)
 
                         dds_name_map = {
                             "color": f"{planet_name}_color.dds",
-                            "surface": f"{planet_name}_surface_a_mask.dds",
+                            "surface": f"{planet_name}_surface_metal.dds",
                             "ocean": f"{planet_name}_ocean_mask.dds",
                             "normal": f"{planet_name}_normal.dds",
                             "rough": f"{planet_name}_rough.dds",
@@ -888,7 +910,7 @@ def main():
                         try:
                             dds_path = convert_png_to_dds(
                                 combined_path,
-                                DDS_OUTPUT_DIR,
+                                dds_output_dir,
                                 plugin_name,
                                 texture_type,
                                 dds_filename,

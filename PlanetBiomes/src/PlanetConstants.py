@@ -24,7 +24,6 @@ TEMP_DIR = OUTPUT_DIR / "temp"
 BIOM_DIR = Path("planetdata/biomemaps")
 DDS_OUTPUT_DIR = OUTPUT_DIR / "textures"
 PNG_OUTPUT_DIR = OUTPUT_DIR / "PNGs"
-MAT_OUTPUT_DIR = Path("materials")
 
 # --- Config and data files ---
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"

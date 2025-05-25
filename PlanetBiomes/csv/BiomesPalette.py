@@ -12,6 +12,7 @@ biome_colors = []
 
 with open("Biomes.csv", "r") as f:
     reader = csv.reader(f)
+    next(reader)
     for row in reader:
         if len(row) < 5:
             continue
