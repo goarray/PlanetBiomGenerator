@@ -37,6 +37,7 @@ import csv
 import os
 import sys
 import shutil
+import math
 from PIL import Image, ImageEnhance
 from PlanetNewsfeed import handle_news
 from PlanetConstants import (
@@ -76,12 +77,18 @@ from PlanetConstants import (
 )
 
 
-# Grid constants
-GRID_SIZE = [256, 256]
-GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
-
 # Global configuration
-config = {}
+def load_config():
+    """Load plugin_name from config.json."""
+    with open(CONFIG_PATH, "r") as f:
+        return json.load(f)
+
+
+config = load_config()
+plugin_name = config.get("plugin_name", "default_plugin")
+
+GRID_SIZE = (256, 256)
+GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
 
 class CsSF_BiomContainer(NamedTuple):
@@ -94,11 +101,11 @@ class CsSF_BiomContainer(NamedTuple):
     resrcGridS: List[int]
 
 
-# Define .biom file structure
+# .biom Structure
 CsSF_Biom = Struct(
     "magic" / Const(0x105, UInt16),
-    "_numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
-    "biomeIds" / Array(this._numBiomes, UInt32),
+    "numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
+    "biomeIds" / Array(this.numBiomes, UInt32),
     Const(2, UInt32),
     Const(GRID_SIZE[0], UInt32),
     Const(GRID_SIZE[1], UInt32),
@@ -113,16 +120,6 @@ CsSF_Biom = Struct(
     Const(GRID_FLATSIZE, UInt32),
     "resrcGridS" / Array(GRID_FLATSIZE, UInt8),
 )
-
-
-def load_config():
-    """Load plugin_name from config.json."""
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
-
-
-config = load_config()
-plugin_name = config.get("plugin_name", "default_plugin")
 
 
 def load_biome_data(
@@ -211,7 +208,7 @@ def load_biome_data(
     return biome_data
 
 
-def load_biom_file(biom_path):
+def load_biom_file(biom_path, used_biome_ids):
     """Load .biom file from the provided path."""
     if not biom_path.exists():
         raise FileNotFoundError(f"Biom file not found at: {biom_path}")
@@ -219,35 +216,40 @@ def load_biom_file(biom_path):
     with open(biom_path, "rb") as f:
         data = cast(CsSF_BiomContainer, CsSF_Biom.parse_stream(f))
 
-    biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(
-        GRID_SIZE[1], GRID_SIZE[0]
-    )
-    biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(
-        GRID_SIZE[1], GRID_SIZE[0]
-    )
+    # Load original 256x256 grids
+    biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(256, 256)
+    biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(256, 256)
+
+    # Extract biome IDs *before* scaling
+    used_biome_ids.update(biome_grid_n.flatten())
+    used_biome_ids.update(biome_grid_s.flatten())
+
+    # Upscale for textures
+    upscale_factor = config["texture_resolution"] // 256
+    biome_grid_n = upscale_grid(biome_grid_n, upscale_factor)
+    biome_grid_s = upscale_grid(biome_grid_s, upscale_factor)
+
+    # Update GRID_SIZE based on upscaled dimensions
+    global GRID_SIZE, GRID_FLATSIZE
+    GRID_SIZE = biome_grid_n.shape  # e.g., (2048, 2048)
+    GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
     return biome_grid_n, biome_grid_s
 
 
-def upscale_image(image, target_size=(1024, 1024)):
-    """Upscale image to target size if enabled in config."""
-    if config.get("upscale_image", False):
-        return image.resize(target_size, Image.Resampling.LANCZOS)
-    return image
-
+def upscale_grid(grid, factor):
+    factor = 2 ** int(math.ceil(math.log2(factor)))  # Ensure factor is a power of 2
+    return np.kron(grid, np.ones((factor, factor), dtype=grid.dtype))
 
 def generate_noise(shape, scale=None):
     """Generate larger-patch high-contrast salt-and-pepper noise."""
     if scale is None:
         scale = config.get("noise_scale", 4.17)
-
     noise = np.random.rand(*shape)
     pepper_mask = noise < (3 * (scale / 100))
     salt_mask = noise > (1 - (3 * (scale / 100)))
-
     noise[pepper_mask] = 0
     noise[salt_mask] = 1
-
     patch_size = int(max(1, scale / 10))
     for y in range(0, shape[0], patch_size):
         for x in range(0, shape[1], patch_size):
@@ -255,7 +257,6 @@ def generate_noise(shape, scale=None):
                 noise[y : y + patch_size, x : x + patch_size] = 0
             elif np.random.rand() > 0.5:
                 noise[y : y + patch_size, x : x + patch_size] = 1
-
     swap_count = int(scale * 5)
     for _ in range(swap_count):
         x1, y1, x2, y2 = (
@@ -271,7 +272,6 @@ def generate_noise(shape, scale=None):
             noise[y2 : y2 + patch_size, x2 : x2 + patch_size],
             noise[y1 : y1 + patch_size, x1 : x1 + patch_size],
         )
-
     return noise
 
 
@@ -409,38 +409,75 @@ def generate_edge_blend(grid, blend_radius=None):
             if any(neighbor != current_biome for neighbor in neighbors):
                 edge_map[y, x] = 1.0
 
-    blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 3 - blend_radius))
+    blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 1 - blend_radius))
     return blurred_map
-
-
-def desaturate_color(rgb, saturate_factor=None):
-    """Adjust color saturation in HSV space."""
-    if saturate_factor is None:
-        saturate_factor = config.get("texture_saturation", 0.29)
-    h, s, v = colorsys.rgb_to_hsv(*[c / 255.0 for c in rgb])
-    s *= saturate_factor
-    r, g, b = colorsys.hsv_to_rgb(h, s, v)
-    return tuple(int(c * 255) for c in (r, g, b))
 
 
 def enhance_brightness(image, bright_factor=None):
     """Enhance image brightness."""
     if bright_factor is None:
         bright_factor = config.get("texture_brightness", 0.74)
-    scaled_factor = bright_factor * 2
+    scaled_factor = bright_factor * 4
     enhancer = ImageEnhance.Brightness(image)
     return enhancer.enhance(scaled_factor)
 
 
+def adjust_tint(rgb, texture_saturation=None, texture_tint=None):
+    if texture_saturation is None:
+        texture_saturation = config.get("texture_saturation", 0.5)
+    if texture_tint is None:
+        texture_tint = config.get("texture_tint", 0.5)
+
+    r, g, b = [c / 255.0 for c in rgb]
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+
+    # Tint range: -0.25 (reddish) to +0.25 (bluish), centered at 0.5 = neutral
+    TINT_ROTATION_MAX = 0.25
+    hue_shift = (texture_tint - 0.5) * 2.0 * TINT_ROTATION_MAX
+    h = (h + hue_shift) % 1.0
+
+    # Saturation scale: 0.5 = unchanged, <0.5 = desaturate, >0.5 = boost
+    if texture_saturation < 0.5:
+        scale = texture_saturation * 2.0  # range [0.0–1.0]
+        s *= scale
+    else:
+        boost = (texture_saturation - 0.5) * 2.0  # range [0.0–1.0]
+        s += (1.0 - s) * boost
+        s = min(s, 1.0)
+
+    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+    return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
+
+
+def desaturate_color(rgb, saturate_factor=None):
+    """Adjust color saturation in HSV space with support for boosting."""
+    if saturate_factor is None:
+        saturate_factor = config.get("texture_saturation", 0.29)
+
+    # Convert to HSV
+    r, g, b = [c / 255.0 for c in rgb]
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+
+    if saturate_factor < 1.0:
+        # Desaturate toward grayscale
+        s = s * saturate_factor
+    else:
+        # Boost saturation above normal (limited to 1.0 max)
+        s = s + (1.0 - s) * (saturate_factor - 1.0)
+        s = min(s, 1.0)
+
+    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+    return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
+
+
 def generate_heightmap(grid, biome_data):
     """Generate heightmap from biome grid using height values from biome_data."""
-    elevation = np.zeros((GRID_SIZE[1], GRID_SIZE[0]), dtype=np.uint8)
-    for y in range(GRID_SIZE[1]):
-        for x in range(GRID_SIZE[0]):
+    height, width = grid.shape
+    elevation = np.zeros((height, width), dtype=np.uint8)
+    for y in range(height):
+        for x in range(width):
             form_id = int(grid[y, x])
-            elevation[y, x] = biome_data.get(form_id, {}).get(
-                "height", 127
-            )  # Fallback to mid-height
+            elevation[y, x] = biome_data.get(form_id, {}).get("height", 127)
     return Image.fromarray(elevation, mode="L")
 
 
@@ -461,18 +498,22 @@ def generate_rough_map(
     # Convert height image to normalized array
     height = np.asarray(height_img).astype(np.float32) / 255.0
     H, W = height.shape
+    if (H, W) != biome_grid.shape:
+        height_img = height_img.resize(biome_grid.shape[::-1], resample=Image.Resampling.NEAREST)
+        height = np.asarray(height_img).astype(np.float32) / 255.0
+        H, W = height.shape
     roughness = np.zeros((H, W), dtype=np.float32)
 
     # Config fallbacks
     if base_value is None:
         base_value = 1.0 - config.get("texture_roughness_base", 0.36)  # e.g., 0.64
     if noise_scale is None:
-        noise_scale = config.get("texture_noise", 0.95) * 0.2  # Reduce noise impact
+        noise_scale = config.get("texture_noise", 0.95) # Reduce noise impact
 
     # 1. Slope roughness (from gradient)
     dy, dx = np.gradient(height)
     slope = np.sqrt(dx**2 + dy**2)
-    slope_roughness = np.clip(slope * slope_strength, 0, 1) * 0.3  # Weight slope at 30%
+    slope_roughness = np.clip(slope * slope_strength, 0, 1) * 0.2  # Weight slope at 20%
     roughness += slope_roughness
     handle_news(None, "info",
         f"Slope roughness range: {slope_roughness.min():.3f} - {slope_roughness.max():.3f}"
@@ -513,7 +554,11 @@ def generate_rough_map(
     if ocean_img is not None:
         ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255.0  # 1.0 = ocean
         roughness *= np.clip(1.0 - ocean_mask * 0.9, 0, 1)  # Stronger suppression
-        handle_news(None, "info", f"Ocean mask range: {ocean_mask.min():.3f} - {ocean_mask.max():.3f}")
+        handle_news(
+            None,
+            "info",
+            f"Ocean mask range: {ocean_mask.min():.3f} - {ocean_mask.max():.3f}",
+        )
 
     # 4. Fractal noise contribution
     if fractal_map is not None:
@@ -521,7 +566,7 @@ def generate_rough_map(
         fractal_map = (fractal_map - fractal_map.min()) / (
             fractal_map.max() - fractal_map.min() + 1e-6
         )
-        roughness += noise_scale * fractal_map * 0.2  # Weight noise at 20%
+        roughness += noise_scale * fractal_map # Weight noise at 20%
         handle_news(None, "info",
             f"Fractal map range (after norm): {fractal_map.min():.3f} - {fractal_map.max():.3f}"
         )
@@ -532,21 +577,25 @@ def generate_rough_map(
     )  # Normalize by total weights
     handle_news(None, "info", f"Final roughness range: {roughness.min():.3f} - {roughness.max():.3f}")
 
-    return Image.fromarray((roughness * 255).astype(np.uint8), mode="L")
+    adjusted = np.where(
+        roughness > 0.6,
+        0.6 + (roughness - 0.6) * 0.4,  # squash values above 0.6 by 60%
+        roughness,
+    )
+
+    return Image.fromarray((adjusted * 255).astype(np.uint8), mode="L")
 
 
 def generate_ocean_mask(grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
-    """Generate ocean mask where height == 0 is black (ocean), else white (land)."""
+    """Generate ocean mask where height == 0 is white (ocean), else black (land)."""
     h, w = grid.shape
-    ocean_mask = np.full((h, w), 255, dtype=np.uint8)  # Default to land (white)
-
+    ocean_mask = np.full((h, w), 0, dtype=np.uint8)  # Default to land (black)
     for y in range(h):
         for x in range(w):
             form_id = int(grid[y, x])
             height = biome_data.get(form_id, {}).get("height", 255)
-            if height == 0:
-                ocean_mask[y, x] = 0  # Ocean
-
+            if height <= 3:
+                ocean_mask[y, x] = max(0, 255 - height**2)  # Ocean
     return Image.fromarray(ocean_mask, mode="L")
 
 
@@ -555,42 +604,42 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
     process_images = config.get("process_images", False)
     bright_factor = config.get("texture_brightness", 0.05)
 
-    # Extract colors from biome_data
+    # Use grid shape instead of GRID_SIZE
+    height, width = grid.shape
     biome_colors = {k: v["color"] for k, v in biome_data.items()}
 
     if not biome_colors:
         print("Error: biome_colors is empty, using default color")
-        color = np.full((GRID_SIZE[1], GRID_SIZE[0], 3), default_color, dtype=np.uint8)
-        dummy_grayscale = np.zeros((GRID_SIZE[1], GRID_SIZE[0]), dtype=np.uint8)
+        color = np.full((height, width, 3), default_color, dtype=np.uint8)
+        dummy_grayscale = np.zeros((height, width), dtype=np.uint8)
         return {
             "color": Image.fromarray(color),
             "surface": Image.fromarray(dummy_grayscale, mode="L"),
             "ocean": Image.fromarray(dummy_grayscale.copy(), mode="L"),
-            "normal": Image.fromarray(color, mode="L"),
+            "normal": Image.fromarray(color, mode="L"),  # Adjust if needed
             "rough": Image.fromarray(dummy_grayscale.copy(), mode="L"),
             "ao": Image.fromarray(dummy_grayscale.copy(), mode="L"),
         }
 
     fractal_map = None
-
-    color = np.zeros((GRID_SIZE[1], GRID_SIZE[0], 3), dtype=np.uint8)
+    color = np.zeros((height, width, 3), dtype=np.uint8)
     if process_images:
         noise_map = generate_noise(
-            (GRID_SIZE[1], GRID_SIZE[0]), scale=config.get("noise_scale", 4.17)
+            (height, width), scale=config.get("noise_scale", 4.17)
         )
         elevation_map = generate_elevation(grid, biome_data)
         elevation_map = generate_craters(elevation_map)
         edge_blend_map = generate_edge_blend(grid)
         shading_map = generate_shading(elevation_map)
-        fractal_map = generate_fractal_noise((GRID_SIZE[1], GRID_SIZE[0]))
+        fractal_map = generate_fractal_noise((height, width))
         bright_factor = config.get("texture_brightness", 0.74)
 
-        for y in range(GRID_SIZE[1]):
-            for x in range(GRID_SIZE[0]):
+        for y in range(height):
+            for x in range(width):
                 form_id = int(grid[y, x])
                 biome_color = biome_data.get(form_id, {}).get("color", default_color)
                 biome_color = tuple(int(v) for v in biome_color)
-                lat_factor = abs((y / GRID_SIZE[1]) - 0.5) * 0.4
+                lat_factor = abs((y / height) - 0.5) * 0.4
                 elevation_factor = elevation_map[y, x] / 255.0
                 shaded_color = tuple(
                     int(c * (0.8 + 0.2 * elevation_factor)) for c in biome_color
@@ -613,10 +662,12 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
                     np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
                     for c in blended_color
                 )
-                color[y, x] = final_color
+                tinted_color = adjust_tint(final_color)
+                desaturated_color = desaturate_color(tinted_color)
+                color[y, x] = desaturated_color
     else:
-        for y in range(GRID_SIZE[1]):
-            for x in range(GRID_SIZE[0]):
+        for y in range(height):
+            for x in range(width):
                 form_id = int(grid[y, x])
                 color[y, x] = biome_data.get(form_id, {}).get("color", default_color)
 
@@ -624,9 +675,9 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
     if process_images:
         color_image = enhance_brightness(color_image, bright_factor)
 
+    # Generate other maps
     surface_image = generate_heightmap(grid, biome_data)
     ocean_image = generate_ocean_mask(grid, biome_data)
-    normal_image = generate_normal_map(surface_image)
     ao_image = generate_ao_map(grid, biome_data)
     rough_image = generate_rough_map(
         height_img=surface_image,
@@ -638,6 +689,11 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
         noise_scale=config.get("texture_roughness", 0.15),
         slope_strength=0.5,
     )
+
+    # Generate normal map from the final color image
+    # Convert color_image to grayscale if generate_normal_map requires a heightmap
+    color_image_grayscale = color_image.convert("L")  # Convert to grayscale
+    normal_image = generate_normal_map(color_image_grayscale)
 
     return {
         "color": color_image,
@@ -654,7 +710,7 @@ from scipy.ndimage import sobel
 from PIL import Image
 
 
-def generate_normal_map(height_img, strength=0.5, invert_height=True):
+def generate_normal_map(height_img, strength=0.1, invert_height=True):
     # Convert height map to float32 and normalize to [0, 1]
     height = np.asarray(height_img).astype(np.float32) / 255.0
 
@@ -665,7 +721,7 @@ def generate_normal_map(height_img, strength=0.5, invert_height=True):
     # Compute gradients using Sobel filter
     dx = sobel(height, axis=1) * strength
     dy = -sobel(height, axis=0) * strength
-    dz = np.ones_like(height)  # Z-component for flat surfaces
+    dz = np.ones_like(height) # Z-component for flat surfaces
 
     # Normalize the normal vector
     length = np.sqrt(dx**2 + dy**2 + dz**2)
@@ -703,7 +759,7 @@ def convert_png_to_dds(
     dds_output_dir.mkdir(parents=True, exist_ok=True)
 
     format_map = {
-        "color": config.get("color_format", "BC7_UNORM"),
+        "color": config.get("color_format", "BC7_UNORM_SRGB"),
         "surface": config.get("surface_format", "BC7_UNORM"),
         "surface_metal": config.get("surface_format", "BC7_UNORM"),
         "ocean": config.get("ocean_format", "BC4_UNORM"),
@@ -725,7 +781,7 @@ def convert_png_to_dds(
         str(TEXCONV_PATH),
         "-f",
         dds_format,
-        "-m",
+        #"-m",
         "0",
         "-y",
         "-o",
@@ -745,9 +801,6 @@ def convert_png_to_dds(
             f"Converted {png_path.name} to {texture_path.name} ({dds_format})",
         )
         return texture_path
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {png_path.name} to DDS: {e.stderr}")
-        raise
     except FileNotFoundError:
         print(f"Error: texconv.exe not found at {TEXCONV_PATH}")
         raise
@@ -782,9 +835,7 @@ def main():
     used_biome_ids = set()
     for biom_path in biom_files:
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path)
-            used_biome_ids.update(biome_grid_n.flatten())
-            used_biome_ids.update(biome_grid_s.flatten())
+            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids)
             handle_news(None, "info", f"Loaded {biom_path.name}: biome IDs = {used_biome_ids}")
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
@@ -801,13 +852,13 @@ def main():
         planet_name = biom_path.stem
         handle_news(None, "info", f"Processing blueprint for planet {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path)
+            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids)
             handle_news(None, "info", f"Generating textures for {planet_name} North...")
             maps_n = create_biome_image(biome_grid_n, biome_data)
             handle_news(None, "info", f"Generating textures for {planet_name} South...")
             maps_s = create_biome_image(biome_grid_s, biome_data)
-            maps_n = {k: upscale_image(v) for k, v in maps_n.items()}
-            maps_s = {k: upscale_image(v) for k, v in maps_s.items()}
+            #maps_n = {k: upscale_image(v) for k, v in maps_n.items()}
+            #maps_s = {k: upscale_image(v) for k, v in maps_s.items()}
 
             once_per_run = False
             copied_textures = set()
@@ -868,16 +919,26 @@ def main():
                 "ao",
             ]:
                 planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
-                north_path = planet_png_dir / f"{planet_name}_North_{texture_type}.png"
-                south_path = planet_png_dir / f"{planet_name}_South_{texture_type}.png"
-                combined_path = planet_png_dir / f"{planet_name}_{texture_type}.png"
+                # Use suffix_map to get the correct filename suffix
+                suffix_map = {
+                    "surface": "surface_metal",
+                    "ocean": "ocean_mask",
+                }
+                suffix = suffix_map.get(texture_type, texture_type)
+                north_path = planet_png_dir / f"{planet_name}_North_{suffix}.png"
+                south_path = planet_png_dir / f"{planet_name}_South_{suffix}.png"
+                combined_path = planet_png_dir / f"{planet_name}_{suffix}.png"
 
                 if north_path.exists() and south_path.exists():
                     try:
                         north_img = Image.open(north_path)
                         south_img = Image.open(south_path)
                         combined_img = Image.new(
-                            "RGB" if texture_type != "ao" else "L",
+                            (
+                                "RGB"
+                                if texture_type not in ["ao", "ocean", "rough"]
+                                else "L"
+                            ),
                             (north_img.width, north_img.height + south_img.height),
                         )
                         combined_img.paste(north_img, (0, 0))

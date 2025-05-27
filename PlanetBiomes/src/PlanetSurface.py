@@ -57,38 +57,6 @@ GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 # Global configuration
 config = {}
 
-
-class CsSF_BiomContainer(NamedTuple):
-    magic: int
-    numBiomes: int
-    biomeIds: List[int]
-    biomeGridN: List[int]
-    resrcGridN: List[int]
-    biomeGridS: List[int]
-    resrcGridS: List[int]
-
-
-# Define .biom file structure
-CsSF_Biom = Struct(
-    "magic" / Const(0x105, UInt16),
-    "_numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
-    "biomeIds" / Array(this._numBiomes, UInt32),
-    Const(2, UInt32),
-    Const(GRID_SIZE[0], UInt32),
-    Const(GRID_SIZE[1], UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "biomeGridN" / Array(GRID_FLATSIZE, UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "resrcGridN" / Array(GRID_FLATSIZE, UInt8),
-    Const(GRID_SIZE[0], UInt32),
-    Const(GRID_SIZE[1], UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "biomeGridS" / Array(GRID_FLATSIZE, UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "resrcGridS" / Array(GRID_FLATSIZE, UInt8),
-)
-
-
 def load_config():
     """Load plugin_name from config.json."""
     with open(CONFIG_PATH, "r") as f:
@@ -118,21 +86,3 @@ def load_biome_colors(csv_path, used_biome_ids, saturate_factor=None):
                 print(f"Warning: Invalid row in Biomes.csv: {row}. Skipping.")
 
     return biome_colors
-
-
-def load_biom_file(biom_path):
-    """Load .biom file from the provided path."""
-    if not biom_path.exists():
-        raise FileNotFoundError(f"Biom file not found at: {biom_path}")
-
-    with open(biom_path, "rb") as f:
-        data = cast(CsSF_BiomContainer, CsSF_Biom.parse_stream(f))
-
-    biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(
-        GRID_SIZE[1], GRID_SIZE[0]
-    )
-    biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(
-        GRID_SIZE[1], GRID_SIZE[0]
-    )
-
-    return biome_grid_n, biome_grid_s

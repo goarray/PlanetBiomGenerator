@@ -176,6 +176,19 @@ def load_config():
             "enable_resource": False,
             "enable_ocean": False,
             "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
+            "number_tect_plates": 5,
+            "boundary_width": 20,
+            "boundary_noise_scale": 12.0,
+            "boundary_noise_octaves": 3,
+            "boundary_noise_persistence": 2.3,
+            "boundary_noise_lacunarity": 2.0,
+            "convergent_elevation": 0.6,
+            "divergent_depression": 0.4,
+            "subduction_elevation": 0.5,
+            "elevation_smoothing": 5,
+            "distort_scale": 40.0,
+            "distort_magnitude": 115.0,
+            "center_jitter": 8.0,
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(DEFAULT_CONFIG_PATH, "w") as f:
@@ -206,11 +219,23 @@ def save_config():
 
 def update_value(key, val, index=None):
     """Update configuration value and save to file."""
+    tectonic_slider_config = {
+        "number_tect_plates": (1, 160),
+        "boundary_width": (1, 100),
+        "boundary_noise_scale": (1, 20),
+        "boundary_noise_octaves": (1, 60),
+        "boundary_noise_persistence": (1, 20.0),
+        "boundary_noise_lacunarity": (1, 20.0),
+        "elevation_smoothing": (1, 100),
+        "distort_scale": (1, 100),
+        "distort_magnitude": (1, 200),
+        "center_jitter": (0, 200),
+    }
     if key not in config:
         print(f"Warning: Key '{key}' not found in config.")
         return
 
-    if key == "user_seed":
+    elif key == "user_seed" or key == "texture_resolution_scale" or key in tectonic_slider_config:
         config[key] = int(val)
     elif isinstance(config[key], bool):
         config[key] = bool(val)
@@ -554,6 +579,13 @@ class MainWindow(QMainWindow):
     rough_preview_image: QLabel
     stdout_widget: QTextEdit
     stderr_widget: QTextEdit
+    themes_dropdown: QComboBox
+    plugins_dropdown: QComboBox
+    folders_dropdown: QComboBox
+    seed_display: QLCDNumber
+    texture_resolution_display: QLCDNumber
+    user_seed: QSlider
+    texture_resolution_scale: QSlider
     preview_command_button: QPushButton
     halt_command_button: QPushButton
     exit_command_button: QPushButton
@@ -561,14 +593,9 @@ class MainWindow(QMainWindow):
     set_equator_bias_button: QPushButton
     set_balanced_bias_button: QPushButton
     set_polar_bias_button: QPushButton
-    themes_dropdown: QComboBox
-    plugins_dropdown: QComboBox
-    folders_dropdown: QComboBox
     open_plugins_button: QPushButton
     open_output_button: QPushButton
     open_input_button: QPushButton
-    seed_display: QLCDNumber
-    user_seed: QSlider
 
     def __init__(self):
         super().__init__()
@@ -780,8 +807,10 @@ class MainWindow(QMainWindow):
                         or button_name == saved_biome_bias
                     )
 
-            # Update seed display
+            # Update displays
             self.seed_display.display(config.get("user_seed", 0))
+            self.texture_resolution_display.display(config.get("texture_resolution", 111))
+
             self.refresh_plugin_list()
             plugin_name = config.get("plugin_name", "preview.csv")
             if "plugin_index" in config and plugin_name in config["plugin_index"]:
@@ -913,6 +942,7 @@ class MainWindow(QMainWindow):
             "zone_04": "zone_04",
             "zone_05": "zone_05",
             "zone_06": "zone_06",
+            "texture_resolution_scale": "texture_resolution_scale",
             "texture_brightness": "texture_brightness",
             "texture_saturation": "texture_saturation",
             "texture_edges": "texture_edges",
@@ -924,6 +954,19 @@ class MainWindow(QMainWindow):
             "texture_perlin": "texture_perlin",
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
+            "number_tect_plates": "number_tect_plates",
+            "boundary_width": "boundary_width",
+            "boundary_noise_scale": "boundary_noise_scale",
+            "boundary_noise_octaves": "boundary_noise_octaves",
+            "boundary_noise_persistence": "boundary_noise_persistence",
+            "boundary_noise_lacunarity": "boundary_noise_lacunarity",
+            "convergent_elevation": "convergent_elevation",
+            "divergent_depression": "divergent_depression",
+            "subduction_elevation": "subduction_elevation",
+            "elevation_smoothing": "elevation_smoothing",
+            "distort_scale": "distort_scale",
+            "distort_magnitude": "distort_magnitude",
+            "center_jitter": "center_jitter",
         }
 
         reset_buttons = [
@@ -978,16 +1021,38 @@ class MainWindow(QMainWindow):
                 value = config.get(key, 0)
 
                 min_val, max_val = 0.1, 1
+                # Define configurable sliders
+                tectonic_slider_config = {
+                    "number_tect_plates": (1, 160),
+                    "boundary_width": (1, 100),
+                    "boundary_noise_scale": (1, 20),
+                    "boundary_noise_octaves": (1, 60),
+                    "boundary_noise_persistence": (1, 20.0),
+                    "boundary_noise_lacunarity": (1, 20.0),
+                    "elevation_smoothing": (1, 100),
+                    "distort_scale": (1, 100),
+                    "distort_magnitude": (1, 200),
+                    "center_jitter": (0, 200),
+                }
                 # Define special value handling separately if needed
-                if key == "user_seed":
-                    slider.setRange(0, 9999999)
+                if key in tectonic_slider_config:
+                    min_val, max_val = tectonic_slider_config[key]
+                    slider.setRange(1, 5)
+                    slider.setValue(int(value))  # Assume `value` is a default starting point
+                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
+                elif key == "user_seed":
+                    slider.setRange(0, 99999)
+                    slider.setValue(int(value))
+                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
+                elif key == "texture_resolution_scale":
+                    slider.setRange(1, 8)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 else:
                     if key == "noise_amplitude":
                         max_val = 0.25
                     if key == "distortion_scale":
-                        max_val = 0.5
+                        max_val = 1
 
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))
@@ -1071,6 +1136,21 @@ class MainWindow(QMainWindow):
             )
         )
 
+        # Setup resolution display
+        texture_resolution = config["texture_resolution_scale"] * 256
+        self.texture_resolution_display.display(texture_resolution)
+        self.texture_resolution_scale.valueChanged.connect(
+            lambda val: (
+                update_value(
+                    "texture_resolution", 256 * int(val)
+                ),  # Update config correctly
+                update_value("texture_resolution_scale", int(val)),  # Keep scale synced
+                self.texture_resolution_display.display(
+                    256 * int(val)
+                ),  # Show multiplied resolution
+            )
+        )
+
     def change_theme(self, theme_name):
         """Apply the selected theme, update stdout, and save to config."""
 
@@ -1123,6 +1203,7 @@ class MainWindow(QMainWindow):
 
         # Update seed display
         self.seed_display.display(config.get("user_seed", 0))
+        self.texture_resolution_display.display(config.get("texture_resolution", 1))
 
         # Update bias radio buttons
         light_bias = config.get("light_bias", "light_bias_cc")

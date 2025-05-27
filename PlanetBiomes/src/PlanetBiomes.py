@@ -28,7 +28,7 @@ from PlanetConstants import (
 # Third Party Libraries
 import scipy.ndimage
 import noise
-from noise import snoise2
+from noise import snoise2, pnoise2
 import numpy as np
 from PIL import Image
 from scipy.ndimage import (
@@ -174,12 +174,18 @@ def generate_hemisphere_patterns(
         np.random.seed(get_seed(config) + seed_offset)
         pattern = generate_squircle_pattern(shape, config.get("squircle_factor", 0.5))
 
+        # Generate tectonic data within the function
+        plate_map, boundary_map, elevation_map = generate_plate_map(shape, config)
+
+        # Apply elevation influence to pattern
+        pattern += config.get("elevation_influence", 0.3) * elevation_map
+
         zone_keys = sorted(k for k in config if k.startswith("zone_"))
         weights = [config[k] for k in zone_keys]
 
         pattern = tilt_zone_weights(pattern, tilt_factor=config.get("zoom_factor", 1.0))
 
-        if config.get("enable_biases", False):        
+        if config.get("enable_biases", False):
             pattern = remap_biome_weights(pattern, weights)
 
         if config.get("enable_noise", False):
@@ -194,6 +200,13 @@ def generate_hemisphere_patterns(
         if config.get("enable_anomalies", False):
             pattern = apply_anomalies(pattern, config)
 
+        # Apply boundary effects (e.g., volcanic biomes near subduction zones)
+        if config.get("enable_tectonic_biomes", False):
+            subduction_mask = boundary_map == 3
+            pattern[subduction_mask] += config.get("subduction_biome_boost", 0.2)
+            divergent_mask = boundary_map == 2
+            pattern[divergent_mask] -= config.get("divergent_biome_depress", 0.1)
+
         # Normalize before return
         pattern = (pattern - pattern.min()) / (pattern.max() - pattern.min() + 1e-6)
         return pattern
@@ -203,7 +216,61 @@ def generate_hemisphere_patterns(
 
     north, south = stitch_hemispheres(north, blend_px=50)
 
+    # Save tectonic maps for debugging (only for north hemisphere to avoid duplication)
+    if config.get("save_tectonic_maps", False):
+        plate_map, boundary_map, elevation_map = generate_plate_map(shape, config)
+        save_plate_map_png(plate_map, str(TEMP_DIR), "plate_map")
+        save_boundary_map_png(boundary_map, str(TEMP_DIR), "boundary_map")
+        save_elevation_map_png(elevation_map, str(TEMP_DIR), "elevation_map")
+
     return north, south
+
+
+def save_plate_map_png(plate_map: np.ndarray, path_out: str, suffix: str = ""):
+    """Save plate map as a color PNG image."""
+    path = os.path.join(path_out, f"temp_plate_map{suffix}.png")
+    os.makedirs(path_out, exist_ok=True)
+    h, w = plate_map.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+    unique_plates = np.unique(plate_map)
+    colors = [(np.random.randint(0, 255, 3)).tolist() for _ in unique_plates]
+    for plate_id, color in zip(unique_plates, colors):
+        color_image[plate_map == plate_id] = color
+    image = Image.fromarray(color_image, mode="RGB")
+    image.save(path)
+    handle_news(None, "info", f"Plate map saved to: {path}")
+
+
+def save_boundary_map_png(boundary_map: np.ndarray, path_out: str, suffix: str = ""):
+    """Save boundary map as a color PNG image."""
+    path = os.path.join(path_out, f"temp_boundary_map{suffix}.png")
+    os.makedirs(path_out, exist_ok=True)
+    color_map = {
+        0: (0, 0, 0),  # No boundary
+        1: (255, 0, 0),  # Convergent
+        2: (0, 255, 0),  # Divergent
+        3: (0, 0, 255),  # Subduction
+    }
+    h, w = boundary_map.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+    for key, rgb in color_map.items():
+        color_image[boundary_map == key] = rgb
+    image = Image.fromarray(color_image, mode="RGB")
+    image.save(path)
+    handle_news(None, "info", f"Boundary map saved to: {path}")
+
+
+def save_elevation_map_png(elevation_map: np.ndarray, path_out: str, suffix: str = ""):
+    """Save elevation map as a grayscale PNG image."""
+    path = os.path.join(path_out, f"temp_elevation_map{suffix}.png")
+    os.makedirs(path_out, exist_ok=True)
+    norm_elevation = (elevation_map - elevation_map.min()) / (
+        elevation_map.max() - elevation_map.min() + 1e-6
+    )
+    color_image = (norm_elevation * 255).astype(np.uint8)
+    image = Image.fromarray(color_image, mode="L")
+    image.save(path)
+    handle_news(None, "info", f"Elevation map saved to: {path}")
 
 
 def generate_squircle_pattern(
@@ -213,19 +280,161 @@ def generate_squircle_pattern(
     y = np.linspace(-1, 1, h)[:, None]
     x = np.linspace(-1, 1, w)[None, :]
 
-    # Map squircle_factor from [0, 1] to n:
-    # n = 10 for square, n = 2 for circle, n = 1 for diamond
-    if squircle_factor <= 0.5:
-        n = 10 - squircle_factor * 16  # 10 → 2 as squircle_factor goes 0 → 0.5
-    else:
-        n = 2 - (squircle_factor - 0.5) * 2  # 2 → 1 as squircle_factor goes 0.5 → 1
+    squircle_factor = np.clip(squircle_factor, 0.0, 1.0)
 
-    dist = (np.abs(x) ** n + np.abs(y) ** n) ** (1 / n)
+    if squircle_factor <= 0.3:
+        t = squircle_factor / 0.3
+        n = 10 - 6 * t  # 10 → 4
+
+        dist = (np.abs(x) ** n + np.abs(y) ** n) ** (1 / n)
+
+        # Inverted warp to push edges inward (concave)
+        # cos(pi*x)*cos(pi*y) ranges [-1,1], so square it to [0,1]
+        edge_warp = (np.cos(np.pi * x) * np.cos(np.pi * y)) ** 2
+
+        # Add inward warp: stronger when t is near 0, zero at 0.3
+        dist += 0.15 * (1 - t) * edge_warp
+
+    # Zone 2: Smooth squircle to circle (0.3–0.7)
+    elif squircle_factor <= 0.7:
+        t = (squircle_factor - 0.3) / 0.4
+        n = 4 - 2 * t  # 4 → 2
+        dist = (np.abs(x) ** n + np.abs(y) ** n) ** (1 / n)
+
+    # Zone 3: Circle to diamond (0.7–1.0)
+    else:
+        t = (squircle_factor - 0.7) / 0.3
+        n = 2 - 1 * t  # 2 → 1
+        dist = (np.abs(x) ** n + np.abs(y) ** n) ** (1 / n)
+
     pattern = 1 - dist
     pattern = np.clip(pattern, 0, 1)
     pattern = (pattern - pattern.min()) / (pattern.max() - pattern.min() + 1e-6)
 
     return pattern
+
+
+def distort_coords(height, width, scale=10.0, magnitude=5.0, seed=0):
+    np.random.seed(seed)
+    noise_x = gaussian_filter(np.random.rand(height, width), sigma=scale)
+    noise_y = gaussian_filter(np.random.rand(height, width), sigma=scale)
+
+    dx = (noise_x - 0.5) * magnitude
+    dy = (noise_y - 0.5) * magnitude
+
+    yy, xx = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
+    distorted_yy = np.clip(yy + dy, 0, height - 1)
+    distorted_xx = np.clip(xx + dx, 0, width - 1)
+
+    return distorted_yy, distorted_xx
+
+
+def generate_plate_map(
+    shape: Tuple[int, int],
+    config: Dict,
+    num_plates: int = 8,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Generates a tectonic plate map with boundary types and elevation influences."""
+    height, width = shape
+    plate_map = np.zeros((height, width), dtype=np.uint8)
+    boundary_map = np.zeros(
+        (height, width), dtype=np.uint8
+    )  # 0: none, 1: convergent, 2: divergent, 3: subduction
+    elevation_map = np.zeros((height, width), dtype=np.float32)  # Elevation influence
+
+    np.random.seed(get_seed(config) + 999)
+    plate_centers = np.random.randint(0, [height, width], size=(num_plates, 2))
+    # Apply distortion directly to plate centers
+    jitter = (np.random.rand(num_plates, 2) - 0.5) * 2 * 8.0  # magnitude
+    plate_centers = plate_centers + jitter.astype(int)
+    plate_centers = np.clip(plate_centers, [0, 0], [height - 1, width - 1])
+    plate_vectors = np.random.uniform(
+        -1, 1, (num_plates, 2)
+    )  # Random motion vectors for plates
+
+    # yy, xx = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
+
+    # Initialize distances and labels with defaults
+    distances = np.full((height, width, 1), np.inf, dtype=np.float32)
+    labels = np.zeros((height, width), dtype=np.int32)
+
+    # Handle case where num_plates is 0
+    if num_plates == 0:
+        return plate_map, boundary_map, elevation_map
+    distorted_yy, distorted_xx = distort_coords(
+        height, width, scale=40.0, magnitude=115.0, seed=get_seed(config) + 123
+    )
+    # Assign plate regions using Voronoi
+    for i, (cy, cx) in enumerate(plate_centers):
+        dist = (distorted_yy - cy) ** 2 + (distorted_xx - cx) ** 2
+        if i == 0:
+            distances = np.expand_dims(dist, axis=2)
+            labels = np.full_like(dist, i)
+        else:
+            closer = dist < distances[..., 0]
+            labels = np.where(closer, i, labels)
+            distances = np.where(closer[..., None], dist[..., None], distances)
+
+    plate_map = labels.astype(np.uint8)
+
+    # Detect boundaries and classify them
+    boundary_mask = np.zeros_like(plate_map, dtype=bool)
+    for i in range(height):
+        for j in range(width):
+            if i < height - 1 and j < width - 1:
+                if (
+                    plate_map[i, j] != plate_map[i + 1, j]
+                    or plate_map[i, j] != plate_map[i, j + 1]
+                ):
+                    boundary_mask[i, j] = True
+
+    # Classify boundaries based on plate motion vectors
+    for i in range(height):
+        for j in range(width):
+            if boundary_mask[i, j]:
+                current_plate = plate_map[i, j]
+                neighbors = []
+                if i > 0:
+                    neighbors.append(plate_map[i - 1, j])
+                if i < height - 1:
+                    neighbors.append(plate_map[i + 1, j])
+                if j > 0:
+                    neighbors.append(plate_map[i, j - 1])
+                if j < width - 1:
+                    neighbors.append(plate_map[i, j + 1])
+
+                for neighbor in set(neighbors):
+                    if neighbor != current_plate:
+                        vec1 = plate_vectors[current_plate]
+                        vec2 = plate_vectors[neighbor]
+                        relative_motion = np.dot(
+                            vec1, vec2
+                        )  # Dot product to determine convergence/divergence
+                        if (
+                            relative_motion < -0.2
+                        ):  # Convergent (plates moving toward each other)
+                            boundary_map[i, j] = 1
+                            elevation_map[i, j] += config.get(
+                                "convergent_elevation", 0.5
+                            )  # Mountain formation
+                        elif relative_motion > 0.2:  # Divergent (plates moving apart)
+                            boundary_map[i, j] = 2
+                            elevation_map[i, j] -= config.get(
+                                "divergent_depression", 0.3
+                            )  # Rift valleys
+                        else:  # Subduction (one plate slides under another)
+                            boundary_map[i, j] = 3
+                            elevation_map[i, j] += config.get(
+                                "subduction_elevation", 0.4
+                            )  # Volcanic arcs
+
+    # Smooth elevation map
+    elevation_map = gaussian_filter(
+        elevation_map, sigma=config.get("elevation_smoothing", 2.0)
+    )
+    elevation_map = np.clip(elevation_map, -1.0, 1.0)  # Normalize to [-1, 1]
+
+    return plate_map, boundary_map, elevation_map
 
 
 def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
@@ -322,7 +531,9 @@ def polar_projection_correction(grid_shape=(256, 256)) -> np.ndarray:
 def generate_distortion(shape: tuple[int, int], config: dict) -> np.ndarray:
     """Generate contrast-preserving distortion with large-scale disturbances."""
     h, w = shape
-    scale = np.clip(config.get("distortion_scale", 0.5), 0.0, 1.0)
+    raw_scale = config.get("distortion_scale", 0.5)
+    # Map [0.1, 1.0] → [0.1, 0.5]
+    scale = 0.1 + ((np.clip(raw_scale, 0.1, 1.0) - 0.1) / 0.9) * 0.4
 
     # Initialize random number generator
     seed = get_seed(config)
@@ -395,16 +606,16 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
 
     # 1. Equator anomaly (centered at 0.5 radius)
     if enable_equator_anomalies:
-        equator_mask = make_mask(center=0.5, width=equator_anomaly_scale)
-        equator_noise = gaussian_filter(np.random.randn(h, w), sigma=8)
-        boosted_equator_strength = equator_anomaly_count
+        equator_mask = make_mask(center=1.0, width=equator_anomaly_scale)
+        equator_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
+        boosted_equator_strength = 2 * equator_anomaly_count
         modified_grid += equator_mask * equator_noise * boosted_equator_strength
 
     # 2. Polar anomaly (centered at 0.0)
     if enable_polar_anomalies:
         polar_mask = make_mask(center=0.0, width=polar_anomaly_scale)
-        polar_noise = gaussian_filter(np.random.randn(h, w), sigma=8)
-        boosted_polar_strength = polar_anomaly_count
+        polar_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
+        boosted_polar_strength = 2 * polar_anomaly_count
         modified_grid += polar_mask * polar_noise * boosted_polar_strength
 
     # 3. Seed-based variant (randomized masks + noise scales)
@@ -455,53 +666,141 @@ def tilt_zone_weights(grid: np.ndarray, tilt_factor: float) -> np.ndarray:
     return np.clip(skewed, 0.0, 1.0)
 
 
-import numpy as np
+def smoothstep(t):
+    """Smoothstep function for smoother interpolation between 0 and 1."""
+    return t * t * (3 - 2 * t)
 
 
 def stitch_hemispheres(
-    north: np.ndarray, blend_px: int = 8, blend_strength: float = 0.5
+    north: np.ndarray, blend_px: int = 128
 ) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Blend edges of the north hemisphere with its horizontal mirror,
-    and force seamless left-right wrapping.
-
-    Returns north and south (mirror of north).
-    """
     h, w = north.shape
-    blend_strength = np.clip(blend_strength, 0.01, 1.0)
+    original = north.copy()
 
-    # Mirror for equator blending
-    mirror = np.fliplr(north)
+    def smoothstep(t):
+        return t * t * (3 - 2 * t)
 
-    # Distance from edge (top, bottom, left, right)
-    y = np.minimum(np.arange(h), np.arange(h)[::-1]).reshape(-1, 1)
-    x = np.minimum(np.arange(w), np.arange(w)[::-1]).reshape(1, -1)
-    dist_to_edge = np.minimum(y, x)
+    ramp = np.array([smoothstep((blend_px - i) / blend_px) for i in range(blend_px)])
 
-    # Weight map: 1 at edge, 0 in center
-    weight = np.clip(1.0 - dist_to_edge / blend_px, 0, 1) ** (1.0 / blend_strength)
+    # --- Left-right blending ---
+    lr_blend = original.copy()
+    left_edge = original[:, :blend_px].copy()
+    right_edge = original[:, -blend_px:].copy()
 
-    # Equator-blend with mirror
-    north_blended = (1 - weight) * north + weight * mirror
+    for i in range(blend_px):
+        wgt = ramp[i]
+        blended = (1 - wgt) * left_edge[:, i] + wgt * right_edge[:, i]
+        lr_blend[:, i] = blended
+        lr_blend[:, w - blend_px + i] = blended
 
-    # --- Force left-right wraparound ---
-    # Average left and right edge columns
-    left_col = north_blended[:, 0]
-    right_col = north_blended[:, -1]
-    avg_col = (left_col + right_col) / 2
+    # --- Top-bottom blending ---
+    tb_blend = original.copy()
+    top_edge = original[:blend_px, :].copy()
+    bottom_edge = original[-blend_px:, :].copy()
 
-    north_blended[:, 0] = avg_col
-    north_blended[:, -1] = avg_col
+    for j in range(blend_px):
+        wgt = ramp[j]
+        blended = (1 - wgt) * top_edge[j, :] + wgt * bottom_edge[j, :]
+        tb_blend[j, :] = blended
+        tb_blend[h - blend_px + j, :] = blended
 
-    # Optionally smooth inward by one pixel
-    if blend_px > 1:
-        north_blended[:, 1] = (north_blended[:, 1] + avg_col) / 2
-        north_blended[:, -2] = (north_blended[:, -2] + avg_col) / 2
+    # --- Combine both blends ---
+    combined = original.copy()
 
-    # South is flipped version of north
-    south = np.fliplr(north_blended)
+    # Blend interior (non-edge) pixels directly from original
+    combined[blend_px : h - blend_px, blend_px : w - blend_px] = original[
+        blend_px : h - blend_px, blend_px : w - blend_px
+    ]
 
-    return north_blended, south
+    # Combine left-right edges from lr_blend
+    combined[:, :blend_px] = lr_blend[:, :blend_px]
+    combined[:, w - blend_px :] = lr_blend[:, w - blend_px :]
+
+    # Combine top-bottom edges from tb_blend
+    combined[:blend_px, :] = tb_blend[:blend_px, :]
+    combined[h - blend_px :, :] = tb_blend[h - blend_px :, :]
+
+    # For corners where both blends overlap, average both
+    for i in range(blend_px):
+        for j in range(blend_px):
+            # top-left corner
+            combined[i, j] = (lr_blend[i, j] + tb_blend[i, j]) / 2
+            # top-right corner
+            combined[i, w - blend_px + j] = (
+                lr_blend[i, w - blend_px + j] + tb_blend[i, w - blend_px + j]
+            ) / 2
+            # bottom-left corner
+            combined[h - blend_px + i, j] = (
+                lr_blend[h - blend_px + i, j] + tb_blend[h - blend_px + i, j]
+            ) / 2
+            # bottom-right corner
+            combined[h - blend_px + i, w - blend_px + j] = (
+                lr_blend[h - blend_px + i, w - blend_px + j]
+                + tb_blend[h - blend_px + i, w - blend_px + j]
+            ) / 2
+
+    # South hemisphere vertical flip
+    south = np.flipud(combined)
+
+    return combined, south
+
+
+def save_biome_grid_png_img(
+    grid: np.ndarray,
+    biome_colors: dict[int, tuple[int, int, int]],
+    path_out: str,
+    suffix: str = "",
+):
+    """Save biome grid as a color PNG image based on biome_colors mapping."""
+    biome_path = os.path.join(path_out, "temp_biome.png")
+    os.makedirs(path_out, exist_ok=True)
+
+    h, w = grid.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+
+    for y in range(h):
+        for x in range(w):
+            form_id = int(grid[y, x])
+            color = biome_colors.get(form_id, (128, 128, 128))  # fallback: neutral gray
+            color_image[y, x] = color
+
+    image = Image.fromarray(color_image, mode="RGB")
+    image.save(biome_path)
+    handle_news(None, "info", f"Biome color grid saved to: {biome_path}")
+
+
+def save_resource_grid_png_img(resource_grid: np.ndarray, path_out: str):
+    """Save resource grid as a color PNG image with distinct resource band colors."""
+    resource_path = os.path.join(path_out, "temp_resource.png")
+    os.makedirs(path_out, exist_ok=True)
+
+    # Color mapping: 0–4 (life group), 80–84 (nolife group), 8 (ocean), 88 (mixed)
+    color_map = {
+        0: (128, 0, 0),  # Maroon
+        1: (255, 0, 0),  # Red
+        2: (255, 128, 0),  # Orange
+        3: (255, 204, 0),  # Mustard
+        4: (255, 255, 0),  # Bright Yellow
+        8: (0, 0, 0),  # Ocean (Black)
+        80: (153, 204, 255),  # Light Blue
+        81: (0, 255, 255),  # Cyan
+        82: (0, 128, 255),  # Blue
+        83: (0, 200, 0),  # Green
+        84: (0, 255, 0),  # Bright Green
+        88: (255, 255, 255),  # None (White)
+    }
+
+    h, w = resource_grid.shape
+    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+
+    for key, rgb in color_map.items():
+        color_image[resource_grid == key] = rgb
+
+    resource_image = Image.fromarray(color_image, mode="RGB")
+    resource_image.save(resource_path)
+    handle_news(
+        None, "header", f"PlanetBiomes: Resource grid saved to: {resource_path}"
+    )
 
 
 ######################################################################################
@@ -511,8 +810,8 @@ def assign_biomes(grid: np.ndarray, biome_ids: List[int]) -> np.ndarray:
     if len(biome_ids) == 1:
         return np.full(GRID_FLATSIZE, biome_ids[0], dtype=np.uint32)
     epsilon = 1e-6
-    grid = np.clip(grid, 0, 1 - epsilon)
-    grid = np.power(grid, 1.5)
+    grid = np.clip(grid, 0, None)  # remove negative values
+    grid = grid / np.max(grid)     # normalize to [0,1]
     mapped = np.zeros(GRID_FLATSIZE, dtype=np.uint32)
     n_biomes = len(biome_ids)
     for y in range(GRID_SIZE[1]):
@@ -551,69 +850,6 @@ def assign_resources(
 
     return out
 
-
-def save_biome_grid(
-    grid: np.ndarray,
-    biome_colors: dict[int, tuple[int, int, int]],
-    path_out: str,
-    suffix: str = "",
-):
-    """Save biome grid as a color PNG image based on biome_colors mapping."""
-    biome_path = os.path.join(path_out, "temp_biome.png")
-    os.makedirs(path_out, exist_ok=True)
-
-    h, w = grid.shape
-    color_image = np.zeros((h, w, 3), dtype=np.uint8)
-
-    for y in range(h):
-        for x in range(w):
-            form_id = int(grid[y, x])
-            color = biome_colors.get(form_id, (128, 128, 128))  # fallback: neutral gray
-            color_image[y, x] = color
-
-    image = Image.fromarray(color_image, mode="RGB")
-    image.save(biome_path)
-    handle_news(
-        None, "info", f"Biome color grid saved to: {biome_path}"
-    )
-
-
-def save_resource_grid(resource_grid: np.ndarray, path_out: str):
-    """Save resource grid as a color PNG image with distinct resource band colors."""
-    resource_path = os.path.join(path_out, "temp_resource.png")
-    os.makedirs(path_out, exist_ok=True)
-
-    # Color mapping: 0–4 (life group), 80–84 (nolife group), 8 (ocean), 88 (mixed)
-    color_map = {
-        0: (128, 0, 0),  # Maroon
-        1: (255, 0, 0),  # Red
-        2: (255, 128, 0),  # Orange
-        3: (255, 204, 0),  # Mustard
-        4: (255, 255, 0),  # Bright Yellow
-        8: (0, 0, 0),  # Ocean (Black)
-        80: (153, 204, 255),  # Light Blue
-        81: (0, 255, 255),  # Cyan
-        82: (0, 128, 255),  # Blue
-        83: (0, 200, 0),  # Green
-        84: (0, 255, 0),  # Bright Green
-        88: (255, 255, 255),  # None (White)
-    }
-
-    h, w = resource_grid.shape
-    color_image = np.zeros((h, w, 3), dtype=np.uint8)
-
-    for key, rgb in color_map.items():
-        color_image[resource_grid == key] = rgb
-
-    resource_image = Image.fromarray(color_image, mode="RGB")
-    resource_image.save(resource_path)
-    handle_news(
-        None,
-        "header",
-        f"PlanetBiomes: Resource grid saved to: {resource_path}"
-    )
-
-
 class BiomFile:
     biomeIds: List[int]
     biomeGridN: np.ndarray
@@ -643,9 +879,9 @@ class BiomFile:
             "numBiomes": len(self.biomeIds),
             "biomeIds": self.biomeIds,
             "biomeGridN": self.biomeGridN.tolist(),
-            "resrcGridN": self.resrcGridN.tolist(),
+            "resrcGridN": [int(x) for x in self.resrcGridN.flatten()],
             "biomeGridS": self.biomeGridS.tolist(),
-            "resrcGridS": self.resrcGridS.tolist(),
+            "resrcGridS": [int(x) for x in self.resrcGridS.flatten()],
         }
         with open(path, "wb") as f:
             CsSF_Biom.build_stream(obj, f)
@@ -661,73 +897,33 @@ def main():
     handle_news(None, "success", f"=== Starting PlanetBiomes ===", flush=True)
     global plugin_name
 
-    # Debug: Check if "--preview" is being detected in sys.argv
-    handle_news(
-        None, "debug", f"PlanetBiomes: Command-line args: {sys.argv}"
-    )
     preview = "--preview" in sys.argv
-    handle_news(
-        None, "debug", f"PlanetBiomes: Preview mode: {preview}"
-    )
-
     config = load_json(CONFIG_PATH)
-    handle_news(
-        None, "debug", f"PlanetBiomes: Loaded config: {config}"
-    )  # Debug: Print config to confirm it loads properly
-
-    biome_cfg = config
     biome_csv = PREVIEW_PATH if preview else INPUT_DIR
-    handle_news(
-        None, "debug", f"PlanetBiomes: Biome CSV path: {biome_csv}"
-    )  # Debug: Confirm correct path selection
-
     plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
-    handle_news(
-        None, "debug", f"PlanetBiomes: Plugin Name from CSV: {plugin}"
-    )  # Debug: Check the extracted plugin name
-
-    config["plugin_name"] = plugin  # Set new active plugin
+    config["plugin_name"] = plugin
     save_json(CONFIG_PATH, config)
-    handle_news(
-        None,
-        "debug",
-        f"PlanetBiomes: Updated plugin name in config: {config['plugin_name']}"
-    )
 
     out_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
-    handle_news(
-        None,
-        "debug",
-        f"PlanetBiomes: Output directory path: {out_dir}"
-    )  # Debug: Check if correct output path is set
     out_dir.mkdir(parents=True, exist_ok=True)
 
     template = BiomFile()
     template.load(TEMPLATE_PATH)
-    handle_news(
-        None,
-        "warn",
-        f"Template loaded successfully from: {TEMPLATE_PATH}"
-    )
 
     for planet, biomes in planets.items():
         handle_news(
             None,
             "info",
-            f"PlanetBiomes: Biom file '{planet}.biom' with {len(biomes)} biomes created in '{out_dir / (planet + '.esm')}'"
+            f"PlanetBiomes: Biom file '{planet}.biom' with {len(biomes)} biomes created in '{out_dir / (planet + '.esm')}'",
         )
 
         inst = BiomFile()
         inst.load(TEMPLATE_PATH)
 
-        north_pattern, south_pattern = generate_hemisphere_patterns(
-            (GRID_SIZE), biome_cfg
-        )
+        grid_dim = GRID_SIZE
+        north_pattern, south_pattern = generate_hemisphere_patterns(grid_dim, config)
 
-        # Step 5: Assign Biomes
         inst.overwrite(biomes, north_pattern, south_pattern)
-
-        # Step 6: Assign Resources
         inst.resrcGridN = assign_resources(
             inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), life, nolife, ocean
         ).flatten()
@@ -735,12 +931,18 @@ def main():
             inst.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]), life, nolife, ocean
         ).flatten()
 
-        save_resource_grid(inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR))
+        save_resource_grid_png_img(
+            inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR)
+        )
 
         used_biome_ids = set(inst.biomeGridN.flatten()) | set(inst.biomeGridS.flatten())
         biome_data = load_biome_data(str(CSV_PATH), used_biome_ids)
         biome_colors = {k: v["color"] for k, v in biome_data.items()}
-        save_biome_grid(inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), biome_colors, str(TEMP_DIR))
+        save_biome_grid_png_img(
+            inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            biome_colors,
+            str(TEMP_DIR),
+        )
 
         inst.save(out_dir / f"{planet}.biom")
 

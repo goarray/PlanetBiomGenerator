@@ -32,3 +32,5 @@ PlanetBiomes/csv/PlanetColors.csv
 PlanetBiomes/src/BruteHash.py
 PlanetBiomes/assets/BiomesPalette.py
 PlanetBiomes/src/preview.mat
+PlanetBiomes/csv/SurfaceBlocks.csv
+PlanetBiomes/csv/SurfacePatterns.csv
