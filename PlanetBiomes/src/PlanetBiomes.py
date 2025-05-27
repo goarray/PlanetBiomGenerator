@@ -175,7 +175,11 @@ def generate_hemisphere_patterns(
         pattern = generate_squircle_pattern(shape, config.get("squircle_factor", 0.5))
 
         # Generate tectonic data within the function
-        plate_map, boundary_map, elevation_map = generate_plate_map(shape, config)
+        if config.get("enable_tectonic_plates", False):  # Safer way to check existence
+            plate_map, boundary_map, elevation_map = generate_plate_map(shape, config)
+        else:
+            elevation_map = np.zeros(shape, dtype=np.float32)
+            boundary_map = np.zeros(shape, dtype=np.float32)
 
         # Apply elevation influence to pattern
         pattern += config.get("elevation_influence", 0.3) * elevation_map
@@ -314,13 +318,32 @@ def generate_squircle_pattern(
     return pattern
 
 
-def distort_coords(height, width, scale=10.0, magnitude=5.0, seed=0):
-    np.random.seed(seed)
-    noise_x = gaussian_filter(np.random.rand(height, width), sigma=scale)
-    noise_y = gaussian_filter(np.random.rand(height, width), sigma=scale)
+def distort_coords(
+    height: int,
+    width: int,
+    distort_scale: int = 10,
+    distort_magnitude: int = 5,
+    seed: int = 0,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Generate distorted coordinates for plate map generation.
 
-    dx = (noise_x - 0.5) * magnitude
-    dy = (noise_y - 0.5) * magnitude
+    Args:
+        height: Height of the map
+        width: Width of the map
+        distort_scale: Scale of noise (1-100)
+        distort_magnitude: Magnitude of distortion (1-200)
+        seed: Random seed for reproducibility
+
+    Returns:
+        Tuple of distorted y and x coordinates
+    """
+    np.random.seed(seed)
+    noise_x = gaussian_filter(np.random.rand(height, width), sigma=float(distort_scale))
+    noise_y = gaussian_filter(np.random.rand(height, width), sigma=float(distort_scale))
+
+    dx = (noise_x - 0.5) * float(distort_magnitude)
+    dy = (noise_y - 0.5) * float(distort_magnitude)
 
     yy, xx = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
     distorted_yy = np.clip(yy + dy, 0, height - 1)
@@ -333,8 +356,28 @@ def generate_plate_map(
     shape: Tuple[int, int],
     config: Dict,
     num_plates: int = 8,
+    boundary_width: int = 10,
+    distort_scale: int = 40,
+    distort_magnitude: int = 115,
+    center_jitter: int = 8,
+    elevation_smoothing: int = 2,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Generates a tectonic plate map with boundary types and elevation influences."""
+    """
+    Generates a tectonic plate map with boundary types and elevation influences.
+
+    Args:
+        shape: Tuple of (height, width) for the map
+        config: Configuration dictionary with elevation parameters
+        num_plates: Number of tectonic plates (1-160)
+        boundary_width: Width of plate boundaries (1-100)
+        distort_scale: Scale of coordinate distortion (1-100)
+        distort_magnitude: Magnitude of coordinate distortion (1-200)
+        center_jitter: Jitter for plate centers (0-200)
+        elevation_smoothing: Smoothing factor for elevation map (1-100)
+
+    Returns:
+        Tuple of plate_map, boundary_map, elevation_map
+    """
     height, width = shape
     plate_map = np.zeros((height, width), dtype=np.uint8)
     boundary_map = np.zeros(
@@ -344,27 +387,30 @@ def generate_plate_map(
 
     np.random.seed(get_seed(config) + 999)
     plate_centers = np.random.randint(0, [height, width], size=(num_plates, 2))
-    # Apply distortion directly to plate centers
-    jitter = (np.random.rand(num_plates, 2) - 0.5) * 2 * 8.0  # magnitude
+    # Apply jitter to plate centers
+    jitter = (np.random.rand(num_plates, 2) - 0.5) * 2 * float(center_jitter)
     plate_centers = plate_centers + jitter.astype(int)
     plate_centers = np.clip(plate_centers, [0, 0], [height - 1, width - 1])
     plate_vectors = np.random.uniform(
         -1, 1, (num_plates, 2)
     )  # Random motion vectors for plates
 
-    # yy, xx = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
-
-    # Initialize distances and labels with defaults
-    distances = np.full((height, width, 1), np.inf, dtype=np.float32)
-    labels = np.zeros((height, width), dtype=np.int32)
-
     # Handle case where num_plates is 0
     if num_plates == 0:
         return plate_map, boundary_map, elevation_map
+
+    # Generate distorted coordinates
     distorted_yy, distorted_xx = distort_coords(
-        height, width, scale=40.0, magnitude=115.0, seed=get_seed(config) + 123
+        height,
+        width,
+        distort_scale=distort_scale,
+        distort_magnitude=distort_magnitude,
+        seed=get_seed(config) + 123,
     )
+
     # Assign plate regions using Voronoi
+    distances = np.full((height, width, 1), np.inf, dtype=np.float32)
+    labels = np.zeros((height, width), dtype=np.int32)
     for i, (cy, cx) in enumerate(plate_centers):
         dist = (distorted_yy - cy) ** 2 + (distorted_xx - cx) ** 2
         if i == 0:
@@ -377,16 +423,20 @@ def generate_plate_map(
 
     plate_map = labels.astype(np.uint8)
 
-    # Detect boundaries and classify them
+    # Detect boundaries with specified width
     boundary_mask = np.zeros_like(plate_map, dtype=bool)
+    boundary_width = max(1, boundary_width)  # Ensure boundary_width is at least 1
     for i in range(height):
         for j in range(width):
-            if i < height - 1 and j < width - 1:
-                if (
-                    plate_map[i, j] != plate_map[i + 1, j]
-                    or plate_map[i, j] != plate_map[i, j + 1]
-                ):
-                    boundary_mask[i, j] = True
+            for di in range(-boundary_width, boundary_width + 1):
+                for dj in range(-boundary_width, boundary_width + 1):
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < height and 0 <= nj < width:
+                        if plate_map[i, j] != plate_map[ni, nj]:
+                            boundary_mask[i, j] = True
+                            break
+                if boundary_mask[i, j]:
+                    break
 
     # Classify boundaries based on plate motion vectors
     for i in range(height):
@@ -394,44 +444,35 @@ def generate_plate_map(
             if boundary_mask[i, j]:
                 current_plate = plate_map[i, j]
                 neighbors = []
-                if i > 0:
-                    neighbors.append(plate_map[i - 1, j])
-                if i < height - 1:
-                    neighbors.append(plate_map[i + 1, j])
-                if j > 0:
-                    neighbors.append(plate_map[i, j - 1])
-                if j < width - 1:
-                    neighbors.append(plate_map[i, j + 1])
+                for di in range(-1, 2):
+                    for dj in range(-1, 2):
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < height and 0 <= nj < width:
+                            neighbors.append(plate_map[ni, nj])
 
                 for neighbor in set(neighbors):
                     if neighbor != current_plate:
                         vec1 = plate_vectors[current_plate]
                         vec2 = plate_vectors[neighbor]
-                        relative_motion = np.dot(
-                            vec1, vec2
-                        )  # Dot product to determine convergence/divergence
-                        if (
-                            relative_motion < -0.2
-                        ):  # Convergent (plates moving toward each other)
+                        relative_motion = np.dot(vec1, vec2)
+                        if relative_motion < -0.2:  # Convergent
                             boundary_map[i, j] = 1
                             elevation_map[i, j] += config.get(
                                 "convergent_elevation", 0.5
-                            )  # Mountain formation
-                        elif relative_motion > 0.2:  # Divergent (plates moving apart)
+                            )
+                        elif relative_motion > 0.2:  # Divergent
                             boundary_map[i, j] = 2
                             elevation_map[i, j] -= config.get(
                                 "divergent_depression", 0.3
-                            )  # Rift valleys
-                        else:  # Subduction (one plate slides under another)
+                            )
+                        else:  # Subduction
                             boundary_map[i, j] = 3
                             elevation_map[i, j] += config.get(
                                 "subduction_elevation", 0.4
-                            )  # Volcanic arcs
+                            )
 
     # Smooth elevation map
-    elevation_map = gaussian_filter(
-        elevation_map, sigma=config.get("elevation_smoothing", 2.0)
-    )
+    elevation_map = gaussian_filter(elevation_map, sigma=float(elevation_smoothing))
     elevation_map = np.clip(elevation_map, -1.0, 1.0)  # Normalize to [-1, 1]
 
     return plate_map, boundary_map, elevation_map

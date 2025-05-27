@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>865</height>
+    <height>140</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -578,6 +578,206 @@
               </property>
               <property name="text">
                <string>Polar</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>140</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Tectonic Boundaries</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_14">
+            <item row="1" column="3">
+             <widget class="QSlider" name="convergent_elevation">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Edge Width</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Num Plates</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="3">
+             <widget class="QSlider" name="distort_magnitude">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QSlider" name="boundary_noise_octaves">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Noise Scale</string>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="QSlider" name="boundary_noise_lacunarity">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="1">
+             <widget class="QSlider" name="boundary_noise_persistence">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSlider" name="number_tect_plates">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Edge Jitter</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSlider" name="center_jitter">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="3">
+             <widget class="QSlider" name="subduction_elevation">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QSlider" name="boundary_width">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="3">
+             <widget class="QSlider" name="distort_scale">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Lacunarity</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QSlider" name="boundary_noise_scale">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="3">
+             <widget class="QSlider" name="elevation_smoothing">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Noise Octave</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Persistence</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="3">
+             <widget class="QSlider" name="divergent_depression">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QLabel" name="label_11">
+              <property name="frameShape">
+               <enum>QFrame::Shape::NoFrame</enum>
+              </property>
+              <property name="text">
+               <string>Convergent</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>Divergent</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="2">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Subduction</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="2">
+             <widget class="QLabel" name="label_14">
+              <property name="text">
+               <string>Smoothing</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="2">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>Distort Scale</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="2">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Magnitude</string>
               </property>
              </widget>
             </item>
@@ -1361,101 +1561,9 @@
         </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
-          <string>Tectonics</string>
+          <string>(NA)</string>
          </attribute>
-         <layout class="QGridLayout" name="gridLayout_5">
-          <item row="1" column="0">
-           <widget class="QSlider" name="number_tect_plates">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="0">
-           <widget class="QSlider" name="convergent_elevation">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QSlider" name="boundary_noise_scale">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QSlider" name="boundary_noise_octaves">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QSlider" name="boundary_width">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QSlider" name="boundary_noise_persistence">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QSlider" name="boundary_noise_lacunarity">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSlider" name="divergent_depression">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSlider" name="subduction_elevation">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QSlider" name="elevation_smoothing">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QSlider" name="distort_scale">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QSlider" name="distort_magnitude">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QSlider" name="center_jitter">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <layout class="QGridLayout" name="gridLayout_5"/>
         </widget>
        </widget>
       </item>
@@ -1595,13 +1703,6 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="4">
-          <widget class="QCheckBox" name="enable_texture_noise">
-           <property name="text">
-            <string>Texture Noise</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QLabel" name="label_3">
            <property name="text">
@@ -1672,7 +1773,24 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="4">
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QCheckBox" name="enable_tectonic_plates">
+           <property name="text">
+            <string>Biome Tectonics</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="4">
           <widget class="QCheckBox" name="enable_texture_craters">
            <property name="minimumSize">
             <size>
@@ -1693,13 +1811,23 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_4">
+         <item row="5" column="4">
+          <widget class="QCheckBox" name="enable_texture_noise">
            <property name="text">
-            <string>Resolution</string>
+            <string>Texture Noise</string>
            </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
+          </widget>
+         </item>
+         <item row="4" column="4">
+          <widget class="QCheckBox" name="enable_texture_edges">
+           <property name="toolTip">
+            <string>Enables blending at biome edges for smooth transitions.</string>
+           </property>
+           <property name="accessibleName">
+            <string>Edge Blending Enabled</string>
+           </property>
+           <property name="text">
+            <string>Texture Edges</string>
            </property>
           </widget>
          </item>
@@ -1768,18 +1896,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QCheckBox" name="output_csv_files">
-           <property name="font">
-            <font>
-             <strikeout>true</strikeout>
-            </font>
-           </property>
-           <property name="text">
-            <string>Create SFTR .csv</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="2">
           <widget class="QCheckBox" name="enable_output_log">
            <property name="font">
@@ -1792,14 +1908,7 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QCheckBox" name="checkBox_5">
-           <property name="text">
-            <string>Create Flora CSV</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
+         <item row="1" column="1">
           <widget class="QCheckBox" name="enable_preview_mode">
            <property name="text">
             <string>Create DDs Files</string>
@@ -2133,20 +2242,6 @@
               </property>
               <property name="text">
                <string>Edges</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="2" rowspan="2">
-             <widget class="QCheckBox" name="enable_texture_edges">
-              <property name="toolTip">
-               <string>Enables blending at biome edges for smooth transitions.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Edge Blending Enabled</string>
-              </property>
-              <property name="text">
-               <string>Enable
-Edges</string>
               </property>
              </widget>
             </item>

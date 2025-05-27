@@ -916,6 +916,7 @@ class MainWindow(QMainWindow):
             "enable_surface": "enable_surface",
             "enable_resource": "enable_resource",
             "enable_ocean": "enable_ocean",
+            "enable_tectonic_plates": "enable_tectonic_plates",
         }
 
         slider_mappings = {
@@ -1037,7 +1038,7 @@ class MainWindow(QMainWindow):
                 # Define special value handling separately if needed
                 if key in tectonic_slider_config:
                     min_val, max_val = tectonic_slider_config[key]
-                    slider.setRange(1, 5)
+                    slider.setRange(1, 100)
                     slider.setValue(int(value))  # Assume `value` is a default starting point
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 elif key == "user_seed":
