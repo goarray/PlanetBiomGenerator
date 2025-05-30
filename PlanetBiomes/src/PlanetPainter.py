@@ -38,6 +38,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QLCDNumber,
     QSlider,
+    QProgressBar
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
@@ -386,6 +387,11 @@ def start_planet_biomes(main_window, mode=""):
     global planet_biomes_process, process_list
     main_window.stdout_widget.clear()
     main_window.stderr_widget.clear()
+    main_window.news_count = 0
+    main_window.news_percent = 0
+    global news_count
+    news_count = 0
+    main_window.news_count_progressbar.setValue(0)
 
     if not SCRIPT_PATH.exists():
         main_window.stderr_widget.insertPlainText(
@@ -487,17 +493,23 @@ def start_planet_biomes(main_window, mode=""):
     planet_biomes_process.readyReadStandardError.connect(handle_error)
     seed = get_seed(config)
 
-    planet_biomes_process.finished.connect(
-        lambda exit_code: handle_news(
-            main_window,
-            "success" if exit_code == 0 else "error",
-            (
-                f"Permit {seed} complete!\nDon't panic!"
-                if exit_code == 0
-                else f"Permit denied, code {exit_code}: Construction halted."
-            ),
+    def on_planet_biomes_finished(exit_code):
+        message = (
+            f"Permit {seed} complete!\nDon't panic!"
+            if exit_code == 0
+            else f"Permit denied, code {exit_code}: Construction halted."
         )
-    )
+        kind = "success" if exit_code == 0 else "error"
+        handle_news(main_window, kind, message)
+
+        # Update total_news in config if exceeded
+        if main_window.news_count > main_window.total_news:
+            config = load_config()
+            config["total_news"] = main_window.news_count
+            save_config()
+            print(f"[CONFIG] Updated total_news to {main_window.news_count}")
+
+    planet_biomes_process.finished.connect(on_planet_biomes_finished)
 
     planet_biomes_process.errorOccurred.connect(
         lambda _: handle_news(
@@ -584,6 +596,7 @@ class MainWindow(QMainWindow):
     folders_dropdown: QComboBox
     seed_display: QLCDNumber
     texture_resolution_display: QLCDNumber
+    news_count_progressbar: QProgressBar
     user_seed: QSlider
     texture_resolution_scale: QSlider
     preview_command_button: QPushButton
@@ -615,6 +628,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
         config = load_config()
+
+        self.news_count = 0
+        self.news_percent = 0
+        self.total_news = config.get("total_news", 82)  # fallback to 82
 
         csv_files = list(INPUT_DIR.glob("*.csv"))
         csv_names = [f.name for f in csv_files]
@@ -955,7 +972,7 @@ class MainWindow(QMainWindow):
             "texture_perlin": "texture_perlin",
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
-            "number_tect_plates": "number_tect_plates",
+            "number_faults": "number_faults",
             "boundary_width": "boundary_width",
             "boundary_noise_scale": "boundary_noise_scale",
             "boundary_noise_octaves": "boundary_noise_octaves",
@@ -1023,26 +1040,12 @@ class MainWindow(QMainWindow):
 
                 min_val, max_val = 0.1, 1
                 # Define configurable sliders
-                tectonic_slider_config = {
-                    "number_tect_plates": (1, 160),
-                    "boundary_width": (1, 100),
-                    "boundary_noise_scale": (1, 20),
-                    "boundary_noise_octaves": (1, 60),
-                    "boundary_noise_persistence": (1, 20.0),
-                    "boundary_noise_lacunarity": (1, 20.0),
-                    "elevation_smoothing": (1, 100),
-                    "distort_scale": (1, 100),
-                    "distort_magnitude": (1, 200),
-                    "center_jitter": (0, 200),
-                }
-                # Define special value handling separately if needed
-                if key in tectonic_slider_config:
-                    min_val, max_val = tectonic_slider_config[key]
-                    slider.setRange(1, 100)
-                    slider.setValue(int(value))  # Assume `value` is a default starting point
-                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "user_seed":
+                if key == "user_seed":
                     slider.setRange(0, 99999)
+                    slider.setValue(int(value))
+                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
+                elif key == "number_faults":
+                    slider.setRange(2, 16)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 elif key == "texture_resolution_scale":

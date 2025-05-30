@@ -197,6 +197,32 @@ THEMES = {
             border-radius: 3px;
         }}
 
+        QProgressBar {{
+            border: 1px solid {theme.get('primary_hover_color', '#6e9bac')};
+            border-radius: 6px;
+            text-align: center;
+            height: 30px;
+            background: {theme.get('background', '#10141a')};
+            color: {theme.get('color', '#FFFFFF')};
+        }}
+
+        QProgressBar::chunk {{
+            background: qlineargradient(
+                x1: 0, y1: 0, x2: 1, y2: 0,
+                stop: 0 {theme.get('primary_hover_color', '#00FFFF')},
+                stop: 1 {theme.get('color', '#0099FF')}
+            );
+            border-radius: 4px;
+        }}
+
+        QLCDNumber {{
+            color: {theme.get("color", "#00FFAA")};
+            background-color: {theme.get("background", "#1e1e1e")};
+            border: 2px solid {theme.get("primary_hover_color", "#00FFFF")};
+            border-radius: 6px;
+            padding: 4px;
+        }}
+
         QCheckBox, QRadioButton {{
             spacing: 5px;
             color: {theme.get('color', '#ffffff')};

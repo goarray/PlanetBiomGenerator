@@ -41,37 +41,30 @@ import math
 from PIL import Image, ImageEnhance
 from PlanetNewsfeed import handle_news
 from PlanetConstants import (
-    # Core Dependencies
     TEXCONV_PATH,
-    # Core directories
     BASE_DIR,
     CONFIG_DIR,
     INPUT_DIR,
-    BIOM_DIR,  # BIOM_DIR = "planetdata/biomemaps"
-    # plugin_name in _congif.json > "plugin_name": "preview.esm"
+    BIOM_DIR,
     OUTPUT_DIR,
     TEMP_DIR,
     ASSETS_DIR,
     SCRIPT_DIR,
-    PLUGINS_DIR,  # PLUGINS_DIR = BASE_DIR / "Plugins"
+    PLUGINS_DIR,
     CSV_DIR,
     IMAGE_DIR,
     PNG_OUTPUT_DIR,
-    # Config and data files
     CONFIG_PATH,
     DEFAULT_CONFIG_PATH,
     CSV_PATH,
     PREVIEW_PATH,
-    # Script and template paths
     SCRIPT_PATH,
     TEMPLATE_PATH,
     PREVIEW_BIOME_PATH,
-    # UI and static assets
     UI_PATH,
     DEFAULT_IMAGE_PATH,
     GIF_PATHS,
     IMAGE_FILES,
-    # Logic/data maps
     BOOLEAN_KEYS,
     PROCESSING_MAP,
 )
@@ -89,7 +82,6 @@ plugin_name = config.get("plugin_name", "default_plugin")
 
 GRID_SIZE = (256, 256)
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
-
 
 class CsSF_BiomContainer(NamedTuple):
     magic: int
@@ -127,119 +119,192 @@ def load_biome_data(
 ) -> dict[int, dict]:
     """Load biome data (colors and heights) from Biomes.csv."""
     biome_data = {}
+    csv_path = Path(csv_path)
+    
+    # Verify file existence
+    if not csv_path.exists():
+        handle_news(None, "error", f"Biomes.csv not found at: {csv_path}")
+        raise FileNotFoundError(f"Biomes.csv not found at: {csv_path}")
+    
+    if not csv_path.is_file():
+        handle_news(None, "error", f"Path is not a file: {csv_path}")
+        raise ValueError(f"Path is not a file: {csv_path}")
+    
     handle_news(None, "info", f"Loading biome data from {csv_path}")
-    with open(csv_path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        expected_columns = {
-            "FormID",
-            "Red",
-            "Green",
-            "Blue",
-            "HeightIndex",
-            "BiomeCategory",
-        }
+    
+    try:
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            expected_columns = {
+                "FormID",
+                "Red",
+                "Green",
+                "Blue",
+                "HeightIndex",
+                "BiomeCategory",
+            }
 
-        if reader.fieldnames is None:
-            handle_news(
-                None,
-                "error",
-                "Biomes.csv is empty or malformed: no column headers found",
-            )
-            raise ValueError(
-                "Biomes.csv is empty or malformed: no column headers found"
-            )
-
-        if not expected_columns.issubset(reader.fieldnames):
-            missing = expected_columns - set(reader.fieldnames)
-            handle_news(None, "error", f"Missing columns in Biomes.csv: {missing}")
-            raise ValueError(f"Biomes.csv missing required columns: {missing}")
-
-        for i, row in enumerate(reader):
-            handle_news(None, "info", f"Processing row {i + 1}: {row}")
-            try:
-                form_id_str = row.get("FormID")
-                if not form_id_str or not isinstance(form_id_str, str):
-                    print(
-                        f"Row {i + 1} skipped: invalid or missing FormID ({form_id_str})"
-                    )
-                    continue
-
-                form_id_str = form_id_str.strip().replace("0x", "")
-                if not form_id_str or not all(
-                    c in "0123456789ABCDEFabcdef" for c in form_id_str
-                ):
-                    print(f"Row {i + 1} skipped: malformed hex FormID ({form_id_str})")
-                    continue
-
-                form_id = int(form_id_str, 16)
-
-                if used_biome_ids is not None and form_id not in used_biome_ids:
-                    continue
-
-                red = int(row.get("Red", 128))
-                green = int(row.get("Green", 128))
-                blue = int(row.get("Blue", 128))
-                height = int(row.get("HeightIndex", 127))
-                category = row.get("BiomeCategory", "").lower()
-
-                biome_data[form_id] = {
-                    "color": (red, green, blue),
-                    "height": height,
-                    "category": category,
-                }
-
-                handle_news(None, "info",
-                    f"Row {i + 1} accepted: FormID {form_id} -> color={red, green, blue}, height={height}, category={category}"
-                )
-
-            except (ValueError, KeyError, TypeError) as e:
-                print(f"Row {i + 1} error: {e}. Full row: {row}")
+            if reader.fieldnames is None:
                 handle_news(
                     None,
                     "error",
-                    f"Warning: Invalid row in Biomes.csv: {row}. Skipping. Error: {e}",
+                    "Biomes.csv is empty or malformed: no column headers found",
+                )
+                raise ValueError(
+                    "Biomes.csv is empty or malformed: no column headers found"
                 )
 
-    if not biome_data:
-        handle_news(None, "error", "No valid biome data loaded from Biomes.csv")
-    else:
-        handle_news(None, "info", f"Finished loading {len(biome_data)} biomes.")
+            if not expected_columns.issubset(reader.fieldnames):
+                missing = expected_columns - set(reader.fieldnames)
+                handle_news(None, "error", f"Missing columns in Biomes.csv: {missing}")
+                raise ValueError(f"Biomes.csv missing required columns: {missing}")
 
+            # Log the headers for debugging
+            handle_news(None, "info", f"CSV headers: {reader.fieldnames}")
+
+            row_count = 0
+            valid_row_count = 0
+            for i, row in enumerate(reader):
+                row_count += 1
+                try:
+                    form_id_str = row.get("FormID")
+                    if not form_id_str or not isinstance(form_id_str, str):
+                        handle_news(
+                            None,
+                            "warning",
+                            f"Row {i + 1} skipped: invalid or missing FormID ({form_id_str})",
+                        )
+                        continue
+
+                    form_id_str = form_id_str.strip().replace("0x", "")
+                    if not form_id_str or not all(
+                        c in "0123456789ABCDEFabcdef" for c in form_id_str
+                    ):
+                        handle_news(
+                            None,
+                            "warning",
+                            f"Row {i + 1} skipped: malformed hex FormID ({form_id_str})",
+                        )
+                        continue
+
+                    form_id = int(form_id_str, 16)
+
+                    # Skip if used_biome_ids is provided and FormID not in it
+                    if used_biome_ids is not None and form_id not in used_biome_ids:
+                        continue
+
+                    # Validate color values
+                    try:
+                        red = int(row.get("Red", 128))
+                        green = int(row.get("Green", 128))
+                        blue = int(row.get("Blue", 128))
+                        if not (0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255):
+                            handle_news(
+                                None,
+                                "warning",
+                                f"Row {i + 1} skipped: RGB values out of range ({red}, {green}, {blue})",
+                            )
+                            continue
+                    except ValueError as e:
+                        handle_news(
+                            None,
+                            "warning",
+                            f"Row {i + 1} skipped: Invalid RGB values ({row.get('Red')}, {row.get('Green')}, {row.get('Blue')}): {e}",
+                        )
+                        continue
+
+                    # Validate height
+                    try:
+                        height = int(row.get("HeightIndex", 127))
+                        if not (0 <= height <= 255):
+                            handle_news(
+                                None,
+                                "warning",
+                                f"Row {i + 1} skipped: HeightIndex out of range ({height})",
+                            )
+                            continue
+                    except ValueError as e:
+                        handle_news(
+                            None,
+                            "warning",
+                            f"Row {i + 1} skipped: Invalid HeightIndex ({row.get('HeightIndex')}): {e}",
+                        )
+                        continue
+
+                    category = row.get("BiomeCategory", "").lower()
+
+                    biome_data[form_id] = {
+                        "color": (red, green, blue),
+                        "height": height,
+                        "category": category,
+                    }
+                    valid_row_count += 1
+
+                except Exception as e:
+                    handle_news(
+                        None,
+                        "warning",
+                        f"Row {i + 1} error: {e}. Full row: {row}",
+                    )
+
+            handle_news(None, "info", f"Processed {row_count} rows, {valid_row_count} valid biomes loaded")
+
+    except UnicodeDecodeError as e:
+        handle_news(None, "error", f"Encoding error reading Biomes.csv: {e}")
+        raise
+
+    if not biome_data:
+        handle_news(None, "error", f"No valid biome data loaded from Biomes.csv. Rows processed: {row_count}")
+        raise ValueError(f"No valid biome data loaded from Biomes.csv. Rows processed: {row_count}")
+
+    handle_news(None, "info", f"Finished loading {len(biome_data)} biomes.")
     return biome_data
 
 
-def load_biom_file(biom_path, used_biome_ids):
-    """Load .biom file from the provided path."""
+def load_biom_file(biom_path, used_biome_ids, biome_data):
+    """Load .biom file and convert to RGB grids using biome_data."""
     if not biom_path.exists():
         raise FileNotFoundError(f"Biom file not found at: {biom_path}")
 
     with open(biom_path, "rb") as f:
         data = cast(CsSF_BiomContainer, CsSF_Biom.parse_stream(f))
 
-    # Load original 256x256 grids
     biome_grid_n = np.array(data.biomeGridN, dtype=np.uint32).reshape(256, 256)
     biome_grid_s = np.array(data.biomeGridS, dtype=np.uint32).reshape(256, 256)
 
-    # Extract biome IDs *before* scaling
     used_biome_ids.update(biome_grid_n.flatten())
     used_biome_ids.update(biome_grid_s.flatten())
 
-    # Upscale for textures
     upscale_factor = config["texture_resolution"] // 256
-    biome_grid_n = upscale_grid(biome_grid_n, upscale_factor)
-    biome_grid_s = upscale_grid(biome_grid_s, upscale_factor)
+    biome_grid_n = upscale_grid(biome_grid_n, upscale_factor, biome_data=biome_data)
+    biome_grid_s = upscale_grid(biome_grid_s, upscale_factor, biome_data=biome_data)
 
-    # Update GRID_SIZE based on upscaled dimensions
     global GRID_SIZE, GRID_FLATSIZE
-    GRID_SIZE = biome_grid_n.shape  # e.g., (2048, 2048)
+    GRID_SIZE = biome_grid_n.shape[:2]
     GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
+    
     return biome_grid_n, biome_grid_s
 
 
-def upscale_grid(grid, factor):
-    factor = 2 ** int(math.ceil(math.log2(factor)))  # Ensure factor is a power of 2
-    return np.kron(grid, np.ones((factor, factor), dtype=grid.dtype))
+def upscale_grid(grid: np.ndarray, factor: int, biome_data: Dict[int, Dict]) -> np.ndarray:
+    """Upscale biome grid and convert to RGB using biome_data."""
+    factor = 2 ** int(math.ceil(math.log2(factor)))
+    h, w = grid.shape
+    new_h, new_w = h * factor, w * factor
+
+    color_grid = np.zeros((h, w, 3), dtype=np.uint8)
+    default_color = (128, 128, 128)
+    for form_id in np.unique(grid):
+        color = biome_data.get(form_id, {}).get("color", default_color)
+        color_grid[grid == form_id] = color
+
+    image = Image.fromarray(color_grid, mode="RGB")
+    upscaled = image.resize((new_w, new_h), resample=Image.Resampling.BILINEAR)
+
+    
+    return np.array(upscaled, dtype=np.uint8)
+
 
 def generate_noise(shape, scale=None):
     """Generate larger-patch high-contrast salt-and-pepper noise."""
@@ -272,23 +337,28 @@ def generate_noise(shape, scale=None):
             noise[y2 : y2 + patch_size, x2 : x2 + patch_size],
             noise[y1 : y1 + patch_size, x1 : x1 + patch_size],
         )
+
+    
     return noise
 
 
-def generate_elevation(grid, biome_data):
-    """Generate elevation from a biome grid using height values from biome_data."""
-    elevation = np.zeros_like(grid, dtype=np.uint8)
+def generate_elevation(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> np.ndarray:
+    """Generate elevation from an RGB biome grid using heights from biome_data."""
+    height, width, _ = rgb_grid.shape
+    elevation = np.zeros((height, width), dtype=np.uint8)
 
-    for y in range(grid.shape[0]):
-        for x in range(grid.shape[1]):
-            biome_id = int(grid[y, x])
-            height = biome_data.get(biome_id, {}).get("height", 127)
-            elevation[y, x] = height
+    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
+    for y in range(height):
+        for x in range(width):
+            rgb = tuple(rgb_grid[y, x])
+            form_id = rgb_to_form_id.get(rgb, None)
+            height_value = biome_data.get(form_id, {}).get("height", 127) if form_id is not None else 127
+            elevation[y, x] = height_value
 
-    # Optional smoothing
     sigma_map = (2.0, 2.0)
     smoothed_elevation = gaussian_filter(elevation, sigma=sigma_map)
 
+    
     return smoothed_elevation.astype(np.uint8)
 
 
@@ -334,35 +404,69 @@ def safe_normalize(arr):
     max_val = arr.max()
     range_val = max_val - min_val
     if range_val == 0:
-        return np.zeros_like(arr)  # or np.full_like(arr, 0.5) if you prefer neutral
+        return np.zeros_like(arr)
+
+    
     return (arr - min_val) / range_val
 
 
+# Used by generate_fractal_noise
+def generate_perlin_noise(elevation_norm, scale=10):
+    """Generate Perlin-like noise seeded by elevation."""
+    # Optional slight perturbation to avoid flat noise
+    noise_seed = elevation_norm + np.random.normal(0, 0.03, elevation_norm.shape)
+    smooth_noise = gaussian_filter(noise_seed, sigma=scale)
+
+    
+    return (smooth_noise - smooth_noise.min()) / (
+        smooth_noise.max() - smooth_noise.min() + 1e-6
+    )
+
+
 def generate_fractal_noise(
-    shape, octaves=None, detail_smoothness=None, texture_contrast=None
+    elevation_norm, octaves=None, detail_smoothness=None, texture_contrast=None
 ):
-    """Generate fractal noise for terrain complexity."""
+    """Generate structured fractal noise for terrain elevation growth."""
     if octaves is None:
         octaves = config.get("texture_fractal", 4.23)
     if detail_smoothness is None:
-        detail_smoothness = config.get("detail_smoothness", 0.41)
+        detail_smoothness = config.get("detail_smoothness", 0.1)
     if texture_contrast is None:
         texture_contrast = config.get("texture_contrast", 0.67)
-    base = np.random.rand(*shape)
+
+    # Generate structured Perlin-style base noise
+    base = generate_perlin_noise(elevation_norm)  # ✅ Structured ridge-based seed
+
     combined = np.zeros_like(base)
     for i in range(int(octaves)):
-        sigma = max(1, detail_smoothness ** (i * 0.3))
-        weight = texture_contrast ** (i * 1.5)
-        combined += gaussian_filter(base, sigma=sigma) * weight
+        sigma = max(1, detail_smoothness ** (i * 1.2))  # Adjust smoothness scaling
+        weight = max(
+            0.1, texture_contrast ** (i * 2.5)
+        )  # More controlled contrast influence
 
+        # **Directional Diffusion Propagation**
+        gradient_x = np.gradient(base, axis=1)
+        gradient_y = np.gradient(base, axis=0)
+        combined += (
+            gaussian_filter(base, sigma=sigma) + gradient_x * 0.3 + gradient_y * 0.3
+        ) * weight  # ✅ Mountain ridges grow naturally
+
+    # **Apply Erosion Effects for Valleys**
+    grad_x, grad_y = np.gradient(combined)
+    erosion_map = np.abs(grad_x) + np.abs(grad_y)
+    combined -= erosion_map * 0.5  # ✅ Valleys deepen while mountains stabilize
+
+    # **Normalize and Strengthen Terrain Growth**
     combined = safe_normalize(combined)
-    combined = np.power(combined, 2)
+    combined = np.power(combined, 2.3)  # ✅ Enhances ridge prominence
+
+    
     return safe_normalize(combined)
 
 
 def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
     if not config.get("texture_craters", False):
-        return elevation_map  # craters disabled
+        return elevation_map
 
     crater_scale = config.get("texture_craters_scale", 1.0)
     max_radius = int(20 * crater_scale)
@@ -387,26 +491,32 @@ def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
     return (elevation_map_f * 255).astype(np.uint8)
 
 
-def generate_edge_blend(grid, blend_radius=None):
-    """Generate edge blending map for biome transitions."""
+def generate_edge_blend(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend_radius=None) -> np.ndarray:
+    """Generate edge blending map for biome transitions based on RGB grid."""
     if not config.get("enable_texture_edges", False):
-        return np.zeros_like(grid, dtype=np.float32)
+        return np.zeros(rgb_grid.shape[:2], dtype=np.float32)
 
     if blend_radius is None:
         blend_radius = config.get("texture_edges", 0.53)
 
-    edge_map = np.zeros_like(grid, dtype=np.float32)
+    edge_map = np.zeros(rgb_grid.shape[:2], dtype=np.float32)
+    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
 
-    for y in range(GRID_SIZE[1]):
-        for x in range(GRID_SIZE[0]):
-            current_biome = grid[y, x]
+    for y in range(rgb_grid.shape[0]):
+        for x in range(rgb_grid.shape[1]):
+            current_rgb = tuple(rgb_grid[y, x])
+            current_form_id = rgb_to_form_id.get(current_rgb, None)
+            if current_form_id is None:
+                continue
+
             neighbors = [
-                grid[max(y - 1, 0), x],
-                grid[min(y + 1, GRID_SIZE[1] - 1), x],
-                grid[y, max(x - 1, 0)],
-                grid[y, min(x + 1, GRID_SIZE[0] - 1)],
+                tuple(rgb_grid[max(y - 1, 0), x]),
+                tuple(rgb_grid[min(y + 1, rgb_grid.shape[0] - 1), x]),
+                tuple(rgb_grid[y, max(x - 1, 0)]),
+                tuple(rgb_grid[y, min(x + 1, rgb_grid.shape[1] - 1)]),
             ]
-            if any(neighbor != current_biome for neighbor in neighbors):
+            neighbor_form_ids = [rgb_to_form_id.get(rgb, None) for rgb in neighbors]
+            if any(nid != current_form_id and nid is not None for nid in neighbor_form_ids):
                 edge_map[y, x] = 1.0
 
     blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 1 - blend_radius))
@@ -422,72 +532,80 @@ def enhance_brightness(image, bright_factor=None):
     return enhancer.enhance(scaled_factor)
 
 
-def adjust_tint(rgb, texture_saturation=None, texture_tint=None):
-    if texture_saturation is None:
-        texture_saturation = config.get("texture_saturation", 0.5)
-    if texture_tint is None:
-        texture_tint = config.get("texture_tint", 0.5)
+def adjust_tint(
+    faded_color,
+    texture_saturation,
+    texture_tint,
+    biome_category="",
+    elevation_factor=0.5,
+):
+    """Adjust color with dynamic tinting based on biome category and elevation."""
 
-    r, g, b = [c / 255.0 for c in rgb]
+    r, g, b = [c / 255.0 for c in faded_color]
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
 
-    # Tint range: -0.25 (reddish) to +0.25 (bluish), centered at 0.5 = neutral
-    TINT_ROTATION_MAX = 0.25
-    hue_shift = (texture_tint - 0.5) * 2.0 * TINT_ROTATION_MAX
+    biome_tint_shifts = {
+        "ocean": -0.1,
+        "forest": -0.05,
+        "desert": 0.05,
+        "lava": 0.15,
+        "tundra": 0.0,
+        "soil": 0.02,
+    }
+    hue_shift = biome_tint_shifts.get(biome_category, 0.0)
+    hue_shift += (texture_tint - 0.5) * 0.25
+    hue_shift += elevation_factor * 0.05
     h = (h + hue_shift) % 1.0
 
-    # Saturation scale: 0.5 = unchanged, <0.5 = desaturate, >0.5 = boost
-    if texture_saturation < 0.5:
-        scale = texture_saturation * 2.0  # range [0.0–1.0]
-        s *= scale
-    else:
-        boost = (texture_saturation - 0.5) * 2.0  # range [0.0–1.0]
-        s += (1.0 - s) * boost
-        s = min(s, 1.0)
+    s = s * (0.8 + 0.4 * elevation_factor)
+    s = min(s, 1.0)
+
+    v = v * (0.9 + 0.2 * texture_saturation)
+    v = min(v, 1.0)
 
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
+
     return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
 
 
-def desaturate_color(rgb, saturate_factor=None):
+def desaturate_color(rgb, texture_saturation):
     """Adjust color saturation in HSV space with support for boosting."""
-    if saturate_factor is None:
-        saturate_factor = config.get("texture_saturation", 0.29)
 
-    # Convert to HSV
     r, g, b = [c / 255.0 for c in rgb]
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
 
-    if saturate_factor < 1.0:
-        # Desaturate toward grayscale
-        s = s * saturate_factor
+    if texture_saturation < 1.0:
+        s = s * texture_saturation
     else:
-        # Boost saturation above normal (limited to 1.0 max)
-        s = s + (1.0 - s) * (saturate_factor - 1.0)
+        s = s + (1.0 - s) * (texture_saturation - 1.0)
         s = min(s, 1.0)
 
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
+
     return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
 
 
-def generate_heightmap(grid, biome_data):
-    """Generate heightmap from biome grid using height values from biome_data."""
-    height, width = grid.shape
+def generate_heightmap(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], min_out=80, max_out=175) -> Image.Image:
+    """Generate heightmap from RGB grid using biome_data heights."""
+    height, width, _ = rgb_grid.shape
     elevation = np.zeros((height, width), dtype=np.uint8)
+    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
+
     for y in range(height):
         for x in range(width):
-            form_id = int(grid[y, x])
-            elevation[y, x] = biome_data.get(form_id, {}).get("height", 127)
+            rgb = tuple(rgb_grid[y, x])
+            form_id = rgb_to_form_id.get(rgb, None)
+            raw_height = biome_data.get(form_id, {}).get("height", 127) if form_id is not None else 127
+            norm_height = np.clip(raw_height, 0, 255)
+            scaled = min_out + (norm_height / 255) * (max_out - min_out)
+            elevation[y, x] = int(scaled)
+
     return Image.fromarray(elevation, mode="L")
-
-
-from PIL import Image
-import numpy as np
 
 
 def generate_rough_map(
     height_img,
-    biome_grid,
+    rgb_grid,
     biome_data,
     ocean_img=None,
     fractal_map=None,
@@ -495,31 +613,27 @@ def generate_rough_map(
     noise_scale=None,
     slope_strength=0.5,
 ):
-    # Convert height image to normalized array
     height = np.asarray(height_img).astype(np.float32) / 255.0
     H, W = height.shape
-    if (H, W) != biome_grid.shape:
-        height_img = height_img.resize(biome_grid.shape[::-1], resample=Image.Resampling.NEAREST)
+    if (H, W) != rgb_grid.shape[:2]:
+        height_img = height_img.resize(rgb_grid.shape[:2][::-1], resample=Image.Resampling.NEAREST)
         height = np.asarray(height_img).astype(np.float32) / 255.0
         H, W = height.shape
     roughness = np.zeros((H, W), dtype=np.float32)
 
-    # Config fallbacks
     if base_value is None:
-        base_value = 1.0 - config.get("texture_roughness_base", 0.36)  # e.g., 0.64
+        base_value = 1.0 - config.get("texture_roughness_base", 0.36)
     if noise_scale is None:
-        noise_scale = config.get("texture_noise", 0.95) # Reduce noise impact
+        noise_scale = config.get("texture_roughness", 0.15)
 
-    # 1. Slope roughness (from gradient)
     dy, dx = np.gradient(height)
     slope = np.sqrt(dx**2 + dy**2)
-    slope_roughness = np.clip(slope * slope_strength, 0, 1) * 0.2  # Weight slope at 20%
+    slope_roughness = np.clip(slope * slope_strength, 0, 1)
     roughness += slope_roughness
     handle_news(None, "info",
         f"Slope roughness range: {slope_roughness.min():.3f} - {slope_roughness.max():.3f}"
     )
 
-    # 2. Biome category influence with height modulation
     biome_rough_lookup = {
         "canyon": 0.35,
         "mountain": 0.45,
@@ -531,168 +645,156 @@ def generate_rough_map(
         "flat": 0.15,
     }
     biome_rough_map = np.full_like(roughness, base_value)
+    #rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
     for form_id, info in biome_data.items():
         category = info.get("BiomeCategory", "").lower()
         base_roughness = biome_rough_lookup.get(category, base_value)
         if base_roughness is None:
             base_roughness = base_value or 0.5
-        # Modulate by height to emphasize elevation within biomes
-        mask = biome_grid == form_id
+        mask = np.all(rgb_grid == np.array(info["color"]), axis=2)
         biome_rough_map[mask] = base_roughness * (
-            1 + height[mask] * 5
-        )  # Height boosts roughness
-        handle_news(None, "info",
-            f"Biome {form_id} ({category}): roughness {base_roughness}, mask size {np.sum(mask)}"
+            1 + height[mask] * 0.5
         )
 
-    roughness += biome_rough_map * 0.5  # Weight biome contribution at 50%
-    handle_news(None, "info",
-        f"Biome roughness range: {biome_rough_map.min():.3f} - {biome_rough_map.max():.3f}"
-    )
-
-    # 3. Ocean suppression
     if ocean_img is not None:
-        ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255.0  # 1.0 = ocean
-        roughness *= np.clip(1.0 - ocean_mask * 0.9, 0, 1)  # Stronger suppression
-        handle_news(
-            None,
-            "info",
-            f"Ocean mask range: {ocean_mask.min():.3f} - {ocean_mask.max():.3f}",
-        )
+        ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255.0
+        roughness *= np.clip(1.0 - ocean_mask * 0.5, 0, 1)
 
-    # 4. Fractal noise contribution
     if fractal_map is not None:
-        # Normalize fractal_map to [0, 1] if it's not already
         fractal_map = (fractal_map - fractal_map.min()) / (
             fractal_map.max() - fractal_map.min() + 1e-6
         )
-        roughness += noise_scale * fractal_map # Weight noise at 20%
-        handle_news(None, "info",
-            f"Fractal map range (after norm): {fractal_map.min():.3f} - {fractal_map.max():.3f}"
-        )
+        roughness += noise_scale * fractal_map
 
-    # Normalize and clamp
     roughness = np.clip(
-        roughness / (0.3 + 0.5 + 0.2), 0, 1
-    )  # Normalize by total weights
-    handle_news(None, "info", f"Final roughness range: {roughness.min():.3f} - {roughness.max():.3f}")
+        roughness / (0.5), 0, 1
+    )
 
     adjusted = np.where(
         roughness > 0.6,
-        0.6 + (roughness - 0.6) * 0.4,  # squash values above 0.6 by 60%
+        0.6 + (roughness - 0.6) * 0.4,
         roughness,
     )
 
     return Image.fromarray((adjusted * 255).astype(np.uint8), mode="L")
 
 
-def generate_ocean_mask(grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
-    """Generate ocean mask where height == 0 is white (ocean), else black (land)."""
-    h, w = grid.shape
-    ocean_mask = np.full((h, w), 0, dtype=np.uint8)  # Default to land (black)
+def generate_ocean_mask(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
+    """Generate ocean mask where height <= 3 is white (ocean), else black (land)."""
+    h, w, _ = rgb_grid.shape
+    ocean_mask = np.full((h, w), 0, dtype=np.uint8)
+    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
+
     for y in range(h):
         for x in range(w):
-            form_id = int(grid[y, x])
-            height = biome_data.get(form_id, {}).get("height", 255)
+            rgb = tuple(rgb_grid[y, x])
+            form_id = rgb_to_form_id.get(rgb, None)
+            height = biome_data.get(form_id, {}).get("height", 255) if form_id is not None else 255
             if height <= 3:
-                ocean_mask[y, x] = max(0, 255 - height**2)  # Ocean
+                ocean_mask[y, x] = max(0, 255 - height**2)
+
     return Image.fromarray(ocean_mask, mode="L")
 
 
-def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
-    """Generate biome texture images from grid and biome data."""
+def create_biome_image(
+    rgb_grid: np.ndarray, biome_data: Dict[int, Dict]
+) -> Dict[str, Image.Image]:
+    """Generate biome texture images from RGB grid and biome data."""
     process_images = config.get("process_images", False)
     bright_factor = config.get("texture_brightness", 0.05)
-
-    # Use grid shape instead of GRID_SIZE
-    height, width = grid.shape
-    biome_colors = {k: v["color"] for k, v in biome_data.items()}
-
-    if not biome_colors:
-        print("Error: biome_colors is empty, using default color")
-        color = np.full((height, width, 3), default_color, dtype=np.uint8)
-        dummy_grayscale = np.zeros((height, width), dtype=np.uint8)
-        return {
-            "color": Image.fromarray(color),
-            "surface": Image.fromarray(dummy_grayscale, mode="L"),
-            "ocean": Image.fromarray(dummy_grayscale.copy(), mode="L"),
-            "normal": Image.fromarray(color, mode="L"),  # Adjust if needed
-            "rough": Image.fromarray(dummy_grayscale.copy(), mode="L"),
-            "ao": Image.fromarray(dummy_grayscale.copy(), mode="L"),
-        }
-
+    texture_saturation = config.get("texture_saturation", 0.5)
+    texture_tint = config.get("texture_tint", 0.5)
     fractal_map = None
-    color = np.zeros((height, width, 3), dtype=np.uint8)
+
+    height, width, _ = rgb_grid.shape
+    color = rgb_grid.copy()
+
     if process_images:
         noise_map = generate_noise(
             (height, width), scale=config.get("noise_scale", 4.17)
         )
-        elevation_map = generate_elevation(grid, biome_data)
+        elevation_map = generate_elevation(rgb_grid, biome_data)
         elevation_map = generate_craters(elevation_map)
-        edge_blend_map = generate_edge_blend(grid)
+        edge_blend_map = generate_edge_blend(rgb_grid, biome_data)
         shading_map = generate_shading(elevation_map)
-        fractal_map = generate_fractal_noise((height, width))
+        elevation_norm = elevation_map / 255.0
+        fractal_map = generate_fractal_noise(elevation_norm)
+        atmospheric_fade_map = generate_atmospheric_fade((height, width))
         bright_factor = config.get("texture_brightness", 0.74)
 
+        rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
         for y in range(height):
             for x in range(width):
-                form_id = int(grid[y, x])
-                biome_color = biome_data.get(form_id, {}).get("color", default_color)
-                biome_color = tuple(int(v) for v in biome_color)
+                rgb = tuple(rgb_grid[y, x])
+                form_id = rgb_to_form_id.get(rgb, None)
+                category = biome_data.get(form_id, {}).get("category", "") if form_id is not None else ""
                 lat_factor = abs((y / height) - 0.5) * 0.4
                 elevation_factor = elevation_map[y, x] / 255.0
+                # Apply elevation-based shading
                 shaded_color = tuple(
-                    int(c * (0.8 + 0.2 * elevation_factor)) for c in biome_color
+                    int(c * (0.8 + 0.2 * elevation_factor)) for c in rgb
                 )
+                # Apply light-based shading
                 light_adjusted_color = tuple(
                     int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color
                 )
+                # Apply fractal noise
                 fractal_adjusted_color = tuple(
                     int(c * (0.85 + 0.15 * fractal_map[y, x]))
                     for c in light_adjusted_color
                 )
+                # Apply latitude-based darkening
                 lat_adjusted_color = tuple(
                     int(c * (1 - lat_factor)) for c in fractal_adjusted_color
                 )
+                # Apply edge blending
                 blended_color = tuple(
                     int(c * (1 - 0.5 * edge_blend_map[y, x]))
                     for c in lat_adjusted_color
                 )
-                final_color = tuple(
+                # Apply noise
+                noisy_color = tuple(
                     np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
                     for c in blended_color
                 )
-                tinted_color = adjust_tint(final_color)
-                desaturated_color = desaturate_color(tinted_color)
+                # Apply atmospheric fade (reduces intensity toward edges)
+                fade_factor = 1.0 - atmospheric_fade_map[y, x]  # 0 at center, up to intensity at edges
+                faded_color = tuple(
+                    int(c * (1.0 - 0.3 * fade_factor)) for c in noisy_color
+                )
+                # Apply biome-specific tint
+                tinted_color = adjust_tint(
+                    faded_color,
+                    texture_saturation,
+                    texture_tint,
+                    category,
+                    elevation_factor,
+                )
+                # Apply desaturation
+                desaturated_color = desaturate_color(tinted_color, texture_saturation)
                 color[y, x] = desaturated_color
     else:
-        for y in range(height):
-            for x in range(width):
-                form_id = int(grid[y, x])
-                color[y, x] = biome_data.get(form_id, {}).get("color", default_color)
+        color = rgb_grid
 
-    color_image = Image.fromarray(color)
+    color_image = Image.fromarray(color, mode="RGB")
     if process_images:
         color_image = enhance_brightness(color_image, bright_factor)
 
-    # Generate other maps
-    surface_image = generate_heightmap(grid, biome_data)
-    ocean_image = generate_ocean_mask(grid, biome_data)
-    ao_image = generate_ao_map(grid, biome_data)
+    surface_image = generate_heightmap(rgb_grid, biome_data)
+    ocean_image = generate_ocean_mask(rgb_grid, biome_data)
+    ao_image = generate_ao_map(rgb_grid, biome_data)
     rough_image = generate_rough_map(
         height_img=surface_image,
-        biome_grid=grid,
+        rgb_grid=rgb_grid,
         biome_data=biome_data,
         ocean_img=ocean_image,
-        fractal_map=fractal_map,
+        fractal_map=fractal_map if process_images else None,
         base_value=config.get("texture_roughness_base", 0.2),
         noise_scale=config.get("texture_roughness", 0.15),
         slope_strength=0.5,
     )
 
-    # Generate normal map from the final color image
-    # Convert color_image to grayscale if generate_normal_map requires a heightmap
-    color_image_grayscale = color_image.convert("L")  # Convert to grayscale
+    color_image_grayscale = color_image.convert("L")
     normal_image = generate_normal_map(color_image_grayscale)
 
     return {
@@ -705,45 +807,29 @@ def create_biome_image(grid, biome_data, default_color=(128, 128, 128)):
     }
 
 
-import numpy as np
-from scipy.ndimage import sobel
-from PIL import Image
-
-
-def generate_normal_map(height_img, strength=0.1, invert_height=True):
-    # Convert height map to float32 and normalize to [0, 1]
+def generate_normal_map(height_img, strength=0.3, invert_height=True):
     height = np.asarray(height_img).astype(np.float32) / 255.0
-
-    # Invert height if needed
     if invert_height:
         height = 1.0 - height
-
-    # Compute gradients using Sobel filter
     dx = sobel(height, axis=1) * strength
     dy = -sobel(height, axis=0) * strength
-    dz = np.ones_like(height) # Z-component for flat surfaces
-
-    # Normalize the normal vector
+    dz = np.ones_like(height)
     length = np.sqrt(dx**2 + dy**2 + dz**2)
     nx = dx / (length + 1e-8)
     ny = dy / (length + 1e-8)
     nz = dz / (length + 1e-8)
-
-    # Convert [-1, 1] to [0, 255] for RGB
-    r = ((nx + 1) * 0.5 * 255).astype(np.uint8)  # Red = X
-    g = ((ny + 1) * 0.5 * 255).astype(np.uint8)  # Green = Y
-    b = ((nz + 1) * 0.5 * 255).astype(np.uint8)  # Blue = Z, full range
-
-    # Stack channels into RGB image
+    r = ((nx + 1) * 0.5 * 255).astype(np.uint8)
+    g = ((ny + 1) * 0.5 * 255).astype(np.uint8)
+    b = ((nz + 1) * 0.5 * 255).astype(np.uint8)
     normal_map = np.stack([r, g, b], axis=-1)
     return Image.fromarray(normal_map, mode="RGB")
 
 
-def generate_ao_map(grid, biome_data):
-    elevation = generate_elevation(grid, biome_data)
-    blurred = gaussian_filter(elevation.astype(np.float32), sigma=2.0)
+def generate_ao_map(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
+    elevation = generate_elevation(rgb_grid, biome_data)
+    blurred = gaussian_filter(elevation.astype(np.float32), sigma=1.0)
     ao = np.clip((blurred - elevation), 0, 255)
-    ao = 255 - (ao / ao.max() * 255)  # Normalize and invert
+    ao = 255 - (ao / ao.max() * 127)
     ao_image = Image.fromarray(ao.astype(np.uint8), mode="L")
     handle_news(None, "info", f"AO map generated: min={ao.min()}, max={ao.max()}, shape={ao.shape}")
     return ao_image
@@ -772,8 +858,6 @@ def convert_png_to_dds(
 
     texture_filename = dds_name if dds_name else png_path.stem + ".dds"
     texture_path = dds_output_dir / texture_filename
-
-    # Actual output filename from texconv (always .DDS upper-case)
     texconv_output_name = png_path.stem + ".DDS"
     texconv_output_path = dds_output_dir / texconv_output_name
 
@@ -781,7 +865,7 @@ def convert_png_to_dds(
         str(TEXCONV_PATH),
         "-f",
         dds_format,
-        #"-m",
+        "-m",
         "0",
         "-y",
         "-o",
@@ -791,10 +875,8 @@ def convert_png_to_dds(
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        # Rename texconv's output to the desired filename
         if texconv_output_path.exists() and texconv_output_path != texture_path:
             texconv_output_path.rename(texture_path)
-
         handle_news(
             None,
             "info",
@@ -833,32 +915,31 @@ def main():
             sys.exit(1)
 
     used_biome_ids = set()
+    # Load biome data without filtering by used_biome_ids initially
+    biome_data = load_biome_data(CSV_PATH)
+    if not biome_data:
+        raise ValueError("No valid biome data loaded from Biomes.csv")
+
     for biom_path in biom_files:
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids)
+            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids, biome_data)
             handle_news(None, "info", f"Loaded {biom_path.name}: biome IDs = {used_biome_ids}")
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
             continue
 
     handle_news(None, "info", f"Used biome IDs: {used_biome_ids}")
-    biome_data = load_biome_data(CSV_PATH, used_biome_ids)
-    handle_news(None, "info", f"Loaded biome data: {biome_data}")
-    if not biome_data:
-        raise ValueError("No valid biome data loaded from Biomes.csv")
 
     keep_pngs = config.get("keep_pngs_after_conversion", True)
     for biom_path in biom_files:
         planet_name = biom_path.stem
         handle_news(None, "info", f"Processing blueprint for planet {biom_path.name}")
         try:
-            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids)
+            biome_grid_n, biome_grid_s = load_biom_file(biom_path, used_biome_ids, biome_data)
             handle_news(None, "info", f"Generating textures for {planet_name} North...")
             maps_n = create_biome_image(biome_grid_n, biome_data)
             handle_news(None, "info", f"Generating textures for {planet_name} South...")
             maps_s = create_biome_image(biome_grid_s, biome_data)
-            #maps_n = {k: upscale_image(v) for k, v in maps_n.items()}
-            #maps_s = {k: upscale_image(v) for k, v in maps_s.items()}
 
             once_per_run = False
             copied_textures = set()
@@ -878,7 +959,7 @@ def main():
                     suffix_map = {
                         "surface": "surface_metal",
                         "ocean": "ocean_mask",
-}
+                    }
                     suffix = suffix_map.get(texture_type, texture_type)
                     png_filename = f"{planet_name}_{hemisphere}_{suffix}.png"
                     planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
@@ -909,7 +990,6 @@ def main():
                 file=sys.stderr,
             )
 
-            # Process combined textures for this planet
             for texture_type in [
                 "color",
                 "surface",
@@ -919,7 +999,6 @@ def main():
                 "ao",
             ]:
                 planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
-                # Use suffix_map to get the correct filename suffix
                 suffix_map = {
                     "surface": "surface_metal",
                     "ocean": "ocean_mask",

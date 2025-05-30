@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1096</width>
-    <height>865</height>
+    <height>870</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>0</width>
-    <height>140</height>
+    <width>1095</width>
+    <height>870</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -596,188 +596,59 @@
             <string>Tectonic Boundaries</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_14">
-            <item row="1" column="3">
-             <widget class="QSlider" name="convergent_elevation">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_6">
               <property name="text">
-               <string>Edge Width</string>
+               <string>Fault Width</string>
               </property>
              </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_5">
               <property name="text">
-               <string>Num Plates</string>
+               <string>Num Faults</string>
               </property>
              </widget>
             </item>
-            <item row="11" column="3">
-             <widget class="QSlider" name="distort_magnitude">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="1">
-             <widget class="QSlider" name="boundary_noise_octaves">
+            <item row="1" column="1">
+             <widget class="QSlider" name="number_faults">
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
             <item row="7" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Noise Scale</string>
-              </property>
-             </widget>
-            </item>
-            <item row="13" column="1">
-             <widget class="QSlider" name="boundary_noise_lacunarity">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="11" column="1">
-             <widget class="QSlider" name="boundary_noise_persistence">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSlider" name="number_tect_plates">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_17">
-              <property name="text">
-               <string>Edge Jitter</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QSlider" name="center_jitter">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="3">
-             <widget class="QSlider" name="subduction_elevation">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <widget class="QSlider" name="boundary_width">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="3">
-             <widget class="QSlider" name="distort_scale">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="13" column="0">
-             <widget class="QLabel" name="label_10">
-              <property name="text">
-               <string>Lacunarity</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="QSlider" name="boundary_noise_scale">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="3">
-             <widget class="QSlider" name="elevation_smoothing">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>Noise Octave</string>
-              </property>
-             </widget>
-            </item>
-            <item row="11" column="0">
-             <widget class="QLabel" name="label_9">
-              <property name="text">
-               <string>Persistence</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="3">
-             <widget class="QSlider" name="divergent_depression">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QLabel" name="label_11">
-              <property name="frameShape">
-               <enum>QFrame::Shape::NoFrame</enum>
-              </property>
-              <property name="text">
-               <string>Convergent</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="2">
-             <widget class="QLabel" name="label_12">
-              <property name="text">
-               <string>Divergent</string>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="2">
-             <widget class="QLabel" name="label_13">
-              <property name="text">
-               <string>Subduction</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="2">
              <widget class="QLabel" name="label_14">
               <property name="text">
                <string>Smoothing</string>
               </property>
              </widget>
             </item>
-            <item row="9" column="2">
-             <widget class="QLabel" name="label_15">
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_17">
               <property name="text">
-               <string>Distort Scale</string>
+               <string>Fault Jitter</string>
               </property>
              </widget>
             </item>
-            <item row="11" column="2">
-             <widget class="QLabel" name="label_16">
-              <property name="text">
-               <string>Magnitude</string>
+            <item row="3" column="1">
+             <widget class="QSlider" name="fault_jitter">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QSlider" name="fault_width">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QSlider" name="horizontalSlider">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
@@ -1176,6 +1047,25 @@
           <string>Textures</string>
          </attribute>
          <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="2">
+           <widget class="QLabel" name="ao_preview_image">
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_3.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0" rowspan="3" colspan="3">
            <widget class="QLabel" name="color_preview_image">
             <property name="sizePolicy">
@@ -1213,59 +1103,8 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="biome_preview_image">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_0.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QLabel" name="resource_preview_image">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_1.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="3">
            <widget class="QLabel" name="normal_preview_image">
-            <property name="layoutDirection">
-             <enum>Qt::LayoutDirection::LeftToRight</enum>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_3.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="rough_preview_image">
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1302,8 +1141,24 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="2">
-           <widget class="QLabel" name="ao_preview_image">
+          <item row="0" column="3">
+           <widget class="QLabel" name="biome_preview_image">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_0.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="rough_preview_image">
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1337,11 +1192,27 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="3">
+           <widget class="QLabel" name="resource_preview_image">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_1.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="color_tab">
          <attribute name="title">
-          <string>Status</string>
+          <string>Terminal</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_8">
           <item>
@@ -1359,7 +1230,7 @@
              </size>
             </property>
             <property name="title">
-             <string>Coonsole Output</string>
+             <string>Terminal Output</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_7">
              <item>
@@ -1648,6 +1519,13 @@
            </property>
           </widget>
          </item>
+         <item row="5" column="4">
+          <widget class="QCheckBox" name="enable_texture_noise">
+           <property name="text">
+            <string>Texture Noise</string>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="2">
           <widget class="QCheckBox" name="upscale_image">
            <property name="toolTip">
@@ -1668,13 +1546,13 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="2">
-          <widget class="QLCDNumber" name="texture_resolution_display">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1720,6 +1598,26 @@
            </property>
           </widget>
          </item>
+         <item row="4" column="4">
+          <widget class="QCheckBox" name="enable_texture_edges">
+           <property name="toolTip">
+            <string>Enables blending at biome edges for smooth transitions.</string>
+           </property>
+           <property name="accessibleName">
+            <string>Edge Blending Enabled</string>
+           </property>
+           <property name="text">
+            <string>Texture Edges</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QCheckBox" name="enable_tectonic_plates">
+           <property name="text">
+            <string>Biome Tectonics</string>
+           </property>
+          </widget>
+         </item>
          <item row="5" column="0">
           <widget class="QCheckBox" name="enable_anomalies">
            <property name="minimumSize">
@@ -1748,6 +1646,12 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
            <property name="font">
             <font>
              <family>Fixedsys</family>
@@ -1766,27 +1670,10 @@
             <string>Seed Value</string>
            </property>
            <property name="frameShape">
-            <enum>QFrame::Shape::NoFrame</enum>
+            <enum>QFrame::Shape::Box</enum>
            </property>
            <property name="digitCount">
             <number>7</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Resolution</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QCheckBox" name="enable_tectonic_plates">
-           <property name="text">
-            <string>Biome Tectonics</string>
            </property>
           </widget>
          </item>
@@ -1811,23 +1698,31 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="4">
-          <widget class="QCheckBox" name="enable_texture_noise">
-           <property name="text">
-            <string>Texture Noise</string>
+         <item row="5" column="2">
+          <widget class="QLCDNumber" name="texture_resolution_display">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-          </widget>
-         </item>
-         <item row="4" column="4">
-          <widget class="QCheckBox" name="enable_texture_edges">
-           <property name="toolTip">
-            <string>Enables blending at biome edges for smooth transitions.</string>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Fixedsys</family>
+             <bold>true</bold>
+            </font>
            </property>
            <property name="accessibleName">
-            <string>Edge Blending Enabled</string>
+            <string>Output Resolution</string>
            </property>
-           <property name="text">
-            <string>Texture Edges</string>
+           <property name="digitCount">
+            <number>4</number>
            </property>
           </widget>
          </item>
@@ -2021,71 +1916,8 @@
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_13">
-            <item row="4" column="0">
-             <widget class="QSlider" name="texture_tint">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSlider" name="texture_contrast">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Rate of decay in detail strength.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Detail Strength Decay</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="texture_saturation_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Saturation</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QPushButton" name="texture_tint_reset">
+            <item row="0" column="1">
+             <widget class="QPushButton" name="texture_contrast_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -2104,7 +1936,7 @@
                </font>
               </property>
               <property name="text">
-               <string>Tint</string>
+               <string>Contrast</string>
               </property>
              </widget>
             </item>
@@ -2152,8 +1984,33 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QPushButton" name="texture_contrast_reset">
+            <item row="4" column="1">
+             <widget class="QSlider" name="texture_edges">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Radius of the smoothing area at biome edges.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Edge Blend Radius</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="texture_tint_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -2172,7 +2029,48 @@
                </font>
               </property>
               <property name="text">
-               <string>Contrast</string>
+               <string>Tint</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QProgressBar" name="news_count_progressbar">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="value">
+               <number>0</number>
+              </property>
+              <property name="textVisible">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QPushButton" name="texture_edges_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Edges</string>
               </property>
              </widget>
             </item>
@@ -2201,33 +2099,8 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="1">
-             <widget class="QSlider" name="texture_edges">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Radius of the smoothing area at biome edges.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Edge Blend Radius</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QPushButton" name="texture_edges_reset">
+            <item row="0" column="2">
+             <widget class="QPushButton" name="texture_saturation_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -2241,8 +2114,86 @@
                </size>
               </property>
               <property name="text">
-               <string>Edges</string>
+               <string>Saturation</string>
               </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QSlider" name="texture_tint">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSlider" name="texture_contrast">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Rate of decay in detail strength.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Detail Strength Decay</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QFrame" name="frame">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Shape::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Shadow::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <item>
+                <widget class="QLabel" name="label_7">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Progress</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
@@ -2570,141 +2521,54 @@
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_11">
-            <item row="0" column="0" rowspan="4">
-             <layout class="QGridLayout" name="gridLayout_17">
-              <item row="0" column="0" colspan="3">
-               <widget class="QLabel" name="label_2">
-                <property name="font">
-                 <font>
-                  <strikeout>true</strikeout>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Loc. Bias</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QRadioButton" name="light_bias_nw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QRadioButton" name="light_bias_nn">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QRadioButton" name="light_bias_ne">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QRadioButton" name="light_bias_ww">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QRadioButton" name="light_bias_cc">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QRadioButton" name="light_bias_ee">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QRadioButton" name="light_bias_sw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="light_bias_ss">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="2">
-               <widget class="QRadioButton" name="light_bias_se">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            <item row="3" column="1">
+             <widget class="QSlider" name="fade_spread">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="fade_spread_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>true</strikeout>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Spread of the edge fade effect.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Fade Spread</string>
+              </property>
+              <property name="text">
+               <string>Spread</string>
+              </property>
+             </widget>
             </item>
             <item row="0" column="1">
              <widget class="QPushButton" name="fade_intensity_reset">
@@ -2755,54 +2619,141 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QPushButton" name="fade_spread_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>120</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>true</strikeout>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Spread of the edge fade effect.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Fade Spread</string>
-              </property>
-              <property name="text">
-               <string>Spread</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QSlider" name="fade_spread">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>120</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
+            <item row="0" column="0" rowspan="4">
+             <layout class="QGridLayout" name="gridLayout_17">
+              <item row="1" column="2">
+               <widget class="QRadioButton" name="light_bias_ne">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QRadioButton" name="light_bias_se">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QRadioButton" name="light_bias_cc">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QRadioButton" name="light_bias_sw">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QRadioButton" name="light_bias_nn">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QRadioButton" name="light_bias_ww">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QRadioButton" name="light_bias_ss">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0" colspan="3">
+               <widget class="QLabel" name="label_2">
+                <property name="font">
+                 <font>
+                  <strikeout>true</strikeout>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Loc. Bias</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QRadioButton" name="light_bias_nw">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QRadioButton" name="light_bias_ee">
+                <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
            <zorder>fade_intensity</zorder>
