@@ -166,6 +166,7 @@ def get_seed(config):
 
 
 def generate_hemisphere_patterns(shape, config):
+    handle_news(None)
     # Initialize random generators with user_seed
     seed = get_seed(config)
     rng = np.random.default_rng(seed)
@@ -216,7 +217,14 @@ def generate_hemisphere_patterns(shape, config):
             south_pattern.max() - south_pattern.min() + epsilon
         )
         north_pattern += elevation_weight * north_elevation
+        north_min = north_pattern.min()
+        north_max = north_pattern.max()
+        north_pattern = (north_pattern - north_min) / (north_max - north_min + 1e-6)
+
         south_pattern += elevation_weight * south_elevation
+        south_min = south_pattern.min()
+        south_max = south_pattern.max()
+        south_pattern = (south_pattern - south_min) / (south_max - south_min + 1e-6)
 
     if config.get("enable_noise", False):
         north_pattern += generate_noise(shape, config)
@@ -247,6 +255,7 @@ def generate_hemisphere_patterns(shape, config):
 
 
 def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_rng):
+    handle_news(None)
     # Generate edge faults and inward fault lines
     north_fault_map, south_fault_map, north_edge_points, south_edge_points = (
         generate_edge_faults(shape, number_faults, py_rng)
@@ -288,6 +297,7 @@ def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_r
 
 
 def generate_edge_faults(grid_size, number_faults, py_rng):
+    handle_news(None)
     h, w = grid_size
     faults_per_edge = (number_faults * 2) // 4
 
@@ -326,7 +336,7 @@ def generate_edge_faults(grid_size, number_faults, py_rng):
             for i in range(faults_per_edge)
         )
         for pos in positions:
-            
+
             y, x = (fixed, pos) if axis == 0 else (pos, fixed)
             fault_type = next(fault_type_cycle)
             north_map[y, x] = fault_type
@@ -358,6 +368,7 @@ def generate_edge_faults(grid_size, number_faults, py_rng):
 def draw_noise_driven_squiggle_line(
     p0, p1, steps=800, distort_scale=5, fault_jitter=0.3, seed=0, rng=None
 ):
+    handle_news(None)
     height, width = GRID_SIZE
 
     fault_jitter = config.get("fault_jitter", 0.5)
@@ -374,15 +385,12 @@ def draw_noise_driven_squiggle_line(
     dx = x1 - x0
     dy = y1 - y0
     total_dist = np.hypot(dx, dy)
-    base_angle = np.arctan2(dy, dx)
 
     cx, cy = float(x0), float(y0)
     path = [(int(y0), int(x0))]
 
     for step in range(1, steps):
         progress = step / (steps - 1)
-        target_x = x0 + dx * progress
-        target_y = y0 + dy * progress
         curr_dx = x1 - cx
         curr_dy = y1 - cy
         curr_dist = np.hypot(curr_dx, curr_dy)
@@ -394,7 +402,7 @@ def draw_noise_driven_squiggle_line(
         local_dy = (noise_y[gy, gx] - 0.5) * 2
         local_angle = np.arctan2(local_dy, local_dx)
 
-        final_angle = curr_angle + (local_angle * fault_jitter)
+        final_angle = (curr_angle + (local_angle * fault_jitter)) * 0.5
         step_size = curr_dist / (steps - step) if step < steps - 1 else curr_dist
         step_size = min(step_size, total_dist / steps * 2)
 
@@ -418,12 +426,14 @@ def draw_noise_driven_squiggle_line(
 def generate_inward_faults(
     grid_size, edge_points, seed_offset=0, rng=None, py_rng=None
 ):
+    handle_news(None)
     fault_line_type_map = np.full(grid_size, -1, dtype=int)
     base_seed = 42 + seed_offset
 
     edge_pairs = [("top", "bottom"), ("left", "right")]
 
     for edge1, edge2 in edge_pairs:
+        handle_news(None)
         starters1 = edge_points[edge1]
         starters2 = edge_points[edge2]
 
@@ -461,10 +471,12 @@ def generate_inward_faults(
     return fault_line_type_map
 
 
-def dilate_fault_lines(fault_map, fault_width=3, seed=0, py_rng=None):
+def dilate_fault_lines(fault_map, fault_width=3, fault_smooth=0.5, seed=0, py_rng=None):
+    handle_news(None)
     h, w = fault_map.shape
     fault_mask = fault_map >= 0
-    fault_width = config.get("fault_width", 3)
+    fault_width = (config.get("fault_width", 3) * 3)
+    fault_smooth = config.get("fault_smooth", 0.5)
     dilated_mask = binary_dilation(fault_mask, iterations=fault_width)
 
     # Initialize py_rng if not provided
@@ -496,10 +508,28 @@ def dilate_fault_lines(fault_map, fault_width=3, seed=0, py_rng=None):
         f"Dilated faults: {convergent_dilated} convergent, {divergent_dilated} divergent",
     )
 
+    if fault_smooth > 0:
+        smoothed_map = dilated_fault_map.copy()
+        for y, x in np.argwhere(dilated_area):
+            neighbors = [
+                dilated_fault_map[ny, nx]
+                for ny in range(max(0, y - 1), min(h, y + 2))
+                for nx in range(max(0, x - 1), min(w, x + 2))
+                if dilated_fault_map[ny, nx] >= 0
+            ]
+            if neighbors:
+                avg = sum(neighbors) / len(neighbors)
+                blended = (
+                    fault_smooth * avg + (1 - fault_smooth) * dilated_fault_map[y, x]
+                )
+                smoothed_map[y, x] = int(round(blended))
+        dilated_fault_map = smoothed_map
+
     return dilated_fault_map
 
 
 def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed, rng):
+    handle_news(None)
     h, w = grid_size
     elevation_map = np.zeros((h, w), dtype=np.float32)
 
@@ -543,6 +573,7 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
 def generate_squircle_pattern(
     shape: Tuple[int, int], squircle_factor: float
 ) -> np.ndarray:
+    handle_news(None)
     h, w = shape
     y = np.linspace(-1, 1, h)[:, None]
     x = np.linspace(-1, 1, w)[None, :]
@@ -582,6 +613,7 @@ def generate_squircle_pattern(
 
 
 def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
+    handle_news(None)
     # Normalize grid
     grid = np.clip(grid, 0.0, 1.0)
 
@@ -606,6 +638,7 @@ def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
 
 def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     """Generate smooth noise with configurable parameters, normalized to 0..1."""
+    handle_news(None)
     if not config.get("enable_noise", True):
         return np.zeros(shape, dtype=np.float32)
 
@@ -710,9 +743,9 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
     enable_seed_anomalies = config.get("enable_seed_anomalies", False)
     enable_polar_anomalies = config.get("enable_polar_anomalies", False)
     equator_anomaly_count = config.get("equator_anomaly_count", 0.5)
-    equator_anomaly_scale = config.get("equator_anomaly_scale", 0.5)
+    equator_anomaly_spray = config.get("equator_anomaly_spray", 0.5)
     polar_anomaly_count = config.get("polar_anomaly_count", 0.5)
-    polar_anomaly_scale = config.get("polar_anomaly_scale", 0.5)
+    polar_anomaly_spray = config.get("polar_anomaly_spray", 0.5)
 
     seed = get_seed(config)
     np.random.seed(seed)
@@ -733,38 +766,35 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
         falloff = np.clip(1.0 - (d / width) ** 2, 0.0, 1.0)
         return falloff
 
-    # 1. Equator anomaly (centered at 0.5 radius)
+    # 1. Equator anomaly (centered at 1.0)
     if enable_equator_anomalies:
-        equator_mask = make_mask(center=1.0, width=equator_anomaly_scale)
+        equator_mask = make_mask(center=1.0, width=equator_anomaly_count)
         equator_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
-        boosted_equator_strength = 2 * equator_anomaly_count
+        boosted_equator_strength = 2 * equator_anomaly_spray
         modified_grid += equator_mask * equator_noise * boosted_equator_strength
 
-    # 2. Polar anomaly (centered at 0.0)
+    # 2. Polar anomaly (centered at 1.0)
     if enable_polar_anomalies:
-        polar_mask = make_mask(center=0.0, width=polar_anomaly_scale)
+        polar_mask = make_mask(center=0.0, width=polar_anomaly_count)
         polar_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
-        boosted_polar_strength = 2 * polar_anomaly_count
+        boosted_polar_strength = 2 * polar_anomaly_spray
         modified_grid += polar_mask * polar_noise * boosted_polar_strength
 
-    # 3. Seed-based variant (randomized masks + noise scales)
+    # 3. Seed-based variant (scattered mid-biome influences)
     if enable_seed_anomalies:
+        strength = 0.25 * (equator_anomaly_count * polar_anomaly_count)
 
-        def normalize_seed(seed: int, min_val=0.1, max_val=1.0) -> float:
-            return min_val + (seed % 1000) / 1000 * (max_val - min_val)
+        anomaly_noise = gaussian_filter(rng.normal(size=(h, w)), sigma=4)
 
-        equator_strength = normalize_seed(seed, 0.2, 1.0)
-        equator_width = normalize_seed(seed + 1, 0.2, 0.7)
-        polar_strength = normalize_seed(seed + 2, 0.2, 1.0)
-        polar_width = normalize_seed(seed + 3, 0.2, 0.7)
+        # Normalize noise to 0–1 range manually
+        noise_min = anomaly_noise.min()
+        noise_max = anomaly_noise.max()
+        normalized_noise = (anomaly_noise - noise_min) / (noise_max - noise_min + 1e-6)
 
-        equator_mask = make_mask(0.5, equator_width)
-        equator_noise = gaussian_filter(rng.normal(size=(h, w)), sigma=[3, 3])
-        modified_grid += equator_mask * equator_noise * equator_strength
+        # Compress values toward 0.5 to favor mid-biomes
+        centered_noise = 0.5 + (normalized_noise - 0.5) * 0.5  # result in [0.25–0.75]
 
-        polar_mask = make_mask(0.0, polar_width)
-        polar_noise = gaussian_filter(rng.normal(size=(h, w)), sigma=3)
-        modified_grid += polar_mask * polar_noise * polar_strength
+        modified_grid += centered_noise * strength
 
     return np.clip(modified_grid, 0, 1)
 

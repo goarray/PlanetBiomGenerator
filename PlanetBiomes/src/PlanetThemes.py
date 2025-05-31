@@ -198,10 +198,10 @@ THEMES = {
         }}
 
         QProgressBar {{
-            border: 1px solid {theme.get("primary_hover_color", "#00FFFF")};
-            border-radius: 6px;
+            border: 1px solid {theme.get("border_color", "#00FFFF")};
+            border-radius: 2px;
             text-align: center;
-            height: 30px;
+            height: 5px;
             background: {theme.get('background', '#10141a')};
             color: {theme.get('color', '#FFFFFF')};
         }}

@@ -53,7 +53,7 @@
          </size>
         </property>
         <property name="title">
-         <string>Biome Options (Broken)</string>
+         <string>Biome Options</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
@@ -71,11 +71,11 @@
             </size>
            </property>
            <property name="title">
-            <string>Biome Basics</string>
+            <string>Biome Map Shape</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
             <item row="0" column="0">
-             <widget class="QPushButton" name="zoom_reset">
+             <widget class="QPushButton" name="zoom_factor_reset">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -93,7 +93,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QPushButton" name="squircle_exponent_reset">
+             <widget class="QPushButton" name="squircle_factor_reset">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -152,11 +152,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="BiomeNoiseGroup">
+          <widget class="QGroupBox" name="BiomeAnomaliesGroup">
            <property name="minimumSize">
             <size>
              <width>260</width>
-             <height>145</height>
+             <height>115</height>
             </size>
            </property>
            <property name="font">
@@ -165,141 +165,49 @@
             </font>
            </property>
            <property name="title">
-            <string>Biome Noise</string>
+            <string>Biome Anomalies</string>
            </property>
            <property name="checkable">
             <bool>false</bool>
            </property>
-           <layout class="QGridLayout" name="gridLayout_8">
-            <item row="0" column="0">
-             <widget class="QPushButton" name="biome_perlin_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="0" column="2">
+             <widget class="QCheckBox" name="enable_polar_anomalies">
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
               </property>
+              <property name="toolTip">
+               <string>Enables biome distortion near poles.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Pole Drag Enabled</string>
+              </property>
+              <property name="text">
+               <string>Polar</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="enable_seed_anomalies">
               <property name="font">
                <font>
                 <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
-               <string>Perlin</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="4">
-             <widget class="QSlider" name="biome_fractal">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="2" colspan="2">
-             <widget class="QPushButton" name="noise_scatter_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Scatter</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QPushButton" name="noise_scale_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Scale</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2" colspan="2">
-             <widget class="QPushButton" name="biome_swap_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Swap</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="4">
-             <widget class="QPushButton" name="noise_amplitude_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Amplitude</string>
+               <string>Random</string>
               </property>
              </widget>
             </item>
             <item row="2" column="2">
-             <widget class="QSlider" name="biome_swap">
+             <widget class="QSlider" name="polar_anomaly_spray">
               <property name="minimumSize">
                <size>
                 <width>0</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="2">
-             <widget class="QSlider" name="noise_scatter">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Noise scatter amplifier.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Noise Scatter</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
@@ -307,7 +215,7 @@
              </widget>
             </item>
             <item row="2" column="0">
-             <widget class="QSlider" name="biome_perlin">
+             <widget class="QSlider" name="equator_anomaly_spray">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -319,75 +227,224 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="0">
-             <widget class="QSlider" name="noise_scale">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Determines the scale of noise used for biome variation.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Noise Scale</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="4">
-             <widget class="QSlider" name="noise_amplitude">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Affects the amplitude of noise used in biome generation.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Noise Amplitude</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="4">
-             <widget class="QPushButton" name="biome_fractal_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="anomaly_count_reset">
               <property name="font">
                <font>
                 <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
-               <string>Fractal</string>
+               <string>Count</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="enable_equator_anomalies">
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Enables biome distortion centered near the equator.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Equator Anomalies Enabled</string>
+              </property>
+              <property name="text">
+               <string>Equator</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QSlider" name="equator_anomaly_count">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QSlider" name="polar_anomaly_count">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="anomaly_spray_reset">
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Spray</string>
               </property>
              </widget>
             </item>
            </layout>
-           <zorder>biome_fractal</zorder>
-           <zorder>biome_swap</zorder>
-           <zorder>noise_scatter</zorder>
-           <zorder>biome_perlin</zorder>
-           <zorder>noise_scale</zorder>
-           <zorder>noise_amplitude</zorder>
-           <zorder>noise_scatter_reset</zorder>
-           <zorder>noise_amplitude_reset</zorder>
-           <zorder>biome_perlin_reset</zorder>
-           <zorder>noise_scale_reset</zorder>
-           <zorder>biome_swap_reset</zorder>
-           <zorder>biome_fractal_reset</zorder>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>140</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Biome Faults</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_14">
+            <item row="1" column="1">
+             <widget class="QSlider" name="number_faults">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>99</number>
+              </property>
+              <property name="pageStep">
+               <number>1</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSlider" name="fault_jitter">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QSlider" name="fault_width">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>99</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QSlider" name="fault_smooth">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="number_faults_reset">
+              <property name="text">
+               <string>Num Faults</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="fault_jitter_reset">
+              <property name="text">
+               <string>Fault Jitter</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QPushButton" name="fault_width_reset">
+              <property name="text">
+               <string>Fault Width</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QPushButton" name="fault_smooth_reset">
+              <property name="text">
+               <string>Fault Edge</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="BiomeDistortionGroup">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>270</width>
+             <height>120</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Biome Distortion</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="1" column="0" colspan="2">
+             <widget class="QSlider" name="distortion_scale">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="distortion_scale_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Distortion</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="random_distortion">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Random</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
@@ -405,6 +462,19 @@
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_10">
+            <item row="0" column="2">
+             <widget class="QPushButton" name="set_balanced_bias_button">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Balanced</string>
+              </property>
+             </widget>
+            </item>
             <item row="1" column="0" colspan="5">
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
@@ -542,19 +612,6 @@
               </item>
              </layout>
             </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="set_balanced_bias_button">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Balanced</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0">
              <widget class="QPushButton" name="set_equator_bias_button">
               <property name="minimumSize">
@@ -585,281 +642,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="groupBox_2">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>140</height>
-            </size>
-           </property>
-           <property name="title">
-            <string>Tectonic Boundaries</string>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_14">
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Fault Width</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Num Faults</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSlider" name="number_faults">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="0">
-             <widget class="QLabel" name="label_14">
-              <property name="text">
-               <string>Smoothing</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_17">
-              <property name="text">
-               <string>Fault Jitter</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QSlider" name="fault_jitter">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <widget class="QSlider" name="fault_width">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="QSlider" name="horizontalSlider">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QGroupBox" name="BiomeDistortionGroup">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>270</width>
-             <height>120</height>
-            </size>
-           </property>
-           <property name="title">
-            <string>Biome Distortion</string>
-           </property>
-           <property name="checkable">
-            <bool>false</bool>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_7">
-            <item row="0" column="0">
-             <widget class="QPushButton" name="distortion_scale_reset">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Distortion</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="random_distortion">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Random</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2" rowspan="2">
-             <layout class="QGridLayout" name="gridLayout_15">
-              <item row="0" column="0" colspan="3">
-               <widget class="QLabel" name="label">
-                <property name="font">
-                 <font>
-                  <strikeout>true</strikeout>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Loc. Bias</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QRadioButton" name="biome_bias_nw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QRadioButton" name="biome_bias_nn">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QRadioButton" name="biome_bias_ne">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QRadioButton" name="biome_bias_ww">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QRadioButton" name="biome_bias_cc">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QRadioButton" name="biome_bias_ee">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QRadioButton" name="biome_bias_sw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="biome_bias_ss">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="2">
-               <widget class="QRadioButton" name="biome_bias_se">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item row="1" column="0" colspan="2">
-             <widget class="QSlider" name="distortion_scale">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>25</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QGroupBox" name="BiomeAnomaliesGroup">
+          <widget class="QGroupBox" name="BiomeNoiseGroup">
            <property name="minimumSize">
             <size>
              <width>260</width>
-             <height>115</height>
+             <height>145</height>
             </size>
            </property>
            <property name="font">
@@ -868,92 +655,62 @@
             </font>
            </property>
            <property name="title">
-            <string>Biome Anomalies</string>
+            <string>Biome Noise</string>
            </property>
            <property name="checkable">
             <bool>false</bool>
            </property>
-           <layout class="QGridLayout" name="gridLayout_9">
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="enable_equator_anomalies">
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
+           <layout class="QGridLayout" name="gridLayout_8">
+            <item row="3" column="2" colspan="2">
+             <widget class="QPushButton" name="noise_scatter_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
               </property>
-              <property name="toolTip">
-               <string>Enables biome distortion centered near the equator.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Equator Anomalies Enabled</string>
-              </property>
-              <property name="text">
-               <string>Equator</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="enable_seed_anomalies">
               <property name="font">
                <font>
                 <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
-               <string>Random</string>
+               <string>Scatter</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
-             <widget class="QCheckBox" name="enable_polar_anomalies">
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Enables biome distortion near poles.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Pole Drag Enabled</string>
-              </property>
-              <property name="text">
-               <string>Polar</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QSlider" name="equator_anomaly_count">
+            <item row="5" column="2">
+             <widget class="QSlider" name="noise_scatter">
               <property name="minimumSize">
                <size>
                 <width>0</width>
                 <height>20</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Noise scatter amplifier.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Noise Scatter</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="anomaly_count_reset">
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Count</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QSlider" name="polar_anomaly_count">
+            <item row="5" column="4">
+             <widget class="QSlider" name="noise_amplitude">
               <property name="minimumSize">
                <size>
                 <width>0</width>
                 <height>20</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Affects the amplitude of noise used in biome generation.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Noise Amplitude</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
@@ -961,7 +718,7 @@
              </widget>
             </item>
             <item row="2" column="0">
-             <widget class="QSlider" name="equator_anomaly_scale">
+             <widget class="QSlider" name="biome_perlin">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -973,8 +730,131 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QPushButton" name="anomaly_scale_reset">
+            <item row="3" column="4">
+             <widget class="QPushButton" name="noise_amplitude_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Amplitude</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QSlider" name="biome_swap">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2" colspan="2">
+             <widget class="QPushButton" name="biome_swap_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Swap</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QSlider" name="noise_scale">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Determines the scale of noise used for biome variation.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Noise Scale</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="4">
+             <widget class="QPushButton" name="biome_fractal_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Fractal</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="biome_perlin_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Perlin</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="4">
+             <widget class="QSlider" name="biome_fractal">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="noise_scale_reset">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <strikeout>false</strikeout>
@@ -985,20 +865,19 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="2">
-             <widget class="QSlider" name="polar_anomaly_scale">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
            </layout>
+           <zorder>biome_fractal</zorder>
+           <zorder>biome_swap</zorder>
+           <zorder>noise_scatter</zorder>
+           <zorder>biome_perlin</zorder>
+           <zorder>noise_scale</zorder>
+           <zorder>noise_amplitude</zorder>
+           <zorder>noise_scatter_reset</zorder>
+           <zorder>noise_amplitude_reset</zorder>
+           <zorder>biome_perlin_reset</zorder>
+           <zorder>noise_scale_reset</zorder>
+           <zorder>biome_swap_reset</zorder>
+           <zorder>biome_fractal_reset</zorder>
           </widget>
          </item>
         </layout>
@@ -1049,6 +928,9 @@
          <layout class="QGridLayout" name="gridLayout">
           <item row="3" column="2">
            <widget class="QLabel" name="ao_preview_image">
+            <property name="toolTip">
+             <string>Shadows</string>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1086,6 +968,9 @@
               <height>100</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string>Planet Texture</string>
+            </property>
             <property name="frameShape">
              <enum>QFrame::Shape::NoFrame</enum>
             </property>
@@ -1105,6 +990,9 @@
           </item>
           <item row="2" column="3">
            <widget class="QLabel" name="normal_preview_image">
+            <property name="toolTip">
+             <string>Visible Bumps</string>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1124,6 +1012,9 @@
           </item>
           <item row="3" column="1">
            <widget class="QLabel" name="ocean_preview_image">
+            <property name="toolTip">
+             <string>Oceans are Black</string>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1143,6 +1034,9 @@
           </item>
           <item row="0" column="3">
            <widget class="QLabel" name="biome_preview_image">
+            <property name="toolTip">
+             <string>Biomes</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -1159,6 +1053,9 @@
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="rough_preview_image">
+            <property name="toolTip">
+             <string>Darker is Shinier</string>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
             </property>
@@ -1178,6 +1075,9 @@
           </item>
           <item row="3" column="3">
            <widget class="QLabel" name="surface_preview_image">
+            <property name="toolTip">
+             <string>Roughness</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -1194,6 +1094,9 @@
           </item>
           <item row="1" column="3">
            <widget class="QLabel" name="resource_preview_image">
+            <property name="toolTip">
+             <string>Resources</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -1461,38 +1364,7 @@
          <string>Biome and Texture Toggles</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_4">
-         <item row="4" column="2">
-          <widget class="QSlider" name="texture_resolution_scale">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimum">
-            <number>1</number>
-           </property>
-           <property name="maximum">
-            <number>4</number>
-           </property>
-           <property name="singleStep">
-            <number>1</number>
-           </property>
-           <property name="sliderPosition">
-            <number>1</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-           <property name="tickPosition">
-            <enum>QSlider::TickPosition::TicksBothSides</enum>
-           </property>
-           <property name="tickInterval">
-            <number>1</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="4">
+         <item row="3" column="4">
           <widget class="QCheckBox" name="process_images">
            <property name="toolTip">
             <string>Enables full texture processing (elevation, normal, rough, etc.).</string>
@@ -1505,140 +1377,14 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="use_random">
-           <property name="text">
-            <string>Use Random</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QCheckBox" name="enable_distortion">
-           <property name="text">
-            <string>Biome Distortion</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="4">
-          <widget class="QCheckBox" name="enable_texture_noise">
-           <property name="text">
-            <string>Texture Noise</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QCheckBox" name="upscale_image">
-           <property name="toolTip">
-            <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
-           </property>
-           <property name="accessibleName">
-            <string>Upscale Image</string>
-           </property>
-           <property name="text">
-            <string>High Resolution</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
+         <item row="7" column="0">
           <widget class="QCheckBox" name="enable_noise">
            <property name="text">
             <string>Biome Noise</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Resolution</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QSlider" name="user_seed">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Slider used to select generation seed</string>
-           </property>
-           <property name="accessibleName">
-            <string>User Seed</string>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Generation Seed</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="4">
-          <widget class="QCheckBox" name="enable_basic_filters">
-           <property name="text">
-            <string>Texture Basics</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="4">
-          <widget class="QCheckBox" name="enable_texture_edges">
-           <property name="toolTip">
-            <string>Enables blending at biome edges for smooth transitions.</string>
-           </property>
-           <property name="accessibleName">
-            <string>Edge Blending Enabled</string>
-           </property>
-           <property name="text">
-            <string>Texture Edges</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QCheckBox" name="enable_tectonic_plates">
-           <property name="text">
-            <string>Biome Tectonics</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QCheckBox" name="enable_anomalies">
-           <property name="minimumSize">
-            <size>
-             <width>120</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Biome Anomalies</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QCheckBox" name="enable_biases">
-           <property name="text">
-            <string>Biome Biases</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
+         <item row="6" column="1">
           <widget class="QLCDNumber" name="seed_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1677,28 +1423,14 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="4">
-          <widget class="QCheckBox" name="enable_texture_craters">
-           <property name="minimumSize">
-            <size>
-             <width>120</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <strikeout>true</strikeout>
-            </font>
-           </property>
-           <property name="layoutDirection">
-            <enum>Qt::LayoutDirection::LeftToRight</enum>
-           </property>
+         <item row="4" column="4">
+          <widget class="QCheckBox" name="enable_basic_filters">
            <property name="text">
-            <string>Texture Scars</string>
+            <string>Texture Basics</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="2">
+         <item row="6" column="2">
           <widget class="QLCDNumber" name="texture_resolution_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1723,6 +1455,180 @@
            </property>
            <property name="digitCount">
             <number>4</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QCheckBox" name="use_random">
+           <property name="text">
+            <string>Use Random</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Generation Seed</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QCheckBox" name="upscale_image">
+           <property name="toolTip">
+            <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
+           </property>
+           <property name="accessibleName">
+            <string>Upscale Image</string>
+           </property>
+           <property name="text">
+            <string>High Resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QSlider" name="user_seed">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Slider used to select generation seed</string>
+           </property>
+           <property name="accessibleName">
+            <string>User Seed</string>
+           </property>
+           <property name="maximum">
+            <number>99</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="4">
+          <widget class="QCheckBox" name="enable_texture_craters">
+           <property name="minimumSize">
+            <size>
+             <width>120</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <strikeout>true</strikeout>
+            </font>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
+           </property>
+           <property name="text">
+            <string>Texture Scars</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="4">
+          <widget class="QCheckBox" name="enable_texture_edges">
+           <property name="toolTip">
+            <string>Enables blending at biome edges for smooth transitions.</string>
+           </property>
+           <property name="accessibleName">
+            <string>Edge Blending Enabled</string>
+           </property>
+           <property name="text">
+            <string>Texture Edges</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="4">
+          <widget class="QCheckBox" name="enable_texture_noise">
+           <property name="text">
+            <string>Texture Noise</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QSlider" name="texture_resolution_scale">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>8</number>
+           </property>
+           <property name="singleStep">
+            <number>1</number>
+           </property>
+           <property name="sliderPosition">
+            <number>1</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TickPosition::TicksBothSides</enum>
+           </property>
+           <property name="tickInterval">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QCheckBox" name="enable_biases">
+           <property name="text">
+            <string>Biome Biases</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QCheckBox" name="enable_distortion">
+           <property name="text">
+            <string>Biome Distortion</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="enable_tectonic_plates">
+           <property name="text">
+            <string>Biome Faults</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="enable_anomalies">
+           <property name="minimumSize">
+            <size>
+             <width>120</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Biome Anomalies</string>
            </property>
           </widget>
          </item>
@@ -1839,6 +1745,12 @@
              <height>35</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Select a Theme</string>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
            <property name="placeholderText">
             <string>Themes..</string>
            </property>
@@ -1864,6 +1776,12 @@
              <height>0</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Select CSV to build planet from. Default=preview</string>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
            <property name="placeholderText">
             <string>Plugin..</string>
            </property>
@@ -1876,6 +1794,12 @@
              <width>0</width>
              <height>35</height>
             </size>
+           </property>
+           <property name="toolTip">
+            <string>Open output folders</string>
+           </property>
+           <property name="statusTip">
+            <string/>
            </property>
            <property name="placeholderText">
             <string>Folders</string>
@@ -2036,7 +1960,7 @@
             <item row="4" column="2">
              <widget class="QProgressBar" name="news_count_progressbar">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -2047,10 +1971,16 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string/>
+              </property>
               <property name="value">
                <number>0</number>
               </property>
               <property name="textVisible">
+               <bool>false</bool>
+              </property>
+              <property name="invertedAppearance">
                <bool>false</bool>
               </property>
              </widget>
@@ -2178,7 +2108,7 @@
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_3">
                <item>
-                <widget class="QLabel" name="label_7">
+                <widget class="QLabel" name="news_label">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -2230,7 +2160,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
@@ -2279,7 +2209,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
@@ -2303,7 +2233,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
@@ -2376,7 +2306,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Amplitude</string>
+               <string>Shiny</string>
               </property>
              </widget>
             </item>
@@ -2484,7 +2414,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
@@ -2511,7 +2441,7 @@
            </property>
            <property name="font">
             <font>
-             <strikeout>true</strikeout>
+             <strikeout>false</strikeout>
             </font>
            </property>
            <property name="title">
@@ -2521,7 +2451,7 @@
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_11">
-            <item row="3" column="1">
+            <item row="3" column="0">
              <widget class="QSlider" name="fade_spread">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -2540,7 +2470,7 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
+            <item row="2" column="0">
              <widget class="QPushButton" name="fade_spread_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -2556,7 +2486,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="toolTip">
@@ -2570,7 +2500,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item row="0" column="0">
              <widget class="QPushButton" name="fade_intensity_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -2586,7 +2516,7 @@
               </property>
               <property name="font">
                <font>
-                <strikeout>true</strikeout>
+                <strikeout>false</strikeout>
                </font>
               </property>
               <property name="text">
@@ -2594,7 +2524,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="1" column="0">
              <widget class="QSlider" name="fade_intensity">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -2618,142 +2548,6 @@
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
-            </item>
-            <item row="0" column="0" rowspan="4">
-             <layout class="QGridLayout" name="gridLayout_17">
-              <item row="1" column="2">
-               <widget class="QRadioButton" name="light_bias_ne">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="2">
-               <widget class="QRadioButton" name="light_bias_se">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QRadioButton" name="light_bias_cc">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QRadioButton" name="light_bias_sw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QRadioButton" name="light_bias_nn">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QRadioButton" name="light_bias_ww">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="light_bias_ss">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="3">
-               <widget class="QLabel" name="label_2">
-                <property name="font">
-                 <font>
-                  <strikeout>true</strikeout>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Loc. Bias</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QRadioButton" name="light_bias_nw">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QRadioButton" name="light_bias_ee">
-                <property name="minimumSize">
-                 <size>
-                  <width>18</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-             </layout>
             </item>
            </layout>
            <zorder>fade_intensity</zorder>
@@ -2798,6 +2592,9 @@
              <bold>true</bold>
             </font>
            </property>
+           <property name="toolTip">
+            <string>Exit</string>
+           </property>
            <property name="text">
             <string>Exit</string>
            </property>
@@ -2833,6 +2630,9 @@
              <bold>true</bold>
             </font>
            </property>
+           <property name="toolTip">
+            <string>Reset all to defaults</string>
+           </property>
            <property name="text">
             <string>Defaults</string>
            </property>
@@ -2864,6 +2664,9 @@
              <pointsize>16</pointsize>
              <bold>true</bold>
             </font>
+           </property>
+           <property name="toolTip">
+            <string>Halt creating</string>
            </property>
            <property name="text">
             <string>Halt</string>
@@ -2903,7 +2706,10 @@
             </font>
            </property>
            <property name="toolTip">
-            <string>Disables 'Upscale', images output in 256x256.</string>
+            <string>Create Planet</string>
+           </property>
+           <property name="statusTip">
+            <string/>
            </property>
            <property name="layoutDirection">
             <enum>Qt::LayoutDirection::LeftToRight</enum>

@@ -385,7 +385,7 @@
 				{
 					"Data" : 
 					{
-						"FileName" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\rock_05_mixed_normal.dds"
+						"FileName" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\planet_name_normal.dds"
 					},
 					"Index" : 1,
 					"Type" : "BSMaterial::MRTextureFile",
@@ -913,7 +913,7 @@
 				},
 				"Normal" : 
 				{
-					"File" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\rock_05_mixed_normal.dds",
+					"File" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\planet_name_normal.dds",
 					"Replacement" : 
 					{
 						"w" : 1,

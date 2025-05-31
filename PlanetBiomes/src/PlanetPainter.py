@@ -43,7 +43,14 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
-from PlanetNewsfeed import handle_news
+from PlanetNewsfeed import (
+    handle_news,
+    news_count,
+    news_percent,
+    total_news,
+    reset_news_count,
+    set_total_news_from_config
+)
 from PlanetConstants import (
     # Core directories
     BASE_DIR,
@@ -92,31 +99,39 @@ def load_config():
             None, "error", f"Error: Config file {config_path} not found. Creating default config."
         )
         raw_config = {
+            "total_news": 37,
             "_program_options": "Pluging related options",
-            "plugin_selected": 1,
-            "plugin_index": ["preview.csv"],
+            "plugin_selected": -1,
+            "plugin_index": ["PlanetBiomes.csv", "preview.csv"],
             "plugin_name": "preview.esm",
             "enable_preview_mode": True,
             "_theme_group": "Parameters related to themes",
             "theme": "Starfield",
             "_biome_toggles_group": "Biome-related options",
-            "enable_noise": True,
-            "enable_distortion": True,
-            "enable_biases": True,
-            "enable_anomalies": True,
+            "enable_noise": False,
+            "enable_distortion": False,
+            "enable_biases": False,
+            "enable_anomalies": False,
             "_generation_seed_group": "Random seed settings",
             "use_random": False,
-            "user_seed": 8437,
+            "user_seed": 99999,
             "_biome_basic_group": "Basic biome parameters",
-            "zoom_factor": 0.64,
-            "squircle_factor": 0.28,
+            "zoom_factor": 0.5,
+            "enable_tectonic_plates": False,
+            "number_faults": 8,
+            "fault_width": 8,
+            "fault_jitter": 0.5,
+            "fault_smooth": 0.5,
+            "distort_scale": 5,
+            "save_tectonic_maps": True,
+            "squircle_factor": 0.5,
             "_biome_noise_group": "Noise configuration",
-            "noise_scale": 0.57,
-            "noise_amplitude": 0.17,
-            "noise_scatter": 0.54,
-            "biome_perlin": 0.57,
-            "biome_swap": 0.56,
-            "biome_fractal": 0.57,
+            "noise_scale": 0.5,
+            "noise_amplitude": 0.5,
+            "noise_scatter": 0.5,
+            "biome_perlin": 0.5,
+            "biome_swap": 0.5,
+            "biome_fractal": 0.5,
             "_biome_bias_group": "Bias settings for different zones",
             "set_equator_bias": "Button used to adjust to an equator bias",
             "set_balanced_bias": "Button used to adjust to an equator bias",
@@ -130,16 +145,16 @@ def load_config():
             "zone_06": 0.5,
             "_biome_distortion_group": "Distortion settings",
             "random_distortion": False,
-            "distortion_scale": 0.28,
+            "distortion_scale": 0.5,
             "biome_bias": "biome_bias_cc",
             "_biome_anomaly_group": "Anomaly settings",
             "enable_equator_anomalies": True,
-            "enable_seed_anomalies": True,
+            "enable_seed_anomalies": False,
             "enable_polar_anomalies": True,
-            "equator_anomaly_count": 0.57,
-            "equator_anomaly_scale": 0.6,
-            "polar_anomaly_count": 0.52,
-            "polar_anomaly_scale": 0.53,
+            "equator_anomaly_count": 0.5,
+            "equator_anomaly_spray": 0.5,
+            "polar_anomaly_count": 0.5,
+            "polar_anomaly_spray": 0.5,
             "_file_toggles_group": "File output settings",
             "output_biom_files": False,
             "keep_pngs_after_conversion": True,
@@ -148,48 +163,39 @@ def load_config():
             "output_csv_files": False,
             "enable_output_log": False,
             "_texture_toggles_group": "Texture processing toggles",
-            "upscale_image": False,
-            "process_images": True,
+            "upscale_image": True,
+            "texture_resolution_scale": 8,
+            "texture_resolution": 2048,
+            "process_images": False,
             "enable_texture_light": True,
-            "enable_basic_filters": True,
-            "enable_texture_edges": True,
-            "enable_texture_noise": True,
+            "enable_basic_filters": False,
+            "enable_texture_edges": False,
+            "enable_texture_noise": False,
             "enable_texture_anomalies": False,
             "_texture_basics_group": "Texture basics",
-            "texture_brightness": 0.73,
-            "texture_saturation": 0.42,
-            "texture_edges": 0.38,
+            "texture_brightness": 0.5,
+            "texture_saturation": 0.5,
+            "texture_edges": 0.5,
             "texture_contrast": 0.5,
-            "texture_tint": 0.49,
+            "texture_tint": 0.5,
             "_texture_noise_group": "Noise parameters for textures",
-            "texture_roughness": 0.83,
-            "texture_roughness_base": 0.85,
+            "texture_roughness": 0.5,
+            "texture_roughness_base": 0.5,
             "texture_noise": 0.5,
-            "texture_perlin": 1.0,
+            "texture_perlin": 0.5,
             "texture_swap": 0.5,
-            "texture_fractal": 1.0,
+            "texture_fractal": 0.5,
             "_texture_lighting_group": "Lighting settings",
             "fade_intensity": 0.5,
             "fade_spread": 0.5,
             "light_bias": "light_bias_cc",
             "_image_options_group": "Other image options",
-            "enable_surface": True,
-            "enable_resource": False,
-            "enable_ocean": False,
+            "enable_normal": True,
+            "enable_rough": False,
+            "enable_alpha": False,
             "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
-            "number_tect_plates": 5,
-            "boundary_width": 20,
-            "boundary_noise_scale": 12.0,
-            "boundary_noise_octaves": 3,
-            "boundary_noise_persistence": 2.3,
-            "boundary_noise_lacunarity": 2.0,
-            "convergent_elevation": 0.6,
-            "divergent_depression": 0.4,
-            "subduction_elevation": 0.5,
-            "elevation_smoothing": 5,
-            "distort_scale": 40.0,
-            "distort_magnitude": 115.0,
-            "center_jitter": 8.0,
+            "blend_px": 50,
+            "elevation_influence": 0.5,
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(DEFAULT_CONFIG_PATH, "w") as f:
@@ -199,6 +205,7 @@ def load_config():
         if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
             raw_config[key] = bool(int(value))
     config = raw_config
+
     return config
 
 
@@ -211,6 +218,8 @@ def save_config():
             None, "info",
             f"Config saved successfully to {CONFIG_PATH}"
         )
+        global total_news
+        total_news = config.get("total_news", 37)
     except Exception as e:
         handle_news(
             None, "error",
@@ -219,24 +228,15 @@ def save_config():
 
 
 def update_value(key, val, index=None):
-    """Update configuration value and save to file."""
-    tectonic_slider_config = {
-        "number_tect_plates": (1, 160),
-        "boundary_width": (1, 100),
-        "boundary_noise_scale": (1, 20),
-        "boundary_noise_octaves": (1, 60),
-        "boundary_noise_persistence": (1, 20.0),
-        "boundary_noise_lacunarity": (1, 20.0),
-        "elevation_smoothing": (1, 100),
-        "distort_scale": (1, 100),
-        "distort_magnitude": (1, 200),
-        "center_jitter": (0, 200),
-    }
     if key not in config:
         print(f"Warning: Key '{key}' not found in config.")
         return
-
-    elif key == "user_seed" or key == "texture_resolution_scale" or key in tectonic_slider_config:
+    elif (
+        key == "user_seed"
+        or key == "texture_resolution_scale"
+        or key == "number_faults"
+        or key == "fault_width"
+    ):
         config[key] = int(val)
     elif isinstance(config[key], bool):
         config[key] = bool(val)
@@ -246,7 +246,6 @@ def update_value(key, val, index=None):
         except ValueError:
             print(f"Error: Cannot convert '{val}' to float for '{key}'")
             return
-
     save_config()
 
 
@@ -303,51 +302,6 @@ def update_seed_display(main_window, config):
     seed = config.get("user_seed", "N/A")
     main_window.seed_display.display(seed)
 
-
-def update_bias_selection(self, button_name, is_checked):
-    """Update the config when a new radio button is selected and update UI."""
-    if is_checked:
-        # Determine if it's a light_bias or biome_bias button
-        bias_type = (
-            "light_bias" if button_name.startswith("light_bias_") else "biome_bias"
-        )
-        config[bias_type] = button_name
-        # Clear redundant bias keys to avoid conflicts
-        bias_keys = [
-            "biome_bias_nw",
-            "biome_bias_nn",
-            "biome_bias_ne",
-            "biome_bias_ww",
-            "biome_bias_cc",
-            "biome_bias_ee",
-            "biome_bias_sw",
-            "biome_bias_ss",
-            "biome_bias_se",
-            "light_bias_nw",
-            "light_bias_nn",
-            "light_bias_ne",
-            "light_bias_ww",
-            "light_bias_cc",
-            "light_bias_ee",
-            "light_bias_sw",
-            "light_bias_ss",
-            "light_bias_se",
-        ]
-        for key in bias_keys:
-            if key in config:
-                del config[key]
-        save_config()
-        handle_news(None, "info", f"{bias_type} Updated: {button_name}")
-
-        # Update UI for the respective bias group
-        group_prefix = "light_bias_" if bias_type == "light_bias" else "biome_bias_"
-        for btn_name in bias_keys:
-            if btn_name.startswith(group_prefix):
-                btn = getattr(self, btn_name, None)
-                if btn:
-                    btn.setChecked(btn_name == button_name)
-
-
 # At the module level
 planet_biomes_process: QProcess | None = None
 
@@ -356,10 +310,10 @@ def apply_bias(bias_type: str) -> Dict[str, float]:
     """Adjust biome zone values with a single-direction bias."""
     if bias_type == "set_equator_bias":
         # Strongest at the equator (zone_00), fading toward the poles
-        zone_values = [0.85, 0.6, 0.4, 0.2, 0.1, 0.05, 0.01]
+        zone_values = [0.95, 0.9, 0.75, 0.5, 0.25, 0.1, 0.05]
     elif bias_type == "set_polar_bias":
         # Strongest at the poles (zone_06), fading toward the equator
-        zone_values = [0.01, 0.05, 0.1, 0.2, 0.4, 0.6, 0.85]
+        zone_values = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
     else:  # Balanced bias
         zone_values = [0.5] * 7  # Uniform values for a neutral effect
 
@@ -387,11 +341,11 @@ def start_planet_biomes(main_window, mode=""):
     global planet_biomes_process, process_list
     main_window.stdout_widget.clear()
     main_window.stderr_widget.clear()
-    main_window.news_count = 0
-    main_window.news_percent = 0
-    global news_count
-    news_count = 0
+    reset_news_count()  # Reset shared counters
+    main_window.news_count = news_count
+    main_window.news_percent = news_percent
     main_window.news_count_progressbar.setValue(0)
+    main_window.news_label.setText("Working...")
 
     if not SCRIPT_PATH.exists():
         main_window.stderr_widget.insertPlainText(
@@ -499,15 +453,12 @@ def start_planet_biomes(main_window, mode=""):
             if exit_code == 0
             else f"Permit denied, code {exit_code}: Construction halted."
         )
+        main_window.news_label.setText("Done.")
         kind = "success" if exit_code == 0 else "error"
         handle_news(main_window, kind, message)
 
-        # Update total_news in config if exceeded
-        if main_window.news_count > main_window.total_news:
-            config = load_config()
-            config["total_news"] = main_window.news_count
-            save_config()
-            print(f"[CONFIG] Updated total_news to {main_window.news_count}")
+        main_window.news_count_progressbar.setValue(int(100))
+        #save_config()
 
     planet_biomes_process.finished.connect(on_planet_biomes_finished)
 
@@ -589,6 +540,7 @@ class MainWindow(QMainWindow):
     normal_preview_image: QLabel
     ao_preview_image: QLabel
     rough_preview_image: QLabel
+    news_label: QLabel
     stdout_widget: QTextEdit
     stderr_widget: QTextEdit
     themes_dropdown: QComboBox
@@ -629,9 +581,9 @@ class MainWindow(QMainWindow):
         self.themes = THEMES
         config = load_config()
 
-        self.news_count = 0
-        self.news_percent = 0
-        self.total_news = config.get("total_news", 82)  # fallback to 82
+        set_total_news_from_config(config)
+
+        self.news_label.setText("Progress")
 
         csv_files = list(INPUT_DIR.glob("*.csv"))
         csv_names = [f.name for f in csv_files]
@@ -739,8 +691,7 @@ class MainWindow(QMainWindow):
         self.folders_dropdown.setCurrentIndex(0)
 
     def reset_to_defaults(self, key):
-        """Reset a single setting to its default using update_value() and update UI sliders."""
-        handle_news(None, "info", f"Resetting key: '{key}'")  # Debug print
+        print(f"Resetting key: '{key}'")
         try:
             with open(DEFAULT_CONFIG_PATH, "r") as f:
                 default_config = json.load(f)
@@ -756,7 +707,19 @@ class MainWindow(QMainWindow):
                 # Update sliders
                 slider = slider_vars.get(key)
                 if slider:
-                    slider.setValue(int(default_value * 100))
+                    if key in [
+                        "number_faults",
+                        "fault_width",
+                        "user_seed",
+                        "texture_resolution_scale",
+                    ]:
+                        slider.setValue(
+                            int(default_value)
+                        )  # No scaling for integer keys
+                    else:
+                        slider.setValue(
+                            int(default_value * 100)
+                        )  # Scale for float keys
 
                 # Update checkboxes
                 checkbox = checkbox_vars.get(key)
@@ -787,42 +750,14 @@ class MainWindow(QMainWindow):
                 slider = slider_vars.get(key)
                 if slider:
                     value = config.get(key, 0)
-                    slider.setValue(int(value * 100))
-
+                    if key in ["number_faults", "fault_width", "user_seed", "texture_resolution_scale"]:
+                        slider.setValue(config[key])
+                    else:
+                        slider.setValue(int(value * 100))
             for key in self.checkbox_mappings:
                 checkbox = checkbox_vars.get(key)
                 if checkbox:
                     checkbox.setChecked(config.get(key, False))
-
-            # Set radio buttons for biases
-            saved_light_bias = config.get("light_bias", "light_bias_cc")
-            saved_biome_bias = config.get("biome_bias", "biome_bias_cc")
-            for button_name in [
-                "biome_bias_nw",
-                "biome_bias_nn",
-                "biome_bias_ne",
-                "biome_bias_ww",
-                "biome_bias_cc",
-                "biome_bias_ee",
-                "biome_bias_sw",
-                "biome_bias_ss",
-                "biome_bias_se",
-                "light_bias_nw",
-                "light_bias_nn",
-                "light_bias_ne",
-                "light_bias_ww",
-                "light_bias_cc",
-                "light_bias_ee",
-                "light_bias_sw",
-                "light_bias_ss",
-                "light_bias_se",
-            ]:
-                button = getattr(self, button_name, None)
-                if button:
-                    button.setChecked(
-                        button_name == saved_light_bias
-                        or button_name == saved_biome_bias
-                    )
 
             # Update displays
             self.seed_display.display(config.get("user_seed", 0))
@@ -918,36 +853,35 @@ class MainWindow(QMainWindow):
             "enable_texture_light": "enable_texture_light",
             "enable_texture_edges": "enable_texture_edges",
             "enable_basic_filters": "enable_basic_filters",
-            "enable_texture_anomalies": "enable_texture_anomalies",
             "process_images": "process_images",
             "enable_texture_noise": "enable_texture_noise",
             "upscale_image": "upscale_image",
             "enable_preview_mode": "enable_preview_mode",
-            "output_csv_files": "output_csv_files",
             "output_dds_files": "output_dds_files",
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
             "output_mat_files": "output_mat_files",
             "output_biom_files": "output_biom_files",
             "enable_seed_anomalies": "enable_seed_anomalies",
             "random_distortion": "random_distortion",
-            "enable_surface": "enable_surface",
-            "enable_resource": "enable_resource",
-            "enable_ocean": "enable_ocean",
             "enable_tectonic_plates": "enable_tectonic_plates",
         }
 
         slider_mappings = {
             "zoom_factor": "zoom_factor",
             "squircle_factor": "squircle_factor",
+            "number_faults": "number_faults",
+            "fault_width": "fault_width",
+            "fault_jitter": "fault_jitter",
+            "fault_smooth": "fault_smooth",
             "noise_scale": "noise_scale",
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
             "fade_intensity": "fade_intensity",
             "fade_spread": "fade_spread",
             "equator_anomaly_count": "equator_anomaly_count",
-            "equator_anomaly_scale": "equator_anomaly_scale",
+            "equator_anomaly_spray": "equator_anomaly_spray",
             "polar_anomaly_count": "polar_anomaly_count",
-            "polar_anomaly_scale": "polar_anomaly_scale",
+            "polar_anomaly_spray": "polar_anomaly_spray",
             "distortion_scale": "distortion_scale",
             "noise_scatter": "noise_scatter",
             "biome_perlin": "biome_perlin",
@@ -972,22 +906,15 @@ class MainWindow(QMainWindow):
             "texture_perlin": "texture_perlin",
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
-            "number_faults": "number_faults",
-            "fault_width": "fault_width",
-            "boundary_noise_scale": "boundary_noise_scale",
-            "boundary_noise_octaves": "boundary_noise_octaves",
-            "boundary_noise_persistence": "boundary_noise_persistence",
-            "boundary_noise_lacunarity": "boundary_noise_lacunarity",
-            "convergent_elevation": "convergent_elevation",
-            "divergent_depression": "divergent_depression",
-            "subduction_elevation": "subduction_elevation",
-            "elevation_smoothing": "elevation_smoothing",
-            "distort_scale": "distort_scale",
-            "distort_magnitude": "distort_magnitude",
-            "fault_jitter": "fault_jitter",
         }
 
         reset_buttons = [
+            "zoom_factor_reset",
+            "squircle_factor_reset",
+            "number_faults_reset",
+            "fault_width_reset",
+            "fault_jitter_reset",
+            "fault_smooth_reset",
             "noise_scale_reset",
             "noise_amplitude_reset",
             "noise_scatter_reset",
@@ -997,15 +924,12 @@ class MainWindow(QMainWindow):
             "texture_brightness_reset",
             "texture_saturation_reset",
             "texture_tint_reset",
-            "detail_smoothness_reset",
-            "detail_strength_decay_reset",
             "texture_edges_reset",
             "texture_perlin_reset",
             "texture_swap_reset",
             "texture_fractal_reset",
             "texture_roughness_reset",
             "texture_roughness_base_reset",
-            "surface_strength_reset",
             "fade_intensity_reset",
             "fade_spread_reset",
             "distortion_scale_reset",
@@ -1017,10 +941,10 @@ class MainWindow(QMainWindow):
             self.reset_to_defaults("equator_anomaly_count")
             self.reset_to_defaults("polar_anomaly_count")
 
-        def reset_anomaly_scales():
+        def reset_anomaly_sprays():
             print("Resetting anomaly scales")
-            self.reset_to_defaults("equator_anomaly_scale")
-            self.reset_to_defaults("polar_anomaly_scale")
+            self.reset_to_defaults("equator_anomaly_spray")
+            self.reset_to_defaults("polar_anomaly_spray")
 
         # Connect checkboxes
         for checkbox_name, key in checkbox_mappings.items():
@@ -1037,15 +961,13 @@ class MainWindow(QMainWindow):
             slider = getattr(self, slider_name, None)
             if slider:
                 value = config.get(key, 0)
-
                 min_val, max_val = 0.1, 1
-                # Define configurable sliders
                 if key == "user_seed":
                     slider.setRange(0, 99999)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 elif key == "number_faults" or key == "fault_width":
-                    slider.setRange(2, 16)
+                    slider.setRange(1, 16)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 elif key == "texture_resolution_scale":
@@ -1053,17 +975,15 @@ class MainWindow(QMainWindow):
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 else:
-                    if key == "noise_amplitude":
+                    if key == "noise_amplitude" or key == "texture_roughness_base":
                         max_val = 0.25
                     if key == "distortion_scale":
                         max_val = 1
-
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))
                     slider.valueChanged.connect(
                         lambda val, k=key: update_value(k, val / 100)
                     )
-
                 slider_vars[key] = slider
             else:
                 print(f"Warning: Slider '{slider_name}' not found in UI")
@@ -1084,7 +1004,7 @@ class MainWindow(QMainWindow):
         # Connect special reset buttons
         special_reset_buttons = {
             "anomaly_count_reset": reset_anomaly_counts,
-            "anomaly_scale_reset": reset_anomaly_scales,
+            "anomaly_spray_reset": reset_anomaly_sprays,
         }
         for button_name, reset_func in special_reset_buttons.items():
             button = getattr(self, button_name, None)
@@ -1092,44 +1012,6 @@ class MainWindow(QMainWindow):
                 button.clicked.connect(reset_func)
             else:
                 print(f"PlanetPainter: Error: Special reset button '{button_name}' not found in UI", file=sys.stderr)
-
-        # Connect bias buttons
-        saved_light_bias = config.get("light_bias", "light_bias_cc")
-        saved_biome_bias = config.get("biome_bias", "biome_bias_cc")
-        bias_buttons = [
-            "biome_bias_nw",
-            "biome_bias_nn",
-            "biome_bias_ne",
-            "biome_bias_ww",
-            "biome_bias_cc",
-            "biome_bias_ee",
-            "biome_bias_sw",
-            "biome_bias_ss",
-            "biome_bias_se",
-            "light_bias_nw",
-            "light_bias_nn",
-            "light_bias_ne",
-            "light_bias_ww",
-            "light_bias_cc",
-            "light_bias_ee",
-            "light_bias_sw",
-            "light_bias_ss",
-            "light_bias_se",
-        ]
-        for button_name in bias_buttons:
-            button = getattr(self, button_name, None)
-            if button:
-                if button_name.startswith("light_bias_"):
-                    button.setChecked(button_name == saved_light_bias)
-                else:
-                    button.setChecked(button_name == saved_biome_bias)
-                button.toggled.connect(
-                    lambda checked, name=button_name: update_bias_selection(
-                        self, name, checked
-                    )
-                )
-            else:
-                print(f"Warning: Bias button '{button_name}' not found in UI")
 
         # Setup seed display
         self.seed_display.display(config["user_seed"])
@@ -1208,38 +1090,6 @@ class MainWindow(QMainWindow):
         # Update seed display
         self.seed_display.display(config.get("user_seed", 0))
         self.texture_resolution_display.display(config.get("texture_resolution", 1))
-
-        # Update bias radio buttons
-        light_bias = config.get("light_bias", "light_bias_cc")
-        biome_bias = config.get("biome_bias", "biome_bias_cc")
-
-        for name in [
-            "biome_bias_nw",
-            "biome_bias_nn",
-            "biome_bias_ne",
-            "biome_bias_ww",
-            "biome_bias_cc",
-            "biome_bias_ee",
-            "biome_bias_sw",
-            "biome_bias_ss",
-            "biome_bias_se",
-            "light_bias_nw",
-            "light_bias_nn",
-            "light_bias_ne",
-            "light_bias_ww",
-            "light_bias_cc",
-            "light_bias_ee",
-            "light_bias_sw",
-            "light_bias_ss",
-            "light_bias_se",
-        ]:
-            button = getattr(self, name, None)
-            if button:
-                button.setChecked(
-                    name == light_bias
-                    if name.startswith("light_bias_")
-                    else name == biome_bias
-                )
 
     def save_and_continue(self):
         """Save config and start PlanetBiomes."""

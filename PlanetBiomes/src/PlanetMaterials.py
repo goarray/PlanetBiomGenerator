@@ -77,6 +77,7 @@ def generate_crc_hashes(mat_data):
     id_mapping = {}
 
     for obj_index, obj in enumerate(mat_data["Objects"]):
+        handle_news(None)
         obj_name = None
         texture_path = None
 
@@ -128,7 +129,7 @@ def write_material_file(material_path, plugin_name, planet_name):
     template_path = MATERIAL_PATH
     try:
         with open(template_path, "r") as f:
-            mat_data = json.load(f)  # ✅ Load JSON directly instead of treating as text
+            mat_data = json.load(f)  # Load JSON directly instead of treating as text
 
         # Replace placeholders
         mat_data["Filename"] = (
@@ -155,7 +156,7 @@ def write_material_file(material_path, plugin_name, planet_name):
         with open(output_path, "w") as f:
             json.dump(
                 updated_mat_data, f, indent=4
-            )  # ✅ Directly saving the final version
+            )  # Directly saving the final version
 
         handle_news(None, "info", f"Material file written to: {output_path}")
 

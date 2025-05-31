@@ -283,31 +283,43 @@ def load_biom_file(biom_path, used_biome_ids, biome_data):
     GRID_SIZE = biome_grid_n.shape[:2]
     GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
-    
     return biome_grid_n, biome_grid_s
 
 
-def upscale_grid(grid: np.ndarray, factor: int, biome_data: Dict[int, Dict]) -> np.ndarray:
-    """Upscale biome grid and convert to RGB using biome_data."""
+def upscale_grid(
+    grid: np.ndarray, factor: int, biome_data: Dict[int, Dict]
+) -> np.ndarray:
+    """Upscale biome grid and convert to RGB using biome_data with smoothing."""
+    handle_news(None)
     factor = 2 ** int(math.ceil(math.log2(factor)))
     h, w = grid.shape
     new_h, new_w = h * factor, w * factor
 
+    # Convert grid to RGB
     color_grid = np.zeros((h, w, 3), dtype=np.uint8)
     default_color = (128, 128, 128)
     for form_id in np.unique(grid):
         color = biome_data.get(form_id, {}).get("color", default_color)
         color_grid[grid == form_id] = color
 
+    # Upscale with bilinear interpolation
     image = Image.fromarray(color_grid, mode="RGB")
     upscaled = image.resize((new_w, new_h), resample=Image.Resampling.BILINEAR)
 
-    
-    return np.array(upscaled, dtype=np.uint8)
+    # Apply Gaussian blur to smooth transitions
+    upscaled_array = np.array(upscaled, dtype=np.float32)
+    sigma = max(1.0, factor / 2.0)  # Scale blur with upscale factor
+    for channel in range(3):
+        upscaled_array[:, :, channel] = gaussian_filter(
+            upscaled_array[:, :, channel], sigma=sigma
+        )
+
+    return np.clip(upscaled_array, 0, 255).astype(np.uint8)
 
 
 def generate_noise(shape, scale=None):
     """Generate larger-patch high-contrast salt-and-pepper noise."""
+    handle_news(None)
     if scale is None:
         scale = config.get("noise_scale", 4.17)
     noise = np.random.rand(*shape)
@@ -338,12 +350,12 @@ def generate_noise(shape, scale=None):
             noise[y1 : y1 + patch_size, x1 : x1 + patch_size],
         )
 
-    
     return noise
 
 
 def generate_elevation(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> np.ndarray:
     """Generate elevation from an RGB biome grid using heights from biome_data."""
+    handle_news(None)
     height, width, _ = rgb_grid.shape
     elevation = np.zeros((height, width), dtype=np.uint8)
 
@@ -358,12 +370,12 @@ def generate_elevation(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> np.
     sigma_map = (2.0, 2.0)
     smoothed_elevation = gaussian_filter(elevation, sigma=sigma_map)
 
-    
     return smoothed_elevation.astype(np.uint8)
 
 
 def generate_atmospheric_fade(shape, intensity=None, spread=None):
     """Generate atmospheric fade effect from planet center."""
+    handle_news(None)
     if intensity is None:
         intensity = config.get("fade_intensity", 0.27)
     if spread is None:
@@ -377,10 +389,11 @@ def generate_atmospheric_fade(shape, intensity=None, spread=None):
 
 def generate_shading(grid, light_source_x=None, light_source_y=None):
     """Generate anisotropic shading based on terrain gradients."""
+    handle_news(None)
     if light_source_x is None:
-        light_source_x = config.get("light_source_x", 0.5)
+        light_source_x = 0.5
     if light_source_y is None:
-        light_source_y = config.get("light_source_y", 0.5)
+        light_source_y = 0.5
 
     grad_x = np.gradient(grid, axis=1)
     grad_y = np.gradient(grid, axis=0)
@@ -413,11 +426,11 @@ def safe_normalize(arr):
 # Used by generate_fractal_noise
 def generate_perlin_noise(elevation_norm, scale=10):
     """Generate Perlin-like noise seeded by elevation."""
+    handle_news(None)
     # Optional slight perturbation to avoid flat noise
     noise_seed = elevation_norm + np.random.normal(0, 0.03, elevation_norm.shape)
     smooth_noise = gaussian_filter(noise_seed, sigma=scale)
 
-    
     return (smooth_noise - smooth_noise.min()) / (
         smooth_noise.max() - smooth_noise.min() + 1e-6
     )
@@ -427,6 +440,7 @@ def generate_fractal_noise(
     elevation_norm, octaves=None, detail_smoothness=None, texture_contrast=None
 ):
     """Generate structured fractal noise for terrain elevation growth."""
+    handle_news(None)
     if octaves is None:
         octaves = config.get("texture_fractal", 4.23)
     if detail_smoothness is None:
@@ -460,11 +474,11 @@ def generate_fractal_noise(
     combined = safe_normalize(combined)
     combined = np.power(combined, 2.3)  # ✅ Enhances ridge prominence
 
-    
     return safe_normalize(combined)
 
 
 def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
+    handle_news(None)
     if not config.get("texture_craters", False):
         return elevation_map
 
@@ -493,6 +507,7 @@ def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
 
 def generate_edge_blend(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend_radius=None) -> np.ndarray:
     """Generate edge blending map for biome transitions based on RGB grid."""
+    handle_news(None)
     if not config.get("enable_texture_edges", False):
         return np.zeros(rgb_grid.shape[:2], dtype=np.float32)
 
@@ -525,6 +540,7 @@ def generate_edge_blend(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend
 
 def enhance_brightness(image, bright_factor=None):
     """Enhance image brightness."""
+    handle_news(None)
     if bright_factor is None:
         bright_factor = config.get("texture_brightness", 0.74)
     scaled_factor = bright_factor * 4
@@ -587,6 +603,7 @@ def desaturate_color(rgb, texture_saturation):
 
 def generate_heightmap(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], min_out=80, max_out=175) -> Image.Image:
     """Generate heightmap from RGB grid using biome_data heights."""
+    handle_news(None)
     height, width, _ = rgb_grid.shape
     elevation = np.zeros((height, width), dtype=np.uint8)
     rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
@@ -613,10 +630,13 @@ def generate_rough_map(
     noise_scale=None,
     slope_strength=0.5,
 ):
+    handle_news(None)
     height = np.asarray(height_img).astype(np.float32) / 255.0
     H, W = height.shape
     if (H, W) != rgb_grid.shape[:2]:
-        height_img = height_img.resize(rgb_grid.shape[:2][::-1], resample=Image.Resampling.NEAREST)
+        height_img = height_img.resize(
+            rgb_grid.shape[:2][::-1], resample=Image.Resampling.NEAREST
+        )
         height = np.asarray(height_img).astype(np.float32) / 255.0
         H, W = height.shape
     roughness = np.zeros((H, W), dtype=np.float32)
@@ -626,14 +646,18 @@ def generate_rough_map(
     if noise_scale is None:
         noise_scale = config.get("texture_roughness", 0.15)
 
+    # --- Slope influence ---
     dy, dx = np.gradient(height)
     slope = np.sqrt(dx**2 + dy**2)
     slope_roughness = np.clip(slope * slope_strength, 0, 1)
     roughness += slope_roughness
-    handle_news(None, "info",
-        f"Slope roughness range: {slope_roughness.min():.3f} - {slope_roughness.max():.3f}"
+    handle_news(
+        None,
+        "info",
+        f"Slope roughness range: {slope_roughness.min():.3f} - {slope_roughness.max():.3f}",
     )
 
+    # --- Biome-based influence ---
     biome_rough_lookup = {
         "canyon": 0.35,
         "mountain": 0.45,
@@ -645,53 +669,66 @@ def generate_rough_map(
         "flat": 0.15,
     }
     biome_rough_map = np.full_like(roughness, base_value)
-    #rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
     for form_id, info in biome_data.items():
         category = info.get("BiomeCategory", "").lower()
         base_roughness = biome_rough_lookup.get(category, base_value)
         if base_roughness is None:
-            base_roughness = base_value or 0.5
+            base_roughness = (base_value) or 0.5
         mask = np.all(rgb_grid == np.array(info["color"]), axis=2)
-        biome_rough_map[mask] = base_roughness * (
-            1 + height[mask] * 0.5
-        )
+        biome_rough_map[mask] = base_roughness * (1 + height[mask] * 0.5)
 
-    if ocean_img is not None:
-        ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255.0
-        roughness *= np.clip(1.0 - ocean_mask * 0.5, 0, 1)
+    roughness += biome_rough_map
 
+    # --- Fractal influence ---
     if fractal_map is not None:
         fractal_map = (fractal_map - fractal_map.min()) / (
             fractal_map.max() - fractal_map.min() + 1e-6
         )
         roughness += noise_scale * fractal_map
 
-    roughness = np.clip(
-        roughness / (0.5), 0, 1
+    # --- Ocean darkening ---
+    if ocean_img is not None:
+        ocean_mask = np.asarray(ocean_img).astype(np.float32) / 255
+        ocean_mask = ocean_mask * 0.7 + 0.3 
+        roughness -= 0.3 * ocean_mask  # Darken ocean areas
+
+    # --- Normalize and tone down brightness ---
+    roughness = np.clip(roughness / 0.5, 0, 1)
+
+    # Apply gamma compression to tone down bright areas
+    gamma = .75  # < 1.0 darkens the map
+    adjusted = np.power(roughness, gamma)
+
+    # Further compress extremely light values
+    adjusted = np.where(adjusted > 0.6, 0.6 + (adjusted - 0.6) * 0.4, adjusted)
+
+    return Image.fromarray(
+        ((1.0 - np.clip(adjusted, 0, 1)) * 255).astype(np.uint8), mode="L"
     )
 
-    adjusted = np.where(
-        roughness > 0.6,
-        0.6 + (roughness - 0.6) * 0.4,
-        roughness,
-    )
 
-    return Image.fromarray((adjusted * 255).astype(np.uint8), mode="L")
-
-
-def generate_ocean_mask(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
-    """Generate ocean mask where height <= 3 is white (ocean), else black (land)."""
+def generate_ocean_mask(
+    rgb_grid: np.ndarray, biome_data: Dict[int, Dict]
+) -> Image.Image:
+    """Generate ocean mask where height <= 4 is black (ocean), else remains white (land)."""
+    handle_news(None)
     h, w, _ = rgb_grid.shape
-    ocean_mask = np.full((h, w), 0, dtype=np.uint8)
+    ocean_mask = np.full((h, w), 255, dtype=np.uint8)  # Start with all white (land)
+
     rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
 
     for y in range(h):
         for x in range(w):
             rgb = tuple(rgb_grid[y, x])
             form_id = rgb_to_form_id.get(rgb, None)
-            height = biome_data.get(form_id, {}).get("height", 255) if form_id is not None else 255
-            if height <= 3:
-                ocean_mask[y, x] = max(0, 255 - height**2)
+            height = (
+                biome_data.get(form_id, {}).get("height", 255)
+                if form_id is not None
+                else 255
+            )
+
+            if height <= 4:
+                ocean_mask[y, x] = 0
 
     return Image.fromarray(ocean_mask, mode="L")
 
@@ -724,6 +761,7 @@ def create_biome_image(
 
         rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
         for y in range(height):
+            handle_news(None)
             for x in range(width):
                 rgb = tuple(rgb_grid[y, x])
                 form_id = rgb_to_form_id.get(rgb, None)
@@ -807,7 +845,9 @@ def create_biome_image(
     }
 
 
-def generate_normal_map(height_img, strength=0.3, invert_height=True):
+def generate_normal_map(height_img, invert_height=True):
+    handle_news(None)
+    strength = config.get("texture_roughness", 0.5)
     height = np.asarray(height_img).astype(np.float32) / 255.0
     if invert_height:
         height = 1.0 - height
@@ -822,16 +862,44 @@ def generate_normal_map(height_img, strength=0.3, invert_height=True):
     g = ((ny + 1) * 0.5 * 255).astype(np.uint8)
     b = ((nz + 1) * 0.5 * 255).astype(np.uint8)
     normal_map = np.stack([r, g, b], axis=-1)
+
     return Image.fromarray(normal_map, mode="RGB")
 
 
-def generate_ao_map(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> Image.Image:
+def generate_ao_map(
+    rgb_grid: np.ndarray,
+    biome_data: Dict[int, Dict],
+    fade_intensity: float = 1.0,  # Range: 0.1–1.0 (darkness strength)
+    fade_spread: float = 1.0,  # Range: 0.1–1.0 (contrast shaping)
+) -> Image.Image:
+    fade_intensity = config.get("fade_intensity", 0.5)
+    fade_spread = config.get("fade_spread", 0.5)
     elevation = generate_elevation(rgb_grid, biome_data)
     blurred = gaussian_filter(elevation.astype(np.float32), sigma=1.0)
     ao = np.clip((blurred - elevation), 0, 255)
-    ao = 255 - (ao / ao.max() * 127)
+
+    # Normalize and apply fade shaping
+    if ao.max() != 0:
+        ao = ao / ao.max()  # Normalize to 0–1
+    else:
+        ao.fill(0.0)
+
+    # Shape and scale using fade_spread
+    ao = ao**fade_spread
+
+    # Apply fade_intensity (scales AO darkness)
+    ao = 1 - fade_intensity * ao
+
+    # Scale to 128–255 grayscale (light ambient occlusion)
+    ao = ao * 127 + 128
+    ao = np.clip(ao, 0, 255)
+
     ao_image = Image.fromarray(ao.astype(np.uint8), mode="L")
-    handle_news(None, "info", f"AO map generated: min={ao.min()}, max={ao.max()}, shape={ao.shape}")
+    handle_news(
+        None,
+        "info",
+        f"AO map generated: min={ao.min()}, max={ao.max()}, shape={ao.shape}",
+    )
     return ao_image
 
 
