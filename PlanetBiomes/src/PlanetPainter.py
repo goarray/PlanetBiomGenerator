@@ -973,7 +973,7 @@ class MainWindow(QMainWindow):
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
             "number_faults": "number_faults",
-            "boundary_width": "boundary_width",
+            "fault_width": "fault_width",
             "boundary_noise_scale": "boundary_noise_scale",
             "boundary_noise_octaves": "boundary_noise_octaves",
             "boundary_noise_persistence": "boundary_noise_persistence",
@@ -984,7 +984,7 @@ class MainWindow(QMainWindow):
             "elevation_smoothing": "elevation_smoothing",
             "distort_scale": "distort_scale",
             "distort_magnitude": "distort_magnitude",
-            "center_jitter": "center_jitter",
+            "fault_jitter": "fault_jitter",
         }
 
         reset_buttons = [
@@ -1044,7 +1044,7 @@ class MainWindow(QMainWindow):
                     slider.setRange(0, 99999)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "number_faults":
+                elif key == "number_faults" or key == "fault_width":
                     slider.setRange(2, 16)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))

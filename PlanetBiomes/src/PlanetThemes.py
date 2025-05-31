@@ -198,7 +198,7 @@ THEMES = {
         }}
 
         QProgressBar {{
-            border: 1px solid {theme.get('primary_hover_color', '#6e9bac')};
+            border: 1px solid {theme.get("primary_hover_color", "#00FFFF")};
             border-radius: 6px;
             text-align: center;
             height: 30px;
@@ -218,7 +218,7 @@ THEMES = {
         QLCDNumber {{
             color: {theme.get("color", "#00FFAA")};
             background-color: {theme.get("background", "#1e1e1e")};
-            border: 2px solid {theme.get("primary_hover_color", "#00FFFF")};
+            border: 1px solid {theme.get("primary_hover_color", "#00FFFF")};
             border-radius: 6px;
             padding: 4px;
         }}
@@ -284,6 +284,14 @@ THEMES = {
             background-color: {theme.get('header_background', theme.get('background', '#262729'))};
             padding: 5px;
 
+        }}
+
+        QLabel {{
+            color: {theme.get('color', '#ffffff')};
+            border: 1px solid {theme.get("primary_hover_color", "#00FFFF")};
+            font-size: {theme.get('fonts', {}).get('size_large', FONT_SIZE_LARGE)};
+            padding: 5px;
+            border-radius: {theme.get('border_radius', 5)}px;
         }}
         
         QTabWidget::pane {{

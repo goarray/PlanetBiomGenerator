@@ -360,6 +360,7 @@ def draw_noise_driven_squiggle_line(
 ):
     height, width = GRID_SIZE
 
+    fault_jitter = config.get("fault_jitter", 0.5)
     # Initialize rng if not provided
     if rng is None:
         rng = np.random.default_rng(seed)
@@ -460,9 +461,10 @@ def generate_inward_faults(
     return fault_line_type_map
 
 
-def dilate_fault_lines(fault_map, fault_width=1, seed=0, py_rng=None):
+def dilate_fault_lines(fault_map, fault_width=3, seed=0, py_rng=None):
     h, w = fault_map.shape
     fault_mask = fault_map >= 0
+    fault_width = config.get("fault_width", 3)
     dilated_mask = binary_dilation(fault_mask, iterations=fault_width)
 
     # Initialize py_rng if not provided
