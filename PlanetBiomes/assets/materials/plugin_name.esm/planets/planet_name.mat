@@ -1,5 +1,5 @@
 {
-	"Filename" : "MATERIALS\\preview.esm\\planets\\preview.mat",
+	"Filename" : "MATERIALS\\plugin_name\\planets\\planet_name.mat",
 	"Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\2LayerStandard.mat" ],
 	"Objects" : 
 	[
@@ -9,7 +9,7 @@
 				{
 					"Data" : 
 					{
-						"Name" : "Preview"
+						"Name" : "planet_name"
 					},
 					"Index" : 0,
 					"Type" : "BSComponentDB::CTName"
@@ -17,7 +17,7 @@
 				{
 					"Data" : 
 					{
-						"ID" : "res:7D091AC1:000635ED:A021B43F"
+						"ID" : "res:D61EC45E:0005F6CB:A3A3A8F4"
 					},
 					"Index" : 0,
 					"Type" : "BSMaterial::BlenderID"
@@ -25,7 +25,7 @@
 				{
 					"Data" : 
 					{
-						"ID" : "res:7D091ADC:000635ED:A021B43F"
+						"ID" : "res:C6F985FA:0005DAC4:A511721A"
 					},
 					"Index" : 0,
 					"Type" : "BSMaterial::LayerID"
@@ -33,18 +33,10 @@
 				{
 					"Data" : 
 					{
-						"ID" : "res:7D091AE1:000635ED:A021B43F"
+						"ID" : "res:D61EC42E:0005F6CB:A3A3A8F4"
 					},
 					"Index" : 1,
 					"Type" : "BSMaterial::LayerID"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : ""
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::LODMaterialID"
 				},
 				{
 					"Data" : 
@@ -64,7 +56,368 @@
 				{
 					"Data" : 
 					{
-						"Name" : "Preview_Blender1"
+						"Name" : "planet_name_Layer1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:C6FA6AC8:0005DAC4:A511721A"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:C6FA6B13:0005DAC4:A511721A"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:C6F985FA:0005DAC4:A511721A",
+			"Parent" : "res:87106673:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_material_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:C6FA6AEB:0005DAC4:A511721A"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Multiply"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialOverrideColorTypeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:C6F985FA:0005DAC4:A511721A",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:C6FA6AC8:0005DAC4:A511721A",
+			"Parent" : "res:8747510A:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_textureset_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"Color" : 
+						{
+							"Data" : 
+							{
+								"Value" : 
+								{
+									"Data" : 
+									{
+										"w" : "1",
+										"x" : "0.8",
+										"y" : "0.8",
+										"z" : "0.8"
+									},
+									"Type" : "XMFLOAT4"
+								}
+							},
+							"Type" : "BSMaterial::Color",
+							"Version" : 1
+						}
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"Enabled" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_color.dds"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_rough.dds"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ao.dds"
+					},
+					"Index" : 5,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.55"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:C6FA6AC8:0005DAC4:A511721A",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:C6FA6AEB:0005DAC4:A511721A",
+			"Parent" : "res:8774BBFC:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_uvstream_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:C6F985FA:0005DAC4:A511721A",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:C6FA6B13:0005DAC4:A511721A",
+			"Parent" : "res:88D32867:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Layer2"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:D61EC442:0005F6CB:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:D61EC43D:0005F6CB:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:D61EC42E:0005F6CB:A3A3A8F4",
+			"Parent" : "res:972BBAD0:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_UVStreamA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:D61EC42E:0005F6CB:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:D61EC43D:0005F6CB:A3A3A8F4",
+			"Parent" : "res:88D32867:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Material1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:D61EC447:0005F6CB:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:D61EC42E:0005F6CB:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:D61EC442:0005F6CB:A3A3A8F4",
+			"Parent" : "res:986BA81D:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_TextureSet1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\planet_name_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.15"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:D61EC442:0005F6CB:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:D61EC447:0005F6CB:A3A3A8F4",
+			"Parent" : "res:98CBCE74:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Blender1"
 					},
 					"Index" : 0,
 					"Type" : "BSComponentDB::CTName"
@@ -126,395 +479,8 @@
 					"Type" : "BSComponentDB2::OuterEdge"
 				}
 			],
-			"ID" : "res:7D091AC1:000635ED:A021B43F",
+			"ID" : "res:D61EC45E:0005F6CB:A3A3A8F4",
 			"Parent" : "res:9ADFE7D4:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_Layer1"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091ADE:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MaterialID"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091AE0:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::UVStreamID"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "<this>",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091ADC:000635ED:A021B43F",
-			"Parent" : "res:87106673:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_terrain"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091ADF:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::TextureSetID",
-					"Version" : 3
-				},
-				{
-					"Data" : 
-					{
-						"Value" : "Multiply"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MaterialOverrideColorTypeComponent"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091ADC:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091ADE:000635ED:A021B43F",
-			"Parent" : "res:8747510A:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_terrain"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ResolutionHint" : "HighResUniqueMap"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::TextureResolutionSetting"
-				},
-				{
-					"Data" : 
-					{
-						"DisableMipBiasHint" : "false"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MipBiasSetting"
-				},
-				{
-					"Data" : 
-					{
-						"Color" : 
-						{
-							"Data" : 
-							{
-								"Value" : 
-								{
-									"Data" : 
-									{
-										"w" : "1",
-										"x" : "0.8",
-										"y" : "0.8",
-										"z" : "0.8"
-									},
-									"Type" : "XMFLOAT4"
-								}
-							},
-							"Type" : "BSMaterial::Color",
-							"Version" : 1
-						}
-					},
-					"Index" : 3,
-					"Type" : "BSMaterial::TextureReplacement"
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_color.dds"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_normal.dds"
-					},
-					"Index" : 1,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_rough.dds"
-					},
-					"Index" : 3,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_surface_metal.dds"
-					},
-					"Index" : 4,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_ao.dds"
-					},
-					"Index" : 5,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_ocean_mask.dds"
-					},
-					"Index" : 10,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"Value" : "0.55"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MaterialParamFloat"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091ADE:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091ADF:000635ED:A021B43F",
-			"Parent" : "res:8774BBFC:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_terrain"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"Value" : "Clamp"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::TextureAddressModeComponent"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091ADC:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091AE0:000635ED:A021B43F",
-			"Parent" : "res:88D32867:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_Layer2"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091AE2:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MaterialID"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091AE4:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::UVStreamID"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "<this>",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091AE1:000635ED:A021B43F",
-			"Parent" : "res:972BBAD0:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_Material1"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ID" : "res:7D091AE3:000635ED:A021B43F"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::TextureSetID",
-					"Version" : 3
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091AE1:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091AE2:000635ED:A021B43F",
-			"Parent" : "res:986BA81D:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_TextureSet1"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				},
-				{
-					"Data" : 
-					{
-						"ResolutionHint" : "HighResUniqueMap"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::TextureResolutionSetting"
-				},
-				{
-					"Data" : 
-					{
-						"DisableMipBiasHint" : "false"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MipBiasSetting"
-				},
-				{
-					"Data" : 
-					{
-						"FileName" : "Data\\Textures\\preview.esm\\preview\\preview_normal.dds"
-					},
-					"Index" : 1,
-					"Type" : "BSMaterial::MRTextureFile",
-					"Version" : 2
-				},
-				{
-					"Data" : 
-					{
-						"Value" : "0.15"
-					},
-					"Index" : 0,
-					"Type" : "BSMaterial::MaterialParamFloat"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091AE2:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091AE3:000635ED:A021B43F",
-			"Parent" : "res:98CBCE74:0005A3FB:A06346EA"
-		},
-		{
-			"Components" : 
-			[
-				{
-					"Data" : 
-					{
-						"Name" : "Preview_UVStreamA"
-					},
-					"Index" : 0,
-					"Type" : "BSComponentDB::CTName"
-				}
-			],
-			"Edges" : 
-			[
-				{
-					"EdgeIndex" : 0,
-					"To" : "res:7D091AE1:000635ED:A021B43F",
-					"Type" : "BSComponentDB2::OuterEdge"
-				}
-			],
-			"ID" : "res:7D091AE4:000635ED:A021B43F",
-			"Parent" : "res:88D32867:0005A3FB:A06346EA"
 		}
 	],
 	"Summary" : 
@@ -526,7 +492,7 @@
 			{
 				"Albedo" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_color.dds",
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_color.dds",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -539,7 +505,7 @@
 				},
 				"AmbientOcclusion" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_ao.dds",
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ao.dds",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -636,7 +602,7 @@
 				},
 				"Mask" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_ocean_mask.dds",
+					"File" : "",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -644,12 +610,11 @@
 						"y" : 0,
 						"z" : 0
 					},
-					"TextureResolutionHint" : "HighResUniqueMap",
 					"UseReplacement" : false
 				},
 				"Metalness" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_surface_metal.dds",
+					"File" : "",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -657,12 +622,11 @@
 						"y" : 0,
 						"z" : 0
 					},
-					"TextureResolutionHint" : "HighResUniqueMap",
-					"UseReplacement" : false
+					"UseReplacement" : true
 				},
 				"Normal" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_normal.dds",
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_normal.dds",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -723,7 +687,7 @@
 				},
 				"Roughness" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_rough.dds",
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_rough.dds",
 					"Replacement" : 
 					{
 						"w" : 1,
@@ -949,7 +913,7 @@
 				},
 				"Normal" : 
 				{
-					"File" : "Data\\Textures\\preview.esm\\preview\\preview_normal.dds",
+					"File" : "Data\\Textures\\Planets\\HoudiniPlanets\\TerrainMapsShared\\planet_name_normal.dds",
 					"Replacement" : 
 					{
 						"w" : 1,

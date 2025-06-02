@@ -2,12 +2,12 @@
     "_____Painter.py_____": "Main UI related settings",
     "total_news": 600,
     "_program_options": "Pluging related options",
-    "plugin_selected": 0,
+    "plugin_selected": 1,
     "plugin_index": [
         "PlanetBiomes.csv",
         "preview.csv"
     ],
-    "plugin_name": "PlanetBiomes.esm",
+    "plugin_name": "preview.esm",
     "enable_preview_mode": false,
     "_theme_group": "Parameters related to themes",
     "theme": "Starfield",
@@ -26,7 +26,7 @@
     "number_faults": 16,
     "fault_width": 15,
     "fault_jitter": 0.92,
-    "fault_smooth": 0.88,
+    "fault_smooth": 0.66,
     "distort_scale": 5,
     "save_tectonic_maps": true,
     "squircle_factor": 0.5,

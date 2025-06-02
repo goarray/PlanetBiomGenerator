@@ -79,13 +79,13 @@ def update_news_count(main_window=None):
             main_window.biom_count_progressBar.setValue(int(biom_percent))
         if hasattr(main_window, "text_count_progressBar"):
             main_window.text_count_progressBar.setValue(int(text_percent))
-
-    print(
+    
+    """print(
         f"news_count: {news_count}, "
         f"biom_percent: {biom_percent:.1f}%, "
         f"text_percent: {text_percent:.1f}%, "
         f"news_percent: {news_percent:.1f}%"
-    )
+    )"""
 
 
 def reset_news_count():

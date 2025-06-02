@@ -38,7 +38,6 @@ from PlanetConstants import (
     # Script and template paths
     SCRIPT_PATH,
     TEMPLATE_PATH,
-    PREVIEW_BIOME_PATH,
     # UI and static assets
     UI_PATH,
     DEFAULT_IMAGE_PATH,

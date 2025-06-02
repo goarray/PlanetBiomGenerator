@@ -37,9 +37,10 @@ PREVIEW_PATH = CSV_DIR / "preview.csv"
 
 # --- Script and template paths ---
 SCRIPT_PATH = SCRIPT_DIR / "PlanetBiomes.py"
-TEMPLATE_PATH = ASSETS_DIR / "PlanetBiomes.biom"
-MATERIAL_PATH = ASSETS_DIR / "PlanetMaterials.mat"
-PREVIEW_BIOME_PATH = ASSETS_DIR / "PlanetBiomes.biom"
+TEMPLATE_PATH = ASSETS_DIR / "planetdata" / "biomemaps" / "plugin_name.esm" / "planet_name.biom"
+MATERIAL_PATH = ASSETS_DIR / "materials" / "plugin_name.esm" / "planets" / "planet_name.mat"
+MESH_PATH = ASSETS_DIR / "meshes" / "planets" / "houdiniplanets" / "plugin_name.esm" / "planet_name.nif"
+#PREVIEW_BIOME_PATH = ASSETS_DIR / "PlanetBiomes.biom"
 
 # --- UI and static assets ---
 UI_PATH = SCRIPT_DIR / "mainwindow.ui"

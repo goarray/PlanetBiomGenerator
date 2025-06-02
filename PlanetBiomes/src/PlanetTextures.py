@@ -59,7 +59,6 @@ from PlanetConstants import (
     PREVIEW_PATH,
     SCRIPT_PATH,
     TEMPLATE_PATH,
-    PREVIEW_BIOME_PATH,
     UI_PATH,
     DEFAULT_IMAGE_PATH,
     GIF_PATHS,

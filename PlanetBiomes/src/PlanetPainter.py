@@ -74,7 +74,7 @@ from PlanetConstants import (
     # Script and template paths
     SCRIPT_PATH,
     FOLDER_PATHS,
-    PREVIEW_BIOME_PATH,
+    TEMPLATE_PATH,
     # UI and static assets
     UI_PATH,
     DEFAULT_IMAGE_PATH,
@@ -111,7 +111,7 @@ def load_config():
             "plugin_selected": -1,
             "plugin_index": ["PlanetBiomes.csv", "preview.csv"],
             "plugin_name": "preview.esm",
-            "enable_preview_mode": True,
+            "enable_preview_mode": False,
             "_theme_group": "Parameters related to themes",
             "theme": "Starfield",
             "_biome_toggles_group": "Biome-related options",
@@ -250,38 +250,36 @@ def update_value(key, val, index=None):
     save_config()
 
 
-def update_selected_plugin(index):
+def update_selected_plugin(index, main_window, force=False):
     if "plugin_index" not in config or not config["plugin_index"]:
         print("plugin_index missing or empty, restoring fallback list.")
         config["plugin_index"] = ["preview.csv"]
         config["plugin_selected"] = 0
-    config["plugin_selected"] = index
-    selected_csv = config["plugin_index"][index]  # Get selected CSV file name
+
+    if config.get("plugin_selected") != index or force:
+        config["plugin_selected"] = index
+
+    selected_csv = config["plugin_index"][index]
 
     if selected_csv == "preview.csv":
         csv_path = CSV_DIR / selected_csv
     else:
-        csv_path = (
-            INPUT_DIR / selected_csv
-        )
-
-    config["enable_preview_mode"] = selected_csv == "preview.csv"
+        csv_path = INPUT_DIR / selected_csv
 
     try:
         with open(csv_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
-            first_row = next(reader, None)  # Get first row
+            first_row = next(reader, None)
             if first_row and len(first_row) > 0:
-                config["plugin_name"] = first_row[0].strip()  # First column
+                config["plugin_name"] = first_row[0].strip()
             else:
                 config["plugin_name"] = "Unknown"
     except FileNotFoundError:
         print(f"Error: CSV file {csv_path} not found.")
         config["plugin_name"] = "Unknown"
 
-    update_value("enable_preview_mode", config["enable_preview_mode"])
-
-    save_config()  # Ensure changes are saved
+    main_window.plugin_name.setText("Plugin: " + config["plugin_name"])
+    save_config()
 
 
 def get_seed(config) -> int:
@@ -385,7 +383,7 @@ def start_planet_biomes(main_window):
     planet_biomes_process.setProgram(sys.executable)
     args = [str(SCRIPT_PATH)]
     if config.get("enable_preview_mode", False):
-        args.append(str(PREVIEW_BIOME_PATH))
+        args.append(str(TEMPLATE_PATH))
     planet_biomes_process.setArguments(args)
     planet_biomes_process.setWorkingDirectory(str(BASE_DIR))
 
@@ -554,6 +552,7 @@ class MainWindow(QMainWindow):
     ao_preview_image: QLabel
     rough_preview_image: QLabel
     news_label: QLabel
+    plugin_name: QLabel
     stdout_widget: QTextEdit
     stderr_widget: QTextEdit
     themes_dropdown: QComboBox
@@ -618,8 +617,13 @@ class MainWindow(QMainWindow):
         self.plugins_dropdown.addItems(config["plugin_index"])
         self.plugins_dropdown.setCurrentIndex(config.get("plugin_selected", 0))
         self.plugins_dropdown.currentIndexChanged.connect(
-            lambda idx: (update_selected_plugin(idx), self.refresh_ui_from_config())
+            lambda idx: (
+                update_selected_plugin(idx, self),
+                self.refresh_ui_from_config(),
+            )
         )
+        index = config.get("plugin_selected", 0)
+        update_selected_plugin(index, self)
         handle_news(None, "info", "DEBUG: Available plugins:")
         for index, plugin in enumerate(plugin_list):
             handle_news(None, "info", "  [{index}] {plugin}")
