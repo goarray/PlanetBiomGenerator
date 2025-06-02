@@ -100,18 +100,20 @@ theme = config.get("theme", "Starfield")
 plugin_name = config.get("plugin_name", "default_plugin")
 
 
-def load_biomes(
-    input_path: Path,
-) -> Tuple[str, Dict[str, List[int]], Set[int], Set[int], Set[int]]:
-    # Respect preview mode immediately
-    if config.get("enable_preview_mode", False):
+def load_biomes() -> Tuple[str, Dict[str, List[int]], Set[int], Set[int], Set[int]]:
+    # Decide CSV input file based on config
+    input_path: Path = PREVIEW_PATH
+    csv_files: List[Path] = []
+
+    if config.get("enable_preview_mode", True):
         input_path = PREVIEW_PATH
         csv_files = [PREVIEW_PATH]
         config["plugin_index"] = ["preview.csv"]
     else:
         csv_files = list(INPUT_DIR.glob("*.csv"))
         if not csv_files:
-            csv_files.append(PREVIEW_PATH)
+            csv_files = [PREVIEW_PATH]
+            input_path = PREVIEW_PATH
             config["enable_preview_mode"] = True
         else:
             config["plugin_index"] = [f.name for f in csv_files]
@@ -123,7 +125,9 @@ def load_biomes(
             config["enable_preview_mode"] = input_path == PREVIEW_PATH
 
     handle_news(None, "into", f"PlanetBiomes: Plugin's csv input_path = {input_path}")
-    handle_news(None, "into", f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}")
+    handle_news(
+        None, "into", f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}"
+    )
 
     with open(input_path, newline="") as f:
         plugin = f.readline().strip().rstrip(",")
@@ -280,11 +284,9 @@ def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_r
     #south_elevation = np.flipud(south_elevation)
 
     # Save elevation maps for debugging
-    save_elevation_map_png(north_elevation, str(temp_dir), "north")
-    save_elevation_map_png(south_elevation, str(temp_dir), "south")
-
-    # Save fault map for debugging
-    save_boundary_map_png(fault_lines, str(temp_dir), "unified")
+    if config.get("enable_preview_mode", False):
+        save_elevation_map_png(north_elevation, str(temp_dir), "north")
+        save_elevation_map_png(south_elevation, str(temp_dir), "south")
 
     return north_elevation, south_elevation
 
@@ -1022,12 +1024,11 @@ def main():
     handle_news(None, "success", f"=== Starting PlanetBiomes ===", flush=True)
     global plugin_name
 
-    preview = "--preview" in sys.argv
     config = load_json(CONFIG_PATH)
-    # Add default elevation influence
-    config.setdefault("elevation_influence", 0.4)  # Weight of elevation in pattern
-    biome_csv = PREVIEW_PATH if preview else INPUT_DIR
-    plugin, planets, life, nolife, ocean = load_biomes(biome_csv)
+    config.setdefault("enable_preview_mode", False)
+    config.setdefault("elevation_influence", 0.4)
+
+    plugin, planets, life, nolife, ocean = load_biomes()
     config["plugin_name"] = plugin
     save_json(CONFIG_PATH, config)
 
@@ -1060,13 +1061,14 @@ def main():
             inst.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]), life, nolife, ocean
         ).flatten()
 
+        used_biome_ids = set(inst.biomeGridN.flatten()) | set(inst.biomeGridS.flatten())
+        biome_data = load_biome_data(str(CSV_PATH), used_biome_ids)
+        biome_colors = {k: v["color"] for k, v in biome_data.items()}
+
         save_resource_grid_png_img(
             inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR)
         )
 
-        used_biome_ids = set(inst.biomeGridN.flatten()) | set(inst.biomeGridS.flatten())
-        biome_data = load_biome_data(str(CSV_PATH), used_biome_ids)
-        biome_colors = {k: v["color"] for k, v in biome_data.items()}
         save_biome_grid_png_img(
             inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
             biome_colors,

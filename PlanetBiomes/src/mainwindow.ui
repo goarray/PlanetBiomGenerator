@@ -1358,6 +1358,11 @@
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="0" column="0">
            <widget class="QCheckBox" name="output_biom_files">
+            <property name="font">
+             <font>
+              <strikeout>true</strikeout>
+             </font>
+            </property>
             <property name="text">
              <string>Output .Biom</string>
             </property>
@@ -1365,13 +1370,18 @@
           </item>
           <item row="3" column="0">
            <widget class="QCheckBox" name="output_dds_files">
+            <property name="font">
+             <font>
+              <strikeout>true</strikeout>
+             </font>
+            </property>
             <property name="text">
              <string>Output .DDS</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QCheckBox" name="enable_output_log">
+           <widget class="QCheckBox" name="output_nif_files">
             <property name="font">
              <font>
               <strikeout>true</strikeout>
@@ -1383,9 +1393,15 @@
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QCheckBox" name="enable_preview_mode">
+           <widget class="QCheckBox" name="keep_pngs_after_conversion">
+            <property name="toolTip">
+             <string>Keep the PNG files after DDS conversion?</string>
+            </property>
+            <property name="accessibleName">
+             <string>Keep PNGs After Conversion</string>
+            </property>
             <property name="text">
-             <string>Create DDs Files</string>
+             <string>Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!</string>
             </property>
            </widget>
           </item>
@@ -1398,19 +1414,6 @@
             </property>
             <property name="text">
              <string>Output .MAT</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QCheckBox" name="keep_pngs_after_conversion">
-            <property name="toolTip">
-             <string>Keep the PNG files after DDS conversion?</string>
-            </property>
-            <property name="accessibleName">
-             <string>Keep PNGs After Conversion</string>
-            </property>
-            <property name="text">
-             <string>Keep .PNGs</string>
             </property>
            </widget>
           </item>
@@ -1644,7 +1647,19 @@
          <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
         <layout class="QGridLayout" name="gridLayout_15">
-         <item row="0" column="0">
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="use_random">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Use Random</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
           <widget class="QLabel" name="label_3">
            <property name="font">
             <font>
@@ -1659,93 +1674,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QSlider" name="user_seed">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Slider used to select generation seed</string>
-           </property>
-           <property name="accessibleName">
-            <string>User Seed</string>
-           </property>
-           <property name="maximum">
-            <number>99</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QSlider" name="texture_resolution_scale">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimum">
-            <number>1</number>
-           </property>
-           <property name="maximum">
-            <number>8</number>
-           </property>
-           <property name="singleStep">
-            <number>1</number>
-           </property>
-           <property name="sliderPosition">
-            <number>1</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-           <property name="tickPosition">
-            <enum>QSlider::TickPosition::TicksBothSides</enum>
-           </property>
-           <property name="tickInterval">
-            <number>1</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="label_4">
-           <property name="font">
-            <font>
-             <strikeout>false</strikeout>
-            </font>
-           </property>
-           <property name="text">
-            <string>Resolution</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="use_random">
-           <property name="font">
-            <font>
-             <strikeout>false</strikeout>
-            </font>
-           </property>
-           <property name="text">
-            <string>Use Random</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
+         <item row="2" column="1">
           <widget class="QLCDNumber" name="seed_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1784,7 +1713,99 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="2">
+         <item row="3" column="3">
+          <widget class="QCheckBox" name="upscale_image">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
+           </property>
+           <property name="accessibleName">
+            <string>Upscale Image</string>
+           </property>
+           <property name="text">
+            <string>User Defined</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QSlider" name="user_seed">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Slider used to select generation seed</string>
+           </property>
+           <property name="accessibleName">
+            <string>User Seed</string>
+           </property>
+           <property name="maximum">
+            <number>99</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="QLabel" name="label_4">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QSlider" name="texture_resolution_scale">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>8</number>
+           </property>
+           <property name="singleStep">
+            <number>1</number>
+           </property>
+           <property name="sliderPosition">
+            <number>1</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TickPosition::TicksBothSides</enum>
+           </property>
+           <property name="tickInterval">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
           <widget class="QLCDNumber" name="texture_resolution_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1810,24 +1831,6 @@
            </property>
            <property name="digitCount">
             <number>4</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="3">
-          <widget class="QCheckBox" name="upscale_image">
-           <property name="font">
-            <font>
-             <strikeout>false</strikeout>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
-           </property>
-           <property name="accessibleName">
-            <string>Upscale Image</string>
-           </property>
-           <property name="text">
-            <string>User Defined</string>
            </property>
           </widget>
          </item>
@@ -2856,7 +2859,7 @@
           </widget>
          </item>
          <item row="2" column="1" rowspan="3">
-          <widget class="QPushButton" name="preview_command_button">
+          <widget class="QPushButton" name="start_command_button">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
              <horstretch>0</horstretch>

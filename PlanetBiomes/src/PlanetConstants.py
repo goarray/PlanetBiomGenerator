@@ -96,7 +96,7 @@ BOOLEAN_KEYS = {
     "enable_texture_light",
     "enable_texture_edges",
     "enable_basic_filters",
-    "enable_texture_anomalies",
+    "enable_texture_craters",
     "process_images",
     "enable_texture_noise",
     "upscale_image",

@@ -30,7 +30,6 @@ from scipy.ndimage import gaussian_filter, sobel
 import numpy as np
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
 import colorsys
-import argparse
 import subprocess
 import json
 import csv
@@ -988,23 +987,32 @@ def main():
     global plugin_name
     print(f"Landscaping permit approved for: {plugin_name}", flush=True)
     print("=== Starting PlanetTextures ===", flush=True)
-    parser = argparse.ArgumentParser(description="Generate PNG and DDS textures from .biom files")
-    parser.add_argument("biom_file", nargs="?", help="Path to the .biom file (for preview mode)")
-    parser.add_argument("--preview", action="store_true", help="Run in preview mode")
-    args = parser.parse_args()
-    handle_news(None, "info", f"Arguments: biom_file={args.biom_file}, preview={args.preview}")
+
+    enable_preview_mode = config.get("enable_preview_mode", False)
+    preview_biom_file = config.get("preview_biom_file", None)
+
+    handle_news(
+        None,
+        "info",
+        f"Config: preview mode = {enable_preview_mode}, file = {preview_biom_file}",
+    )
 
     PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     handle_news(None, "info", f"PNG output directory: {PNG_OUTPUT_DIR}")
 
-    if args.preview and args.biom_file:
-        biom_files = [Path(args.biom_file)]
+    if enable_preview_mode and preview_biom_file:
+        biom_files = [Path(preview_biom_file)]
         handle_news(None, "info", f"Preview mode: Processing {biom_files[0]}")
         if not biom_files[0].exists():
-            print(f"Error: Provided .biom file not found: {args.biom_file}")
+            print(f"Error: Provided .biom file not found: {preview_biom_file}")
             sys.exit(1)
     else:
-        biom_files = [f for f in (PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name).rglob("*.biom")]
+        biom_files = [
+            f
+            for f in (PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name).rglob(
+                "*.biom"
+            )
+        ]
         handle_news(None, "info", f"Found .biom files: {biom_files}")
         if not biom_files:
             print("No .biom files found in the output directory.")
@@ -1160,19 +1168,15 @@ def main():
                             )
 
                         if not keep_pngs:
+                            plugin_dir = (
+                                north_path.parent.parent
+                            )
                             try:
-                                north_path.unlink()
-                                south_path.unlink()
-                                combined_path.unlink()
-                                print(
-                                    f"Deleted {north_path}, {south_path}, and {combined_path}",
-                                    file=sys.stderr,
-                                )
-                            except OSError as e:
-                                print(
-                                    f"Error deleting PNGs for {planet_name}: {e}",
-                                    file=sys.stderr,
-                                )
+                                shutil.rmtree(plugin_dir)
+                                print(f"Deleted plugin directory: {plugin_dir}", file=sys.stderr)
+                            except Exception as e:
+                                print(f"Error deleting plugin directory: {plugin_dir}: {e}", file=sys.stderr)
+
                     except Exception as e:
                         handle_news(
                             None,
@@ -1185,7 +1189,7 @@ def main():
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
 
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.pyt")], check=True)
+    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.py")], check=True)
     sys.stdout.flush()
     sys.exit()
 

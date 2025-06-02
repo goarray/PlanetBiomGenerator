@@ -50,8 +50,12 @@ from PlanetNewsfeed import (
     biom_percent,
     text_percent,
     total_news,
+    total_biom,
+    total_text,
+    total_other,
     reset_news_count,
-    set_total_news_from_config
+    precompute_total_news,
+    load_global_config,
 )
 from PlanetConstants import (
     # Core directories
@@ -174,7 +178,7 @@ def load_config():
             "enable_basic_filters": False,
             "enable_texture_edges": False,
             "enable_texture_noise": False,
-            "enable_texture_anomalies": False,
+            "enable_texture_craters": False,
             "_texture_basics_group": "Texture basics",
             "texture_brightness": 0.5,
             "texture_saturation": 0.5,
@@ -191,13 +195,11 @@ def load_config():
             "_texture_lighting_group": "Lighting settings",
             "fade_intensity": 0.5,
             "fade_spread": 0.5,
-            "light_bias": "light_bias_cc",
             "_image_options_group": "Other image options",
             "enable_normal": True,
             "enable_rough": False,
             "enable_alpha": False,
             "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
-            "blend_px": 50,
             "elevation_influence": 0.5,
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -335,16 +337,28 @@ def get_planet_biomes_process() -> QProcess:
     return planet_biomes_process
 
 
-def start_planet_biomes(main_window, mode=""):
-    """Start PlanetBiomes.py asynchronously, handle modes, and update UI."""
+def start_planet_biomes(main_window):
     global planet_biomes_process, process_list
+    global total_news, total_biom, total_text, total_other
+    global news_count, news_percent, biom_percent, text_percent
+
     main_window.stdout_widget.clear()
     main_window.stderr_widget.clear()
-    reset_news_count()  # Reset shared counters
-    main_window.news_count = news_count
-    main_window.news_percent = news_percent
-    main_window.biom_percent = biom_percent
-    main_window.text_percent = text_percent
+
+    # Reset progress counters
+    news_count = 0
+    news_percent = 0.0
+    biom_percent = 0.0
+    text_percent = 0.0
+
+    # Precompute totals based on input
+    totals = precompute_total_news(config)
+    total_news = totals["total_news"]
+    total_biom = totals["total_biom"]
+    total_text = totals["total_text"]
+    total_other = totals["total_other"]
+
+    # Initialize progress bars and labels
     main_window.news_count_progressBar.setValue(0)
     main_window.biom_count_progressBar.setValue(0)
     main_window.text_count_progressBar.setValue(0)
@@ -356,27 +370,22 @@ def start_planet_biomes(main_window, mode=""):
         )
         main_window.stderr_widget.moveCursor(QTextCursor.MoveOperation.End)
         return
+
     seed = get_seed(config)
     update_seed_display(main_window, config)
     handle_news(main_window, "success", f"Permit application: {seed} received.")
 
-    # Disable upscaling for preview mode
-    if "--preview" in mode:
+    if config.get("enable_preview_mode", False):
         disable_upscaling()
 
-    # Save config to ensure latest settings are used
     save_config()
 
     # Initialize planet_biomes_process
     planet_biomes_process = QProcess()
     planet_biomes_process.setProgram(sys.executable)
     args = [str(SCRIPT_PATH)]
-    print(f"Mode argument received: {mode}")
-    if mode:
-        if "--preview" in mode:
-            args.extend([str(PREVIEW_BIOME_PATH), "--preview"])
-        else:
-            args.extend(mode.split())
+    if config.get("enable_preview_mode", False):
+        args.append(str(PREVIEW_BIOME_PATH))
     planet_biomes_process.setArguments(args)
     planet_biomes_process.setWorkingDirectory(str(BASE_DIR))
 
@@ -448,7 +457,6 @@ def start_planet_biomes(main_window, mode=""):
     # Connect signals
     planet_biomes_process.readyReadStandardOutput.connect(handle_output)
     planet_biomes_process.readyReadStandardError.connect(handle_error)
-    seed = get_seed(config)
 
     def on_planet_biomes_finished(exit_code):
         message = (
@@ -558,7 +566,7 @@ class MainWindow(QMainWindow):
     text_count_progressBar: QProgressBar
     user_seed: QSlider
     texture_resolution_scale: QSlider
-    preview_command_button: QPushButton
+    start_command_button: QPushButton
     halt_command_button: QPushButton
     exit_command_button: QPushButton
     reset_command_button: QPushButton
@@ -587,8 +595,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
         config = load_config()
-
-        set_total_news_from_config(config)
 
         self.news_label.setText("Progress")
 
@@ -658,9 +664,7 @@ class MainWindow(QMainWindow):
         self.stdout_widget.moveCursor(QTextCursor.MoveOperation.End)
 
         # Connect signals
-        self.preview_command_button.clicked.connect(
-            lambda: start_planet_biomes(self, "--preview" if config.get("enable_preview_mode") else "")
-        )
+        self.start_command_button.clicked.connect(lambda: start_planet_biomes(self))
         self.halt_command_button.clicked.connect(cancel_processing)
         self.exit_command_button.clicked.connect(cancel_and_exit)
         self.reset_command_button.clicked.connect(self.reset_all_to_defaults)
@@ -864,7 +868,6 @@ class MainWindow(QMainWindow):
             "process_images": "process_images",
             "enable_texture_noise": "enable_texture_noise",
             "upscale_image": "upscale_image",
-            "enable_preview_mode": "enable_preview_mode",
             "output_dds_files": "output_dds_files",
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
             "output_mat_files": "output_mat_files",
