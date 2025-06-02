@@ -40,3 +40,5 @@ PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_05_mi
 PlanetBiomes/assets/textures/planets/houdiniplanets/terrainmapsshared/rock_05_mixed_ao.dds
 PlanetBiomes/1024_PreFixes.png
 PlanetBiomes/src/PlanetPlanet.py
+PlanetBiomes/src/temp_output/north_hemisphere.png
+PlanetBiomes/src/temp_output/south_hemisphere.png

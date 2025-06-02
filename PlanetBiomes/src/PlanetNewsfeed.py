@@ -9,8 +9,13 @@ from PlanetConstants import CONFIG_PATH, DEFAULT_CONFIG_PATH
 
 # Shared global variables
 news_count = 0
+other_news = 0
 news_percent = 0
-total_news = 37
+biom_percent = 0
+text_percent = 0
+total_news = 0
+total_biom = 0
+total_text = 0
 
 
 def set_total_news_from_config(config):
@@ -36,23 +41,52 @@ def format_message(message: str, kind: str = "info", timestamp: bool = False) ->
 
 
 def update_news_count(main_window=None):
-    """Increment news_count and update news_percent."""
-    global news_count, news_percent
+    """Increment news_count and update progress bar percentages."""
+    global news_count, news_percent, biom_percent, text_percent
+    global total_news, total_biom, total_text
+
     news_count += 1
+
     if total_news > 0:
         news_percent = (news_count / total_news) * 100
+
+    # Biomes percentage (first N entries)
+    if news_count <= total_biom:
+        biom_percent = (news_count / total_biom) * 100
+    else:
+        biom_percent = 100.0
+
+    # Textures percentage (starts after total_biom)
+    if news_count > total_biom:
+        completed = news_count - total_biom
+        text_percent = min((completed / total_text) * 100, 100.0)
+    else:
+        text_percent = 0.0
+
+    # Update progress bars if UI present
     if main_window:
-        main_window.news_count = news_count
-        main_window.news_percent = news_percent
-        if hasattr(main_window, "news_count_progressbar"):
-            main_window.news_count_progressbar.setValue(int(news_percent))
+        if hasattr(main_window, "news_count_progressBar"):
+            main_window.news_count_progressBar.setValue(int(news_percent))
+        if hasattr(main_window, "biom_count_progressBar"):
+            main_window.biom_count_progressBar.setValue(int(biom_percent))
+        if hasattr(main_window, "text_count_progressBar"):
+            main_window.text_count_progressBar.setValue(int(text_percent))
+
+    print(
+        f"news_count: {news_count}, "
+        f"biom_percent: {biom_percent:.1f}%, "
+        f"text_percent: {text_percent:.1f}%, "
+        f"news_percent: {news_percent:.1f}%"
+    )
 
 
 def reset_news_count():
     """Reset news_count and news_percent."""
-    global news_count, news_percent
+    global news_count, news_percent, biom_percent, text_percent
     news_count = 0
     news_percent = 0
+    biom_percent = 0
+    text_percent = 0
 
 
 def handle_news(main_window, kind: str = "info", message: str = "", flush=False):
@@ -83,26 +117,72 @@ def handle_news(main_window, kind: str = "info", message: str = "", flush=False)
     print(f"{clean}", file=stream, flush=flush)
 
 
+def calc_biom_count(config):
+    base = 44  # base number of biomes
+    if config.get("process_biomes", False):
+        base += sum(
+            2
+            for key in [
+                "enable_noise",
+                "enable_distortion",
+                "enable_biases",
+                "enable_anomalies",
+            ]
+            if config.get(key, False)
+        )
+        if config.get("enable_tectonic_plates", False):
+            base += 20
+    return base
+
+
+def calc_text_count(config):
+    base = (127 + calc_biom_count(config)) #127 = textures base
+    if config.get("process_images", False):
+        base += 18
+        base += sum(
+            2
+            for key in [
+                "enable_basic_filters",
+                #"enable_texture_noise",
+                #"enable_texture_edges",
+                #"enable_texture_light",
+                #"enable_texture_craters",
+            ]
+            if config.get(key, False)
+        )
+    return base
+
+
 def load_global_config():
     """Load total_news from config.json and initialize global variables."""
-    global total_news
+    global total_news, total_biom, total_text
+
     config_path = CONFIG_PATH if CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
     try:
         with open(config_path, "r") as f:
             config = json.load(f)
-            total_news = config.get("total_news", 37)
+
+            # Calculate counts
+            total_biom = calc_biom_count(config)
+            total_text = calc_text_count(config)
+            total_news = (
+                total_biom + total_text + other_news
+            )  # + any extra chunks if needed
+
             handle_news(
-                None, "info", f"Loaded total_news: {total_news} from {config_path}"
+                None,
+                "info",
+                f"Loaded config: biom={total_biom}, text={total_text}, total_news={total_news}",
             )
     except FileNotFoundError:
         handle_news(
             None,
             "error",
-            f"Config file {config_path} not found. Using default total_news: {total_news}",
+            f"Config file {config_path} not found. Using default totals.",
         )
     except json.JSONDecodeError as e:
         handle_news(None, "error", f"Error parsing config file {config_path}: {e}")
-        total_news = 37
+        total_news = 351  # Fallback default
 
 
 # Initialize total_news after all functions are defined

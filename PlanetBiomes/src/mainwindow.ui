@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1096</width>
-    <height>870</height>
+    <width>1099</width>
+    <height>876</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -35,7 +35,7 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout_4">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
@@ -55,6 +55,9 @@
         <property name="title">
          <string>Biome Options</string>
         </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QGroupBox" name="biome_basics_group">
@@ -72,6 +75,9 @@
            </property>
            <property name="title">
             <string>Biome Map Shape</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
             <item row="0" column="0">
@@ -309,6 +315,9 @@
            <property name="title">
             <string>Biome Faults</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
            <layout class="QGridLayout" name="gridLayout_14">
             <item row="1" column="1">
              <widget class="QSlider" name="number_faults">
@@ -401,6 +410,9 @@
            <property name="title">
             <string>Biome Distortion</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
            <property name="checkable">
             <bool>false</bool>
            </property>
@@ -457,6 +469,9 @@
            </property>
            <property name="title">
             <string>Biome Biases</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
            <property name="checkable">
             <bool>false</bool>
@@ -656,6 +671,9 @@
            </property>
            <property name="title">
             <string>Biome Noise</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
            <property name="checkable">
             <bool>false</bool>
@@ -948,6 +966,25 @@
             </property>
            </widget>
           </item>
+          <item row="3" column="3">
+           <widget class="QLabel" name="surface_preview_image">
+            <property name="toolTip">
+             <string>Roughness</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_2.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0" rowspan="3" colspan="3">
            <widget class="QLabel" name="color_preview_image">
             <property name="sizePolicy">
@@ -1010,6 +1047,44 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="biome_preview_image">
+            <property name="toolTip">
+             <string>Biomes</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_0.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QLabel" name="resource_preview_image">
+            <property name="toolTip">
+             <string>Resources</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../assets/images/progress_1.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="1">
            <widget class="QLabel" name="ocean_preview_image">
             <property name="toolTip">
@@ -1032,25 +1107,6 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="biome_preview_image">
-            <property name="toolTip">
-             <string>Biomes</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_0.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="3" column="0">
            <widget class="QLabel" name="rough_preview_image">
             <property name="toolTip">
@@ -1064,44 +1120,6 @@
             </property>
             <property name="pixmap">
              <pixmap>../assets/images/progress_3.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="3">
-           <widget class="QLabel" name="surface_preview_image">
-            <property name="toolTip">
-             <string>Roughness</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_2.gif</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QLabel" name="resource_preview_image">
-            <property name="toolTip">
-             <string>Resources</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>../assets/images/progress_1.gif</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1335,24 +1353,283 @@
         </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
-          <string>(NA)</string>
+          <string>Settings (NA)</string>
          </attribute>
-         <layout class="QGridLayout" name="gridLayout_5"/>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="output_biom_files">
+            <property name="text">
+             <string>Output .Biom</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="output_dds_files">
+            <property name="text">
+             <string>Output .DDS</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="enable_output_log">
+            <property name="font">
+             <font>
+              <strikeout>true</strikeout>
+             </font>
+            </property>
+            <property name="text">
+             <string>Output .NIF</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="enable_preview_mode">
+            <property name="text">
+             <string>Create DDs Files</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="output_mat_files">
+            <property name="font">
+             <font>
+              <strikeout>true</strikeout>
+             </font>
+            </property>
+            <property name="text">
+             <string>Output .MAT</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="keep_pngs_after_conversion">
+            <property name="toolTip">
+             <string>Keep the PNG files after DDS conversion?</string>
+            </property>
+            <property name="accessibleName">
+             <string>Keep PNGs After Conversion</string>
+            </property>
+            <property name="text">
+             <string>Keep .PNGs</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="BiomeAndTextureToggleGroup">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QGroupBox" name="process_biomes">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>236</width>
+            <height>120</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <strikeout>false</strikeout>
+           </font>
+          </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="title">
+           <string>Enable Biome Filters</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="4" column="1">
+            <widget class="QProgressBar" name="biom_count_progressBar">
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="textVisible">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QCheckBox" name="enable_noise">
+             <property name="text">
+              <string>Biome Noise</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QCheckBox" name="enable_distortion">
+             <property name="text">
+              <string>Biome Distortion</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QCheckBox" name="enable_tectonic_plates">
+             <property name="text">
+              <string>Biome Faults</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QCheckBox" name="enable_anomalies">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Biome Anomalies</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="enable_biases">
+             <property name="text">
+              <string>Biome Biases</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="process_images">
+          <property name="minimumSize">
+           <size>
+            <width>236</width>
+            <height>120</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Enable Texture Filters</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="enable_basic_filters">
+             <property name="text">
+              <string>Texture Basics</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="enable_texture_light">
+             <property name="text">
+              <string>Texture Lighting</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="enable_texture_noise">
+             <property name="text">
+              <string>Texture Noise</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="enable_texture_craters">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <strikeout>false</strikeout>
+              </font>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LayoutDirection::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>Texture Scars</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="enable_texture_edges">
+             <property name="toolTip">
+              <string>Enables blending at biome edges for smooth transitions.</string>
+             </property>
+             <property name="accessibleName">
+              <string>Edge Blending Enabled</string>
+             </property>
+             <property name="text">
+              <string>Texture Edges</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QProgressBar" name="text_count_progressBar">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="textVisible">
+              <bool>false</bool>
+             </property>
+             <property name="invertedAppearance">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="file_options_group">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
         <property name="minimumSize">
          <size>
-          <width>440</width>
-          <height>160</height>
+          <width>490</width>
+          <height>120</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
          </size>
         </property>
         <property name="font">
@@ -1361,30 +1638,114 @@
          </font>
         </property>
         <property name="title">
-         <string>Biome and Texture Toggles</string>
+         <string>Generation Options</string>
         </property>
-        <layout class="QGridLayout" name="gridLayout_4">
-         <item row="3" column="4">
-          <widget class="QCheckBox" name="process_images">
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_15">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Generation Seed</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSlider" name="user_seed">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>20</height>
+            </size>
+           </property>
            <property name="toolTip">
-            <string>Enables full texture processing (elevation, normal, rough, etc.).</string>
+            <string>Slider used to select generation seed</string>
            </property>
            <property name="accessibleName">
-            <string>Process Images</string>
+            <string>User Seed</string>
            </property>
-           <property name="text">
-            <string>Texture Filters</string>
+           <property name="maximum">
+            <number>99</number>
            </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QCheckBox" name="enable_noise">
-           <property name="text">
-            <string>Biome Noise</string>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
+         <item row="0" column="2">
+          <widget class="QSlider" name="texture_resolution_scale">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>8</number>
+           </property>
+           <property name="singleStep">
+            <number>1</number>
+           </property>
+           <property name="sliderPosition">
+            <number>1</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TickPosition::TicksBothSides</enum>
+           </property>
+           <property name="tickInterval">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QLabel" name="label_4">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="use_random">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
+           <property name="text">
+            <string>Use Random</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
           <widget class="QLCDNumber" name="seed_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1423,14 +1784,7 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="4">
-          <widget class="QCheckBox" name="enable_basic_filters">
-           <property name="text">
-            <string>Texture Basics</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="2">
+         <item row="1" column="2">
           <widget class="QLCDNumber" name="texture_resolution_display">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1448,6 +1802,7 @@
             <font>
              <family>Fixedsys</family>
              <bold>true</bold>
+             <strikeout>false</strikeout>
             </font>
            </property>
            <property name="accessibleName">
@@ -1458,25 +1813,13 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
-          <widget class="QCheckBox" name="use_random">
-           <property name="text">
-            <string>Use Random</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Generation Seed</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="2">
+         <item row="1" column="3">
           <widget class="QCheckBox" name="upscale_image">
+           <property name="font">
+            <font>
+             <strikeout>false</strikeout>
+            </font>
+           </property>
            <property name="toolTip">
             <string>If enabled, images are upscaled to 1024x1024 resolution.</string>
            </property>
@@ -1484,235 +1827,7 @@
             <string>Upscale Image</string>
            </property>
            <property name="text">
-            <string>High Resolution</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QSlider" name="user_seed">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Slider used to select generation seed</string>
-           </property>
-           <property name="accessibleName">
-            <string>User Seed</string>
-           </property>
-           <property name="maximum">
-            <number>99</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="4">
-          <widget class="QCheckBox" name="enable_texture_craters">
-           <property name="minimumSize">
-            <size>
-             <width>120</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <strikeout>true</strikeout>
-            </font>
-           </property>
-           <property name="layoutDirection">
-            <enum>Qt::LayoutDirection::LeftToRight</enum>
-           </property>
-           <property name="text">
-            <string>Texture Scars</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Resolution</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="4">
-          <widget class="QCheckBox" name="enable_texture_edges">
-           <property name="toolTip">
-            <string>Enables blending at biome edges for smooth transitions.</string>
-           </property>
-           <property name="accessibleName">
-            <string>Edge Blending Enabled</string>
-           </property>
-           <property name="text">
-            <string>Texture Edges</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="4">
-          <widget class="QCheckBox" name="enable_texture_noise">
-           <property name="text">
-            <string>Texture Noise</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="2">
-          <widget class="QSlider" name="texture_resolution_scale">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimum">
-            <number>1</number>
-           </property>
-           <property name="maximum">
-            <number>8</number>
-           </property>
-           <property name="singleStep">
-            <number>1</number>
-           </property>
-           <property name="sliderPosition">
-            <number>1</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Orientation::Horizontal</enum>
-           </property>
-           <property name="tickPosition">
-            <enum>QSlider::TickPosition::TicksBothSides</enum>
-           </property>
-           <property name="tickInterval">
-            <number>1</number>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QCheckBox" name="enable_biases">
-           <property name="text">
-            <string>Biome Biases</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QCheckBox" name="enable_distortion">
-           <property name="text">
-            <string>Biome Distortion</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QCheckBox" name="enable_tectonic_plates">
-           <property name="text">
-            <string>Biome Faults</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QCheckBox" name="enable_anomalies">
-           <property name="minimumSize">
-            <size>
-             <width>120</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Biome Anomalies</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="file_options_group">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <strikeout>true</strikeout>
-         </font>
-        </property>
-        <property name="title">
-         <string>File Options</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="output_biom_files">
-           <property name="text">
-            <string>Output .Biom</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="output_dds_files">
-           <property name="text">
-            <string>Output .DDS</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QCheckBox" name="output_mat_files">
-           <property name="font">
-            <font>
-             <strikeout>true</strikeout>
-            </font>
-           </property>
-           <property name="text">
-            <string>Output .MAT</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="keep_pngs_after_conversion">
-           <property name="toolTip">
-            <string>Keep the PNG files after DDS conversion?</string>
-           </property>
-           <property name="accessibleName">
-            <string>Keep PNGs After Conversion</string>
-           </property>
-           <property name="text">
-            <string>Keep .PNGs</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QCheckBox" name="enable_output_log">
-           <property name="font">
-            <font>
-             <strikeout>true</strikeout>
-            </font>
-           </property>
-           <property name="text">
-            <string>Output .NIF</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QCheckBox" name="enable_preview_mode">
-           <property name="text">
-            <string>Create DDs Files</string>
+            <string>User Defined</string>
            </property>
           </widget>
          </item>
@@ -1729,12 +1844,15 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>0</width>
+          <width>490</width>
           <height>71</height>
          </size>
         </property>
         <property name="title">
          <string>Interface Options</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
@@ -1830,40 +1948,22 @@
         <property name="title">
          <string>Texture Options</string>
         </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <widget class="QGroupBox" name="textureOptionsGroup">
            <property name="title">
             <string>Texture Basics</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
            <property name="checkable">
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_13">
-            <item row="0" column="1">
-             <widget class="QPushButton" name="texture_contrast_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>true</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Contrast</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0">
              <widget class="QPushButton" name="texture_brightness_reset">
               <property name="sizePolicy">
@@ -1880,56 +1980,6 @@
               </property>
               <property name="text">
                <string>Brightness</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QSlider" name="texture_saturation">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>If enabled, a new random seed will be generated on each run.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Saturation</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QSlider" name="texture_edges">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Radius of the smoothing area at biome edges.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Edge Blend Radius</string>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
@@ -1954,53 +2004,6 @@
               </property>
               <property name="text">
                <string>Tint</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QProgressBar" name="news_count_progressbar">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string/>
-              </property>
-              <property name="value">
-               <number>0</number>
-              </property>
-              <property name="textVisible">
-               <bool>false</bool>
-              </property>
-              <property name="invertedAppearance">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QPushButton" name="texture_edges_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Edges</string>
               </property>
              </widget>
             </item>
@@ -2029,25 +2032,6 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="texture_saturation_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Saturation</string>
-              </property>
-             </widget>
-            </item>
             <item row="4" column="0">
              <widget class="QSlider" name="texture_tint">
               <property name="sizePolicy">
@@ -2067,7 +2051,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="4" column="1">
              <widget class="QSlider" name="texture_contrast">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -2092,38 +2076,72 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="2">
-             <widget class="QFrame" name="frame">
+            <item row="3" column="1">
+             <widget class="QPushButton" name="texture_contrast_reset">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="frameShape">
-               <enum>QFrame::Shape::StyledPanel</enum>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
               </property>
-              <property name="frameShadow">
-               <enum>QFrame::Shadow::Raised</enum>
+              <property name="font">
+               <font>
+                <strikeout>true</strikeout>
+               </font>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QLabel" name="news_label">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Progress</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignmentFlag::AlignCenter</set>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              <property name="text">
+               <string>Contrast</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSlider" name="texture_saturation">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>If enabled, a new random seed will be generated on each run.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Saturation</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QPushButton" name="texture_saturation_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Saturation</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -2139,6 +2157,9 @@
            </property>
            <property name="title">
             <string>Texture Noise</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
            <property name="checkable">
             <bool>false</bool>
@@ -2426,7 +2447,69 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="enable_texture_light">
+          <widget class="QGroupBox" name="groupBox_3">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>80</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Texture Edges</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <item>
+             <widget class="QPushButton" name="texture_edges_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Edges</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="texture_edges">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Radius of the smoothing area at biome edges.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Edge Blend Radius</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="texture_lighting_group">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -2436,7 +2519,7 @@
            <property name="minimumSize">
             <size>
              <width>260</width>
-             <height>145</height>
+             <height>120</height>
             </size>
            </property>
            <property name="font">
@@ -2447,12 +2530,39 @@
            <property name="title">
             <string>Texture Lighting</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
            <property name="checkable">
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_11">
-            <item row="3" column="0">
-             <widget class="QSlider" name="fade_spread">
+            <item row="0" column="0">
+             <widget class="QPushButton" name="fade_intensity_reset">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>35</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <strikeout>false</strikeout>
+               </font>
+              </property>
+              <property name="text">
+               <string>Intensity</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSlider" name="fade_intensity">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                 <horstretch>0</horstretch>
@@ -2465,12 +2575,18 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string>Strength of atmospheric edge fade.</string>
+              </property>
+              <property name="accessibleName">
+               <string>Fade Intensity</string>
+              </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="1" column="0">
              <widget class="QPushButton" name="fade_spread_reset">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -2500,32 +2616,8 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QPushButton" name="fade_intensity_reset">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>120</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-               </font>
-              </property>
-              <property name="text">
-               <string>Intensity</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QSlider" name="fade_intensity">
+            <item row="1" column="1">
+             <widget class="QSlider" name="fade_spread">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                 <horstretch>0</horstretch>
@@ -2537,12 +2629,6 @@
                 <width>120</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="toolTip">
-               <string>Strength of atmospheric edge fade.</string>
-              </property>
-              <property name="accessibleName">
-               <string>Fade Intensity</string>
               </property>
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
@@ -2560,6 +2646,76 @@
        </widget>
       </item>
       <item>
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Texture Scars</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_17">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="texture_valcanos_reset">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Volcanos</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSlider" name="texture_valcanos">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="texture_craters_reset">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Craters</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSlider" name="texture_craters">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QGroupBox" name="command_buttons_group">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -2570,46 +2726,31 @@
         <property name="minimumSize">
          <size>
           <width>280</width>
-          <height>145</height>
+          <height>220</height>
          </size>
         </property>
         <property name="title">
          <string>Actions</string>
         </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="2" column="1">
-          <widget class="QPushButton" name="exit_command_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <family>Segoe UI</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string>Exit</string>
-           </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="news_label">
            <property name="text">
-            <string>Exit</string>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="default">
-            <bool>true</bool>
+            <string>Waiting...</string>
            </property>
           </widget>
          </item>
          <item row="0" column="1">
+          <widget class="QProgressBar" name="news_count_progressBar">
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
           <widget class="QPushButton" name="reset_command_button">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -2619,7 +2760,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>131</width>
+             <width>100</width>
              <height>0</height>
             </size>
            </property>
@@ -2650,7 +2791,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
+         <item row="3" column="0">
           <widget class="QPushButton" name="halt_command_button">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -2682,7 +2823,39 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0" rowspan="3">
+         <item row="4" column="0">
+          <widget class="QPushButton" name="exit_command_button">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <family>Segoe UI</family>
+             <pointsize>16</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>Exit</string>
+           </property>
+           <property name="text">
+            <string>Exit</string>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="default">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1" rowspan="3">
           <widget class="QPushButton" name="preview_command_button">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">

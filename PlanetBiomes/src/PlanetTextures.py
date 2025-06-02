@@ -308,11 +308,11 @@ def upscale_grid(
 
     # Apply Gaussian blur to smooth transitions
     upscaled_array = np.array(upscaled, dtype=np.float32)
-    sigma = max(1.0, factor / 2.0)  # Scale blur with upscale factor
-    for channel in range(3):
-        upscaled_array[:, :, channel] = gaussian_filter(
-            upscaled_array[:, :, channel], sigma=sigma
-        )
+    #sigma = max(1.0, factor / 2.0)  # Scale blur with upscale factor
+    #for channel in range(3):
+    #    upscaled_array[:, :, channel] = gaussian_filter(
+    #       upscaled_array[:, :, channel], sigma=sigma
+    #    )
 
     return np.clip(upscaled_array, 0, 255).astype(np.uint8)
 
@@ -445,8 +445,11 @@ def generate_fractal_noise(
         octaves = config.get("texture_fractal", 4.23)
     if detail_smoothness is None:
         detail_smoothness = config.get("detail_smoothness", 0.1)
-    if texture_contrast is None:
-        texture_contrast = config.get("texture_contrast", 0.67)
+    if config.get("enable_basic_filters", True):
+        if texture_contrast is None:
+            texture_contrast = config.get("texture_contrast", 0.67)
+    else:
+        texture_contrast = 0.5
 
     # Generate structured Perlin-style base noise
     base = generate_perlin_noise(elevation_norm)  # ✅ Structured ridge-based seed
@@ -479,8 +482,6 @@ def generate_fractal_noise(
 
 def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
     handle_news(None)
-    if not config.get("texture_craters", False):
-        return elevation_map
 
     crater_scale = config.get("texture_craters_scale", 1.0)
     max_radius = int(20 * crater_scale)
@@ -737,6 +738,11 @@ def create_biome_image(
     rgb_grid: np.ndarray, biome_data: Dict[int, Dict]
 ) -> Dict[str, Image.Image]:
     """Generate biome texture images from RGB grid and biome data."""
+    enable_basic_filters = config.get("enable_basic_filters", True)
+    enable_texture_noise = config.get("enable_texture_noise", True)
+    enable_texture_edges = config.get("enable_texture_edges", True)
+    enable_texture_light = config.get("enable_texture_light", True)
+    enable_texture_craters = config.get("enable_texture_craters", True)
     process_images = config.get("process_images", False)
     bright_factor = config.get("texture_brightness", 0.05)
     texture_saturation = config.get("texture_saturation", 0.5)
@@ -746,22 +752,25 @@ def create_biome_image(
     height, width, _ = rgb_grid.shape
     color = rgb_grid.copy()
 
+    handle_news(None)
+
     if process_images:
         noise_map = generate_noise(
             (height, width), scale=config.get("noise_scale", 4.17)
         )
         elevation_map = generate_elevation(rgb_grid, biome_data)
-        elevation_map = generate_craters(elevation_map)
+        if enable_texture_craters:
+            elevation_map = generate_craters(elevation_map)
         edge_blend_map = generate_edge_blend(rgb_grid, biome_data)
         shading_map = generate_shading(elevation_map)
         elevation_norm = elevation_map / 255.0
         fractal_map = generate_fractal_noise(elevation_norm)
         atmospheric_fade_map = generate_atmospheric_fade((height, width))
-        bright_factor = config.get("texture_brightness", 0.74)
+        if enable_basic_filters:
+            bright_factor = config.get("texture_brightness", 0.74)
 
         rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
         for y in range(height):
-            handle_news(None)
             for x in range(width):
                 rgb = tuple(rgb_grid[y, x])
                 form_id = rgb_to_form_id.get(rgb, None)
@@ -769,54 +778,73 @@ def create_biome_image(
                 lat_factor = abs((y / height) - 0.5) * 0.4
                 elevation_factor = elevation_map[y, x] / 255.0
                 # Apply elevation-based shading
+                # under noise
                 shaded_color = tuple(
                     int(c * (0.8 + 0.2 * elevation_factor)) for c in rgb
                 )
                 # Apply light-based shading
-                light_adjusted_color = tuple(
-                    int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color
-                )
-                # Apply fractal noise
+                if enable_texture_light:
+                    light_adjusted_color = tuple(
+                        int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color
+                    )
+                else:
+                    light_adjusted_color = shaded_color
+
+                # Apply fractal noise # under noise
                 fractal_adjusted_color = tuple(
                     int(c * (0.85 + 0.15 * fractal_map[y, x]))
                     for c in light_adjusted_color
                 )
-                # Apply latitude-based darkening
+                # Apply latitude-based darkening # Under bacis
                 lat_adjusted_color = tuple(
                     int(c * (1 - lat_factor)) for c in fractal_adjusted_color
                 )
                 # Apply edge blending
-                blended_color = tuple(
-                    int(c * (1 - 0.5 * edge_blend_map[y, x]))
-                    for c in lat_adjusted_color
-                )
+                if enable_texture_edges:
+                    blended_color = tuple(
+                        int(c * (1 - 0.5 * edge_blend_map[y, x])) for c in lat_adjusted_color
+                    )
+                else:
+                    blended_color = lat_adjusted_color
+
                 # Apply noise
-                noisy_color = tuple(
-                    np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
-                    for c in blended_color
-                )
+                if enable_texture_noise:
+                    noisy_color = tuple(
+                        np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
+                        for c in blended_color
+                    )
+                else:
+                    noisy_color = blended_color
+
                 # Apply atmospheric fade (reduces intensity toward edges)
-                fade_factor = 1.0 - atmospheric_fade_map[y, x]  # 0 at center, up to intensity at edges
-                faded_color = tuple(
-                    int(c * (1.0 - 0.3 * fade_factor)) for c in noisy_color
-                )
-                # Apply biome-specific tint
-                tinted_color = adjust_tint(
-                    faded_color,
-                    texture_saturation,
-                    texture_tint,
-                    category,
-                    elevation_factor,
-                )
-                # Apply desaturation
-                desaturated_color = desaturate_color(tinted_color, texture_saturation)
-                color[y, x] = desaturated_color
+                if enable_texture_light:
+                    fade_factor = 1.0 - atmospheric_fade_map[y, x]
+                    faded_color = tuple(
+                        int(c * (1.0 - 0.3 * fade_factor)) for c in noisy_color
+                    )
+                else:
+                    faded_color = noisy_color
+                    
+                if enable_basic_filters:
+                    # Apply biome-specific tint
+                    tinted_color = adjust_tint(
+                        faded_color,
+                        texture_saturation,
+                        texture_tint,
+                        category,
+                        elevation_factor,
+                    )
+                    # Apply desaturation
+                
+                    desaturated_color = desaturate_color(tinted_color, texture_saturation)
+                    color[y, x] = desaturated_color
     else:
         color = rgb_grid
 
     color_image = Image.fromarray(color, mode="RGB")
     if process_images:
-        color_image = enhance_brightness(color_image, bright_factor)
+        if enable_basic_filters:
+            color_image = enhance_brightness(color_image, bright_factor)
 
     surface_image = generate_heightmap(rgb_grid, biome_data)
     ocean_image = generate_ocean_mask(rgb_grid, biome_data)
@@ -1157,7 +1185,7 @@ def main():
         except Exception as e:
             print(f"Error processing {biom_path.name}: {e}")
 
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.py")], check=True)
+    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.pyt")], check=True)
     sys.stdout.flush()
     sys.exit()
 

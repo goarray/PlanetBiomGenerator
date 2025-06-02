@@ -47,6 +47,8 @@ from PlanetNewsfeed import (
     handle_news,
     news_count,
     news_percent,
+    biom_percent,
+    text_percent,
     total_news,
     reset_news_count,
     set_total_news_from_config
@@ -99,7 +101,8 @@ def load_config():
             None, "error", f"Error: Config file {config_path} not found. Creating default config."
         )
         raw_config = {
-            "total_news": 37,
+            "total_news": 351,
+            "process_biomes": False,
             "_program_options": "Pluging related options",
             "plugin_selected": -1,
             "plugin_index": ["PlanetBiomes.csv", "preview.csv"],
@@ -214,10 +217,6 @@ def save_config():
     try:
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f, indent=4)
-        handle_news(
-            None, "info",
-            f"Config saved successfully to {CONFIG_PATH}"
-        )
         global total_news
         total_news = config.get("total_news", 37)
     except Exception as e:
@@ -344,7 +343,11 @@ def start_planet_biomes(main_window, mode=""):
     reset_news_count()  # Reset shared counters
     main_window.news_count = news_count
     main_window.news_percent = news_percent
-    main_window.news_count_progressbar.setValue(0)
+    main_window.biom_percent = biom_percent
+    main_window.text_percent = text_percent
+    main_window.news_count_progressBar.setValue(0)
+    main_window.biom_count_progressBar.setValue(0)
+    main_window.text_count_progressBar.setValue(0)
     main_window.news_label.setText("Working...")
 
     if not SCRIPT_PATH.exists():
@@ -457,8 +460,10 @@ def start_planet_biomes(main_window, mode=""):
         kind = "success" if exit_code == 0 else "error"
         handle_news(main_window, kind, message)
 
-        main_window.news_count_progressbar.setValue(int(100))
-        #save_config()
+        main_window.news_count_progressBar.setValue(int(100))
+        main_window.biom_count_progressBar.setValue(int(100))
+        main_window.text_count_progressBar.setValue(int(100))
+        # save_config()
 
     planet_biomes_process.finished.connect(on_planet_biomes_finished)
 
@@ -548,7 +553,9 @@ class MainWindow(QMainWindow):
     folders_dropdown: QComboBox
     seed_display: QLCDNumber
     texture_resolution_display: QLCDNumber
-    news_count_progressbar: QProgressBar
+    news_count_progressBar: QProgressBar
+    biom_count_progressBar: QProgressBar
+    text_count_progressBar: QProgressBar
     user_seed: QSlider
     texture_resolution_scale: QSlider
     preview_command_button: QPushButton
@@ -747,11 +754,11 @@ class MainWindow(QMainWindow):
 
             # Re-apply UI control values
             for key in self.slider_mappings:
-                slider = slider_vars.get(key)
+                slider = self.slider_vars.get(key)
                 if slider:
                     value = config.get(key, 0)
                     if key in ["number_faults", "fault_width", "user_seed", "texture_resolution_scale"]:
-                        slider.setValue(config[key])
+                        slider.setValue(int(value))
                     else:
                         slider.setValue(int(value * 100))
             for key in self.checkbox_mappings:
@@ -843,6 +850,7 @@ class MainWindow(QMainWindow):
         self.slider_vars["zone_05"] = self.findChild(QSlider, "zone_05")
         self.slider_vars["zone_06"] = self.findChild(QSlider, "zone_06")
         checkbox_mappings = {
+            "process_biomes": "process_biomes",
             "enable_noise": "enable_noise",
             "enable_distortion": "enable_distortion",
             "enable_biases": "enable_biases",
@@ -1080,8 +1088,12 @@ class MainWindow(QMainWindow):
     def refresh_ui_from_config(self):
         """Refresh the entire UI to reflect current config values."""
         for key, slider in slider_vars.items():
-            if slider and key in config:
-                slider.setValue(int(config[key] * 100))
+            if slider:
+                value = config.get(key, 0)
+                if key in ["number_faults", "fault_width", "user_seed", "texture_resolution_scale"]:
+                    slider.setValue(int(value))
+                else:
+                    slider.setValue(int(value * 100))
 
         for key, checkbox in checkbox_vars.items():
             if checkbox and key in config:
