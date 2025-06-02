@@ -2,10 +2,10 @@
     "_____Painter.py_____": "Main UI related settings",
     "total_news": 600,
     "_program_options": "Pluging related options",
-    "plugin_selected": 1,
+    "plugin_selected": 0,
     "plugin_index": [
-        "PlanetBiomes.csv",
-        "preview.csv"
+        "preview.csv",
+        "PlanetBiomes.csv"
     ],
     "plugin_name": "preview.esm",
     "enable_preview_mode": false,
@@ -96,10 +96,6 @@
     "enable_normal": true,
     "enable_rough": false,
     "enable_alpha": false,
-    "plugin_list": [
-        "PlanetBiomes.csv",
-        "preview.csv"
-    ],
     "_____NO_USER_INPUT_____": "invisible Settings",
     "elevation_influence": 0.5
 }

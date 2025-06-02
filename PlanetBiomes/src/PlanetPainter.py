@@ -108,8 +108,8 @@ def load_config():
             "total_news": 351,
             "process_biomes": False,
             "_program_options": "Pluging related options",
-            "plugin_selected": -1,
-            "plugin_index": ["PlanetBiomes.csv", "preview.csv"],
+            "plugin_selected": 0,
+            "plugin_index": ["preview.csv"],
             "plugin_name": "preview.esm",
             "enable_preview_mode": False,
             "_theme_group": "Parameters related to themes",
@@ -199,7 +199,7 @@ def load_config():
             "enable_normal": True,
             "enable_rough": False,
             "enable_alpha": False,
-            "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
+            #"plugin_list": ["PlanetBiomes.csv", "preview.csv"],
             "elevation_influence": 0.5,
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -210,6 +210,16 @@ def load_config():
         if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
             raw_config[key] = bool(int(value))
     config = raw_config
+
+    # Ensure plugin settings are initialized
+    if "plugin_selected" not in config:
+        config["plugin_selected"] = 0
+    if "plugin_index" not in config or not config["plugin_index"]:
+        config["plugin_index"] = ["preview.csv"]
+    if "plugin_name" not in config:
+        config["plugin_name"] = "preview.esm"
+    #if "plugin_list" not in config:
+    #   config["plugin_list"] = ["preview.csv"]
 
     return config
 
@@ -251,35 +261,70 @@ def update_value(key, val, index=None):
 
 
 def update_selected_plugin(index, main_window, force=False):
+    """Update the selected plugin in config and UI when the user selects a plugin."""
     if "plugin_index" not in config or not config["plugin_index"]:
-        print("plugin_index missing or empty, restoring fallback list.")
+        handle_news(
+            None, "error", "plugin_index missing or empty, restoring fallback list."
+        )
         config["plugin_index"] = ["preview.csv"]
+        #config["plugin_list"] = ["preview.csv"]
         config["plugin_selected"] = 0
+        config["plugin_name"] = "preview.esm"
+        save_config()
 
+    if index < 0 or index >= len(config["plugin_index"]):
+        handle_news(
+            None, "warn", f"Invalid plugin index {index}, defaulting to preview.csv"
+        )
+        index = (
+            config["plugin_index"].index("preview.csv")
+            if "preview.csv" in config["plugin_index"]
+            else 0
+        )
+
+    # Only update if the selection has changed or forced
     if config.get("plugin_selected") != index or force:
         config["plugin_selected"] = index
+        selected_csv = config["plugin_index"][index]
+        csv_path = (
+            CSV_DIR / selected_csv
+            if selected_csv == "preview.csv"
+            else INPUT_DIR / selected_csv
+        )
 
-    selected_csv = config["plugin_index"][index]
+        try:
+            with open(csv_path, newline="", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                first_row = next(reader, None)
+                if first_row and len(first_row) > 0:
+                    config["plugin_name"] = first_row[0].strip()
+                else:
+                    config["plugin_name"] = selected_csv  # Use CSV name as fallback
+            handle_news(
+                None,
+                "info",
+                f"Read plugin name '{config['plugin_name']}' from {csv_path}",
+            )
+        except FileNotFoundError:
+            handle_news(None, "error", f"CSV file {csv_path} not found.")
+            config["plugin_name"] = "preview.esm"
+            config["plugin_selected"] = (
+                config["plugin_index"].index("preview.csv")
+                if "preview.csv" in config["plugin_index"]
+                else 0
+            )
+            selected_csv = "preview.csv"
+            index = config["plugin_selected"]
 
-    if selected_csv == "preview.csv":
-        csv_path = CSV_DIR / selected_csv
-    else:
-        csv_path = INPUT_DIR / selected_csv
-
-    try:
-        with open(csv_path, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            first_row = next(reader, None)
-            if first_row and len(first_row) > 0:
-                config["plugin_name"] = first_row[0].strip()
-            else:
-                config["plugin_name"] = "Unknown"
-    except FileNotFoundError:
-        print(f"Error: CSV file {csv_path} not found.")
-        config["plugin_name"] = "Unknown"
+        save_config()
+        handle_news(
+            None,
+            "info",
+            f"Selected plugin: index={index}, name={config['plugin_name']}, csv={selected_csv}",
+        )
 
     main_window.plugin_name.setText("Plugin: " + config["plugin_name"])
-    save_config()
+    main_window.plugins_dropdown.setCurrentIndex(config["plugin_selected"])
 
 
 def get_seed(config) -> int:
@@ -597,36 +642,34 @@ class MainWindow(QMainWindow):
 
         self.news_label.setText("Progress")
 
-        csv_files = list(INPUT_DIR.glob("*.csv"))
-        csv_names = [f.name for f in csv_files]
+        # Initialize plugin list
+        if not config.get("plugin_index"):
+            config["plugin_index"] = ["preview.csv"]
+            #config["plugin_list"] = ["preview.csv"]
+            config["plugin_selected"] = 0
+            config["plugin_name"] = "preview.esm"
+            save_config()
 
-        # Always include preview.csv if it's not already listed
-        if PREVIEW_PATH.name not in csv_names:
-            csv_names.append(PREVIEW_PATH.name)
-
-        config["plugin_index"] = csv_names  # Used by update_selected_plugin
-        config["plugin_list"] = csv_names   # Optional duplicate (can unify later)
-
-        handle_news(None, "info", "DEBUG: plugin_index = {config['plugin_index']}")
-
-        handle_news(None, "info", "DEBUG: Available themes: {self.themes.keys()}")
-        theme = config.get("theme", "Starfield")
-        handle_news(None, "info", "DEBUG: Loaded theme from config: {theme}")
-        plugin_list = config.get("plugin_index", [])  # Get the list or default to empty
         self.plugins_dropdown.clear()
         self.plugins_dropdown.addItems(config["plugin_index"])
-        self.plugins_dropdown.setCurrentIndex(config.get("plugin_selected", 0))
+        selected_index = config.get("plugin_selected", 0)
+        if selected_index >= 0 and selected_index < len(config["plugin_index"]):
+            self.plugins_dropdown.setCurrentIndex(selected_index)
+        else:
+            self.plugins_dropdown.setCurrentIndex(0)
+            config["plugin_selected"] = 0
+            config["plugin_name"] = "preview.esm"
+            save_config()
+
+        update_selected_plugin(
+            selected_index if selected_index >= 0 else 0, self, force=True
+        )
         self.plugins_dropdown.currentIndexChanged.connect(
             lambda idx: (
                 update_selected_plugin(idx, self),
                 self.refresh_ui_from_config(),
             )
         )
-        index = config.get("plugin_selected", 0)
-        update_selected_plugin(index, self)
-        handle_news(None, "info", "DEBUG: Available plugins:")
-        for index, plugin in enumerate(plugin_list):
-            handle_news(None, "info", "  [{index}] {plugin}")
 
         self.image_labels = [
             self.color_preview_image,
@@ -660,7 +703,7 @@ class MainWindow(QMainWindow):
                 )
                 if image_path.exists()
                 else self.default_image
-    )
+            )
             label.setPixmap(pixmap)
 
         message = f"Available themes: {', '.join(self.themes.keys())}"
@@ -692,10 +735,12 @@ class MainWindow(QMainWindow):
         # Map checkboxes and sliders to config
         self.setup_config_controls()
 
-        self.change_theme(theme)
+        self.change_theme(config.get("theme", "Starfield"))
+
+        save_config()
 
         message = "Available plugins:\n"
-        for index, plugin in enumerate(plugin_list):
+        for index, plugin in enumerate(config["plugin_index"]):
             message += f"  [{index}] {plugin}\n"
         self.stderr_widget.insertPlainText(message)
 
@@ -779,13 +824,12 @@ class MainWindow(QMainWindow):
             self.texture_resolution_display.display(config.get("texture_resolution", 111))
 
             self.refresh_plugin_list()
-            plugin_name = config.get("plugin_name", "preview.csv")
-            if "plugin_index" in config and plugin_name in config["plugin_index"]:
-                config["plugin_selected"] = config["plugin_index"].index(plugin_name)
-            else:
-                config["plugin_selected"] = -1
+            config["plugin_selected"] = 0
+            config["plugin_name"] = "preview.esm"
+            save_config()
 
-            self.plugins_dropdown.setCurrentIndex(config["plugin_selected"])
+            self.plugins_dropdown.setCurrentIndex(0)
+            update_selected_plugin(0, self, force=True)
 
             self.refresh_ui_from_config()
             save_config()
@@ -796,28 +840,42 @@ class MainWindow(QMainWindow):
     def refresh_plugin_list(self):
         """Scan for CSVs and update plugin list in config and dropdown."""
         global config
-
         csv_files = list(INPUT_DIR.glob("*.csv"))
         csv_names = [f.name for f in csv_files]
-
-        # Always include preview.csv if not already
         if PREVIEW_PATH.name not in csv_names:
             csv_names.append(PREVIEW_PATH.name)
 
-        config["plugin_index"] = csv_names
-        config["plugin_list"] = csv_names  # Optional, depending on what you're using
+        # Update plugin_index only if new CSVs are found
+        current_index = config.get("plugin_index", [])
+        if set(csv_names) != set(current_index):
+            config["plugin_index"] = csv_names
+            #config["plugin_list"] = csv_names
+            save_config()
 
-        # Reset selected plugin
-        config["plugin_selected"] = 0
-        config["plugin_name"] = csv_names[0].replace(".csv", ".esm")
-        config["enable_preview_mode"] = csv_names[0] == PREVIEW_PATH.name
+        # Preserve existing selection if valid
+        selected_index = config.get("plugin_selected", 0)
+        if (
+            selected_index >= 0
+            and selected_index < len(csv_names)
+            and config.get("plugin_name")
+        ):
+            # Keep current selection
+            pass
+        else:
+            # Default to preview.csv
+            config["plugin_selected"] = (
+                csv_names.index("preview.csv") if "preview.csv" in csv_names else 0
+            )
+            config["plugin_name"] = "preview.esm"
+            save_config()
 
-        # Refresh dropdown UI
         self.plugins_dropdown.blockSignals(True)
         self.plugins_dropdown.clear()
         self.plugins_dropdown.addItems(csv_names)
-        self.plugins_dropdown.setCurrentIndex(0)
+        self.plugins_dropdown.setCurrentIndex(config["plugin_selected"])
         self.plugins_dropdown.blockSignals(False)
+
+        update_selected_plugin(config["plugin_selected"], self, force=True)
 
     def open_folder(self, directory):
         """Open the specified directory in the file explorer."""

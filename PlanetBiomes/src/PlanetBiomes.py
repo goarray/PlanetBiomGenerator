@@ -101,33 +101,25 @@ plugin_name = config.get("plugin_name", "default_plugin")
 
 
 def load_biomes() -> Tuple[str, Dict[str, List[int]], Set[int], Set[int], Set[int]]:
-    # Decide CSV input file based on config
-    input_path: Path = PREVIEW_PATH
-    csv_files: List[Path] = []
+    import traceback
+    print("DEBUG: load_biomes() called from:")
+    traceback.print_stack()
+    csv_files: List[Path] = list(INPUT_DIR.glob("*.csv"))
+    csv_names = [f.name for f in csv_files]
 
-    if config.get("enable_preview_mode", True):
+    # Fallback to preview if no config or missing file
+    plugin_csv = config.get("plugin_name", "preview.esm").replace(".esm", ".csv")
+    input_path = INPUT_DIR / plugin_csv
+
+    if not input_path.exists():
         input_path = PREVIEW_PATH
-        csv_files = [PREVIEW_PATH]
-        config["plugin_index"] = ["preview.csv"]
-    else:
-        csv_files = list(INPUT_DIR.glob("*.csv"))
-        if not csv_files:
-            csv_files = [PREVIEW_PATH]
-            input_path = PREVIEW_PATH
-            config["enable_preview_mode"] = True
-        else:
-            config["plugin_index"] = [f.name for f in csv_files]
-            selected_index = min(
-                config.get("plugin_selected", 0), max(len(csv_files) - 1, 0)
-            )
-            selected_index = max(0, selected_index)
-            input_path = csv_files[selected_index]
-            config["enable_preview_mode"] = input_path == PREVIEW_PATH
+        plugin_csv = "preview.csv"
+        config["plugin_name"] = "preview.esm"
+
+    config["plugin_index"] = csv_names or ["preview.csv"]
 
     handle_news(None, "into", f"PlanetBiomes: Plugin's csv input_path = {input_path}")
-    handle_news(
-        None, "into", f"DEBUG: enable_preview_mode = {config['enable_preview_mode']}"
-    )
+    handle_news(None, "into", f"DEBUG: plugin_name = {config['plugin_name']}")
 
     with open(input_path, newline="") as f:
         plugin = f.readline().strip().rstrip(",")

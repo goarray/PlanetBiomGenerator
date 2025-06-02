@@ -77,6 +77,9 @@ def load_config():
 
 config = load_config()
 plugin_name = config.get("plugin_name", "default_plugin")
+if plugin_name == "default_plugin" or not plugin_name.endswith(".esm"):
+    handle_news(None, "error", f"[ERROR] Invalid or missing plugin_name in config: {plugin_name}")
+    sys.exit(1)
 
 GRID_SIZE = (256, 256)
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
@@ -987,35 +990,17 @@ def main():
     print(f"Landscaping permit approved for: {plugin_name}", flush=True)
     print("=== Starting PlanetTextures ===", flush=True)
 
-    enable_preview_mode = config.get("enable_preview_mode", False)
-    preview_biom_file = config.get("preview_biom_file", None)
-
-    handle_news(
-        None,
-        "info",
-        f"Config: preview mode = {enable_preview_mode}, file = {preview_biom_file}",
-    )
-
     PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     handle_news(None, "info", f"PNG output directory: {PNG_OUTPUT_DIR}")
 
-    if enable_preview_mode and preview_biom_file:
-        biom_files = [Path(preview_biom_file)]
-        handle_news(None, "info", f"Preview mode: Processing {biom_files[0]}")
-        if not biom_files[0].exists():
-            print(f"Error: Provided .biom file not found: {preview_biom_file}")
-            sys.exit(1)
-    else:
-        biom_files = [
-            f
-            for f in (PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name).rglob(
-                "*.biom"
-            )
-        ]
-        handle_news(None, "info", f"Found .biom files: {biom_files}")
-        if not biom_files:
-            print("No .biom files found in the output directory.")
-            sys.exit(1)
+    biom_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
+    biom_files = list(biom_dir.glob("*.biom"))
+
+    handle_news(None, "info", f"Found .biom files: {biom_files}")
+
+    if not biom_files:
+        print("Error: No .biom files found for plugin.")
+        sys.exit(1)
 
     used_biome_ids = set()
     # Load biome data without filtering by used_biome_ids initially

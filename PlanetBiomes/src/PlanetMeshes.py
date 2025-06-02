@@ -21,7 +21,7 @@ from PlanetConstants import (
     # Config and data files
     CONFIG_PATH,
     DEFAULT_CONFIG_PATH,
-    CSV_PATH,
+    MESH_PATH,
     PREVIEW_PATH,
     # Script and template paths
     SCRIPT_PATH,
