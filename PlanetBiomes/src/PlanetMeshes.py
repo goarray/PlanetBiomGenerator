@@ -1,50 +1,75 @@
-import subprocess
-import json
-from PlanetConstants import (
-    # Core Dependencies
-    TEXCONV_PATH,
-    # Core directories
-    BASE_DIR,
-    CONFIG_DIR,
-    INPUT_DIR,
-    BIOM_DIR,  # BIOM_DIR = "planetdata/biomemaps"
-    # plugin_name in _congif.json > "plugin_name": "preview.esm"
-    OUTPUT_DIR,
-    TEMP_DIR,
-    ASSETS_DIR,
-    SCRIPT_DIR,
-    PLUGINS_DIR,  # PLUGINS_DIR = BASE_DIR / "Plugins"
-    CSV_DIR,
-    IMAGE_DIR,
-    DDS_OUTPUT_DIR,
-    PNG_OUTPUT_DIR,
-    # Config and data files
-    CONFIG_PATH,
-    DEFAULT_CONFIG_PATH,
-    MESH_PATH,
-    PREVIEW_PATH,
-    # Script and template paths
-    SCRIPT_PATH,
-    TEMPLATE_PATH,
-    # UI and static assets
-    UI_PATH,
-    DEFAULT_IMAGE_PATH,
-    GIF_PATHS,
-    IMAGE_FILES,
-    # Logic/data maps
-    BOOLEAN_KEYS,
-    PROCESSING_MAP,
-)
-
-# Global configuration
-config = {}
+from pathlib import Path
+from shutil import copyfile
+from PlanetConstants import PLUGINS_DIR, ASSETS_DIR, MESH_OUTPUT_DIR, BIOM_DIR, MESH_PATH, load_config
+from PlanetNewsfeed import handle_news
 
 
-def load_config():
-    """Load plugin_name from config.json."""
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+def patch_nif_material_path(nif_path: Path, new_mat_path: str):
+    """
+    Replace the material path in a .nif file with the given new path.
+    """
+    with open(nif_path, "rb") as f:
+        data = f.read()
+
+    byte_data = bytearray(data)
+
+    start = byte_data.find(b"materials\\")
+    if start == -1:
+        raise ValueError(f"Material path not found in {nif_path.name}")
+
+    end = byte_data.find(b"\x00", start)
+    if end == -1:
+        raise ValueError(
+            f"Null terminator not found after material path in {nif_path.name}"
+        )
+
+    new_bytes = new_mat_path.encode("utf-8")
+    length = end - start
+    padded = new_bytes.ljust(length, b"\x00")
+
+    if len(padded) > length:
+        raise ValueError(f"New material path too long for {nif_path.name}")
+
+    byte_data[start:end] = padded[:length]
+
+    with open(nif_path, "wb") as f:
+        f.write(byte_data)
+
+    handle_news(None, "info", f"Patched: {nif_path.name} → {new_mat_path}")
 
 
-config = load_config()
-plugin_name = config.get("plugin_name", "default_plugin")
+def generate_and_patch_planet_meshes():
+    config = load_config()
+    plugin_name = config.get("plugin_name", "PLUGINNOTFOUND")
+
+    biom_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
+    mesh_output_dir = PLUGINS_DIR / plugin_name / "meshes" / plugin_name / "planets"
+    template_nif = MESH_PATH
+
+    if not biom_dir.exists() or not template_nif.exists():
+        raise FileNotFoundError("Required biom or template directory missing.")
+
+    mesh_output_dir.mkdir(parents=True, exist_ok=True)
+
+    for biom_path in sorted(biom_dir.glob("*.biom")):
+        planet_name = biom_path.stem
+        output_nif = mesh_output_dir / f"{planet_name}.nif"
+
+        if not template_nif.exists():
+            handle_news(
+                None, "warn", f"Template not found for {planet_name}: {template_nif}"
+            )
+            continue
+
+        copyfile(template_nif, output_nif)
+        mat_path = f"materials\\{plugin_name}\\planets\\{planet_name}.mat"
+
+        try:
+            patch_nif_material_path(output_nif, mat_path)
+        except Exception as e:
+            handle_news(None, "error", f"Failed to patch {output_nif.name}: {e}")
+
+
+# Optional entry point
+if __name__ == "__main__":
+    generate_and_patch_planet_meshes()

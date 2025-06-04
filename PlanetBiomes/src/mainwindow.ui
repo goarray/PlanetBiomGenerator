@@ -934,7 +934,7 @@
          <enum>QTabWidget::TabShape::Triangular</enum>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <property name="movable">
          <bool>true</bool>
@@ -947,7 +947,7 @@
           <item row="3" column="2">
            <widget class="QLabel" name="ao_preview_image">
             <property name="toolTip">
-             <string>Shadows</string>
+             <string>&quot;Texture Lighting&quot; darker are shadows.</string>
             </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
@@ -1006,7 +1006,7 @@
              </size>
             </property>
             <property name="toolTip">
-             <string>Planet Texture</string>
+             <string>Planet final color</string>
             </property>
             <property name="frameShape">
              <enum>QFrame::Shape::NoFrame</enum>
@@ -1050,7 +1050,7 @@
           <item row="0" column="3">
            <widget class="QLabel" name="biome_preview_image">
             <property name="toolTip">
-             <string>Biomes</string>
+             <string>Biome Map</string>
             </property>
             <property name="text">
              <string/>
@@ -1069,7 +1069,7 @@
           <item row="1" column="3">
            <widget class="QLabel" name="resource_preview_image">
             <property name="toolTip">
-             <string>Resources</string>
+             <string>Resource Map</string>
             </property>
             <property name="text">
              <string/>
@@ -1088,7 +1088,7 @@
           <item row="3" column="1">
            <widget class="QLabel" name="ocean_preview_image">
             <property name="toolTip">
-             <string>Oceans are Black</string>
+             <string>Ocean are black, land white.</string>
             </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>
@@ -1110,7 +1110,7 @@
           <item row="3" column="0">
            <widget class="QLabel" name="rough_preview_image">
             <property name="toolTip">
-             <string>Darker is Shinier</string>
+             <string>&quot;Shiny&quot; Darker is Shinier</string>
             </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::LeftToRight</enum>

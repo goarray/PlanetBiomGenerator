@@ -24,6 +24,7 @@ TEMP_DIR = OUTPUT_DIR / "temp"
 BIOM_DIR = Path("planetdata/biomemaps")
 DDS_OUTPUT_DIR = OUTPUT_DIR / "textures"
 PNG_OUTPUT_DIR = OUTPUT_DIR / "PNGs"
+MESH_OUTPUT_DIR = PLUGINS_DIR / "meshes" / "planets" / "houdiniplanets"
 
 # --- Config and data files ---
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
@@ -33,14 +34,21 @@ THEME_PATH = CONFIG_DIR / "custom_themes.json"
 DEFAULT_THEME_PATH = CONFIG_DIR / "default_themes.json"
 
 CSV_PATH = CSV_DIR / "Biomes.csv"
-PREVIEW_PATH = CSV_DIR / "preview.csv"
+PREVIEW_PATH = CSV_DIR / "preview.csv2" ###########intentionally broken
 
 # --- Script and template paths ---
 SCRIPT_PATH = SCRIPT_DIR / "PlanetBiomes.py"
 TEMPLATE_PATH = ASSETS_DIR / "planetdata" / "biomemaps" / "plugin_name.esm" / "planet_name.biom"
-MATERIAL_PATH = ASSETS_DIR / "materials" / "plugin_name.esm" / "planets" / "planet_name.mat"
+MATERIAL_PATH = (
+    ASSETS_DIR
+    / "Materials"
+    / "Layered"
+    / "LayeredMaterials"
+    / "HoudiniPlanets"
+    / "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.mat"
+)
 MESH_PATH = ASSETS_DIR / "meshes" / "planets" / "houdiniplanets" / "plugin_name.esm" / "planet_name.nif"
-#PREVIEW_BIOME_PATH = ASSETS_DIR / "PlanetBiomes.biom"
+# PREVIEW_BIOME_PATH = ASSETS_DIR / "PlanetBiomes.biom"
 
 # --- UI and static assets ---
 UI_PATH = SCRIPT_DIR / "mainwindow.ui"

@@ -1,18 +1,10 @@
 import json
 import sys
+import subprocess
 from pathlib import Path
-import zlib
-import os
-import random
-import binascii
-import copy
-from typing import List, Dict
-import uuid
 from PlanetNewsfeed import handle_news
-from PlanetHasher import create_resource_id, create_simple_crc_id
 from PlanetConstants import (
-    BASE_DIR,
-    CRC_MAP,
+    SCRIPT_DIR,
     CONFIG_PATH,
     PLUGINS_DIR,
     BIOM_DIR,
@@ -31,6 +23,33 @@ def load_config():
     """Load configuration from custom_config.json."""
     with open(CONFIG_PATH, "r") as f:
         return json.load(f)
+
+
+def replace_placeholders_recursive(data, plugin_name: str, planet_name: str) -> None:
+    """Recursively replace plugin_name and planet_name placeholders in all strings."""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, str):
+                if "plugin_name" in value or "planet_name" in value:
+                    new_value = value.replace("plugin_name", plugin_name).replace(
+                        "planet_name", planet_name
+                    )
+                    data[key] = new_value
+                    handle_news(
+                        None,
+                        "info",
+                        f"Replaced in {key}: '{value}' -> '{new_value}'",
+                    )
+            else:
+                replace_placeholders_recursive(value, plugin_name, planet_name)
+    elif isinstance(data, list):
+        for item in data:
+            replace_placeholders_recursive(item, plugin_name, planet_name)
+
+
+def count_json_lines(data) -> int:
+    """Count the number of lines in a JSON object when serialized."""
+    return len(json.dumps(data, indent=4).splitlines())
 
 
 def get_planet_material_paths():
@@ -72,71 +91,30 @@ def get_planet_material_paths():
         yield planet_name, texture_path, material_path
 
 
-def generate_crc_hashes(mat_data):
-    mat_data = copy.deepcopy(mat_data)
-    id_mapping = {}
-
-    for obj_index, obj in enumerate(mat_data["Objects"]):
-        handle_news(None)
-        obj_name = None
-        texture_path = None
-
-        for component in obj.get("Components", []):
-            if component.get("Type") == "BSComponentDB::CTName":
-                obj_name = component.get("Data", {}).get("Name")
-            elif component.get("Type") == "BSMaterial::MRTextureFile":
-                texture_path = component.get("Data", {}).get("FileName", "")
-
-        if not obj_name:
-            obj_name = f"object_{obj_index}"
-
-        # --- Assign object ID based on texture path ---
-        if "ID" in obj:
-            old_id = obj["ID"]
-            if texture_path:
-                folder = os.path.dirname(texture_path)
-                file = os.path.splitext(os.path.basename(texture_path))[0]
-                new_id = create_resource_id(folder, file)
-                id_mapping[old_id] = new_id
-                obj["ID"] = new_id
-
-        # --- Assign component IDs using simple CRC ---
-        for comp_index, component in enumerate(obj.get("Components", [])):
-            if "Data" in component and "ID" in component["Data"]:
-                old_id = component["Data"]["ID"]
-                if old_id:
-                    comp_name = f"{obj_name}_comp_{comp_index}"
-                    new_id = create_simple_crc_id(comp_name, index=comp_index)
-                    id_mapping[old_id] = new_id
-                    component["Data"]["ID"] = new_id
-
-    # --- Update 'To' fields in Edges ---
-    for obj in mat_data["Objects"]:
-        for edge in obj.get("Edges", []):
-            if edge.get("To") not in ("<this>", None) and edge["To"] in id_mapping:
-                edge["To"] = id_mapping[edge["To"]]
-
-    return mat_data
-
-
 def write_material_file(material_path, plugin_name, planet_name):
-    """Generate and write a formatted .mat file with hashed values."""
-
+    """Generate and write a formatted .mat file with replaced placeholders."""
     output_path = Path(material_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Read template file
     template_path = MATERIAL_PATH
     try:
-        with open(template_path, "r") as f:
-            mat_data = json.load(f)  # Load JSON directly instead of treating as text
+        with open(template_path, "r", encoding="utf-8") as f:
+            mat_data = json.load(f)
 
-        # Replace placeholders
-        mat_data["Filename"] = (
-            mat_data["Filename"]
-            .replace("plugin_name", plugin_name)
-            .replace("planet_name", planet_name)
+        initial_lines = count_json_lines(mat_data)
+        handle_news(None, "info", f"Template JSON line count: {initial_lines}")
+
+        handle_news(
+            None,
+            "info",
+            f"Replacing placeholders for plugin_name={plugin_name}, planet_name={planet_name}",
         )
+        replace_placeholders_recursive(mat_data, plugin_name, planet_name)
+
+        replaced_lines = count_json_lines(mat_data)
+        handle_news(None, "info", f"Post-replacement JSON line count: {replaced_lines}")
+
+        mat_data["Filename"] = f"MATERIALS\\{plugin_name}\\planets\\{planet_name}.mat"
 
         for obj in mat_data.get("Objects", []):
             for component in obj.get("Components", []):
@@ -149,33 +127,10 @@ def write_material_file(material_path, plugin_name, planet_name):
                             .replace("planet_name", planet_name)
                         )
 
-        # Generate CRC-based hashes in one step
-        updated_mat_data = generate_crc_hashes(mat_data)
-
-        # Write final material file
-        with open(output_path, "w") as f:
-            json.dump(
-                updated_mat_data, f, indent=4
-            )  # Directly saving the final version
+        with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(mat_data, f, indent=4, ensure_ascii=False)
 
         handle_news(None, "info", f"Material file written to: {output_path}")
-
-        # Print resource hash info for this .mat file
-        relative_folder = f"materials/{plugin_name}/planets"
-        filename = planet_name  # no extension
-
-        folder_hash = create_resource_id(relative_folder, "")
-        file_hash = create_resource_id(relative_folder, filename)
-
-        print(f"[MATERIAL PATH]: {relative_folder} / {filename}")
-
-        # Split and extract folder/file CRCs from the res string
-        parts = file_hash.split(":")
-        folder_crc = parts[1]
-        file_crc = parts[2]
-
-        print(f"[MATERIAL FOLDER HASH]: {folder_crc}")
-        print(f"[MATERIAL FILE HASH]:   {file_crc}")
 
     except FileNotFoundError:
         print(f"Template file not found: {template_path}", file=sys.stderr)
@@ -185,8 +140,14 @@ def main():
     """Run material processing and print results."""
     print("=== Starting Material Path Processing ===")
     for planet_name, texture_path, material_path in get_planet_material_paths():
-        handle_news(None, "info", f"Updated {planet_name} material. Saved at: {material_path}")
+        handle_news(
+            None, "info", f"Updated {planet_name} material. Saved at: {material_path}"
+        )
+
+    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMeshes.py")], check=True)
+    sys.stdout.flush()
+    sys.exit()
 
 
 if __name__ == "__main__":
-    main()  #
+    main()

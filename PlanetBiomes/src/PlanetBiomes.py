@@ -57,17 +57,20 @@ class CsSF_BiomContainer(NamedTuple):
     resrcGridS: List[int]
 
 
+# .biom Structure
 CsSF_Biom = Struct(
     "magic" / Const(0x105, UInt16),
     "numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
     "biomeIds" / Array(this.numBiomes, UInt32),
     Const(2, UInt32),
-    Const([GRID_SIZE[0], GRID_SIZE[1]], Array(2, UInt32)),
+    Const(GRID_SIZE[0], UInt32),
+    Const(GRID_SIZE[1], UInt32),
     Const(GRID_FLATSIZE, UInt32),
     "biomeGridN" / Array(GRID_FLATSIZE, UInt32),
     Const(GRID_FLATSIZE, UInt32),
     "resrcGridN" / Array(GRID_FLATSIZE, UInt8),
-    Const([GRID_SIZE[0], GRID_SIZE[1]], Array(2, UInt32)),
+    Const(GRID_SIZE[0], UInt32),
+    Const(GRID_SIZE[1], UInt32),
     Const(GRID_FLATSIZE, UInt32),
     "biomeGridS" / Array(GRID_FLATSIZE, UInt32),
     Const(GRID_FLATSIZE, UInt32),
@@ -102,7 +105,7 @@ plugin_name = config.get("plugin_name", "default_plugin")
 
 def load_biomes() -> Tuple[str, Dict[str, List[int]], Set[int], Set[int], Set[int]]:
     import traceback
-    print("DEBUG: load_biomes() called from:")
+    handle_news(None)
     traceback.print_stack()
     csv_files: List[Path] = list(INPUT_DIR.glob("*.csv"))
     csv_names = [f.name for f in csv_files]
@@ -305,7 +308,7 @@ def generate_edge_faults(grid_size, number_faults, py_rng):
     for name, (axis, fixed, start, end), direction in edges:
         step = (end - start) / faults_per_edge if faults_per_edge > 0 else end - start
         positions = sorted(
-            py_rng.randint(int(start + i * step), int(start + (i + 1) * step))
+            py_rng.randint(int(start + i * step), int(start + (i + 1) * step) - 1)
             for i in range(faults_per_edge)
         )
         for pos in positions:

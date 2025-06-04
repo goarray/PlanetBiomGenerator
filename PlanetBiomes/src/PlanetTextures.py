@@ -898,14 +898,14 @@ def generate_normal_map(height_img, invert_height=True):
 def generate_ao_map(
     rgb_grid: np.ndarray,
     biome_data: Dict[int, Dict],
-    fade_intensity: float = 1.0,  # Range: 0.1–1.0 (darkness strength)
-    fade_spread: float = 1.0,  # Range: 0.1–1.0 (contrast shaping)
+    fade_intensity: float = 0.1,  # Range: 0.1–1.0 (darkness strength)
+    fade_spread: float = 0.1,  # Range: 0.1–1.0 (contrast shaping)
 ) -> Image.Image:
     fade_intensity = config.get("fade_intensity", 0.5)
     fade_spread = config.get("fade_spread", 0.5)
     elevation = generate_elevation(rgb_grid, biome_data)
-    blurred = gaussian_filter(elevation.astype(np.float32), sigma=1.0)
-    ao = np.clip((blurred - elevation), 0, 255)
+    #blurred = gaussian_filter(elevation.astype(np.float32), sigma=0.2)
+    ao = np.clip((elevation), 0, 255)
 
     # Normalize and apply fade shaping
     if ao.max() != 0:
