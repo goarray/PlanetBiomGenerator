@@ -46,7 +46,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
-from PlanetMeshes import generate_sphere
+from PlanetPlotter import generate_sphere
 from PlanetNewsfeed import (
     handle_news,
     news_count,
@@ -487,6 +487,8 @@ def start_planet_biomes(main_window):
                         main_window.image_labels[index].movie().stop()
                         main_window.image_labels[index].setMovie(None)
                     main_window.image_labels[index].setPixmap(pixmap)
+
+            generate_sphere(main_window.plotter)
 
         if "Visual inspection" in output:
             output_dir = Path(OUTPUT_DIR)
