@@ -29,3 +29,7 @@ PlanetBiomes/assets/materials/Layered/LayeredMaterials/HoudiniPlanets/XXXXXXXXXX
 PlanetBiomes/assets/PlanetBiomes.csv
 PlanetBiomes/Input/PlanetBiomes.biom_bak
 PlanetBiomes/Input/zswdiagnostic.csv
+PlanetBiomes/erosion_mask.png
+PlanetBiomes/csv/BaseGameBiomeColors.csv
+PlanetBiomes/csv/BaseGameMergedColors.csv
+PlanetBiomes/Input/zswwhitesun.csv

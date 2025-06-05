@@ -300,6 +300,13 @@ THEMES = {
             padding: 5px;
         }}
 
+        QFrame[frameShape="4"] {{
+            color: 1px solid {theme.get("selection_color", "#00FFFF")};
+            min-width: 1px;
+            max-width: 1px;
+            margin: 4px;
+        }}
+
         QTabBar::tab {{
             background:{theme.get('background', '#1e1e1e')}; 
             color: {theme.get('tooltip_color', '#d9f6ff')};

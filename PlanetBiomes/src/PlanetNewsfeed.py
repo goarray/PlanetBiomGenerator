@@ -154,7 +154,7 @@ def calc_text_count(config):
                 #"enable_texture_noise",
                 #"enable_texture_edges",
                 #"enable_texture_light",
-                #"enable_texture_craters",
+                #"enable_texture_terrain",
             ]
             if config.get(key, False)
         )
@@ -172,7 +172,7 @@ def calc_other_count(config):
     #            #"enable_texture_noise",
     #            #"enable_texture_edges",
     #            #"enable_texture_light",
-    #            #"enable_texture_craters",
+    #            #"enable_texture_terrain",
     #        ]
     #        if config.get(key, False)
     #    )

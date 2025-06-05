@@ -27,6 +27,7 @@ from pathlib import Path
 from construct import Struct, Const, Rebuild, this, len_
 from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Array
 from scipy.ndimage import gaussian_filter, sobel
+from noise import pnoise2
 import numpy as np
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
 import colorsys
@@ -39,6 +40,7 @@ import shutil
 import math
 from PIL import Image, ImageEnhance
 from PlanetNewsfeed import handle_news
+from PlanetTerrain import generate_terrain_normal, generate_terrain
 from PlanetConstants import (
     TEXCONV_PATH,
     BASE_DIR,
@@ -374,13 +376,13 @@ def generate_elevation(rgb_grid: np.ndarray, biome_data: Dict[int, Dict]) -> np.
     return smoothed_elevation.astype(np.uint8)
 
 
-def generate_atmospheric_fade(shape, intensity=None, spread=None):
-    """Generate atmospheric fade effect from planet center."""
+def generate_shadows(shape, intensity=None, spread=None):
+    """Generate shadow effect from planet center."""
     handle_news(None)
     if intensity is None:
-        intensity = config.get("fade_intensity", 0.27)
+        intensity = (config.get("texture_contrast", 0.27) * 1.5)
     if spread is None:
-        spread = config.get("fade_spread", 0.81)
+        spread = (config.get("texture_brightness", 0.81) * 2)
     center_y, center_x = shape[0] // 2, shape[1] // 2
     y_grid, x_grid = np.indices(shape)
     distance_from_center = np.sqrt((x_grid - center_x) ** 2 + (y_grid - center_y) ** 2)
@@ -388,25 +390,34 @@ def generate_atmospheric_fade(shape, intensity=None, spread=None):
     return np.exp(-spread * (distance_from_center / max_distance)) * intensity
 
 
-def generate_shading(grid, light_source_x=None, light_source_y=None):
-    """Generate anisotropic shading based on terrain gradients."""
+def generate_shading(
+    grid, light_source_x=0.5, light_source_y=0.5, fade_intensity=0.5, fade_spread=0.5
+):
+    """Generate anisotropic shading based on terrain gradients with fade controls."""
     handle_news(None)
-    if light_source_x is None:
-        light_source_x = 0.5
-    if light_source_y is None:
-        light_source_y = 0.5
 
+    # Compute gradient
     grad_x = np.gradient(grid, axis=1)
     grad_y = np.gradient(grid, axis=0)
+
+    # Light projection
     shading = grad_x * light_source_x + grad_y * light_source_y
 
-    # Normalize to [0, 1]
+    # Optional: apply fade_spread as a smoothing factor (e.g., Gaussian blur)
+    if fade_spread > 0:
+        sigma = max(0.1, fade_spread * 10)  # Spread control, scaled to usable blur
+        shading = gaussian_filter(shading, sigma=sigma)
+
+    # Normalize shading to [0, 1]
     shading_min = np.nanmin(shading)
     shading_max = np.nanmax(shading)
     range_val = shading_max - shading_min if shading_max != shading_min else 1.0
     shading = (shading - shading_min) / range_val
 
-    # Sanitize the result
+    # Apply intensity scaling (fade_intensity can be positive or negative)
+    shading = 0.5 + (shading - 0.5) * fade_intensity
+
+    # Sanitize
     shading = np.nan_to_num(shading, nan=0.0, posinf=1.0, neginf=0.0)
     shading = np.clip(shading, 0.0, 1.0)
 
@@ -507,20 +518,29 @@ def generate_craters(elevation_map, crater_depth_min=0.2, crater_depth_max=0.8):
     return (elevation_map_f * 255).astype(np.uint8)
 
 
-def generate_edge_blend(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend_radius=None) -> np.ndarray:
-    """Generate edge blending map for biome transitions based on RGB grid."""
+def generate_edge_blend(
+    rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend_radius=None
+) -> np.ndarray:
+    """
+    Generate a localized Perlin noise blend map along biome boundaries.
+    Non-edge areas stay untouched. Edge-adjacent pixels get a noise mask
+    with smooth radial falloff (like an edge feather).
+    """
     handle_news(None)
+
     if not config.get("enable_texture_edges", False):
         return np.zeros(rgb_grid.shape[:2], dtype=np.float32)
 
     if blend_radius is None:
         blend_radius = config.get("texture_edges", 0.53)
 
-    edge_map = np.zeros(rgb_grid.shape[:2], dtype=np.float32)
+    h, w = rgb_grid.shape[:2]
+    edge_map = np.zeros((h, w), dtype=np.float32)
     rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
 
-    for y in range(rgb_grid.shape[0]):
-        for x in range(rgb_grid.shape[1]):
+    # --- Step 1: Detect biome edge pixels ---
+    for y in range(h):
+        for x in range(w):
             current_rgb = tuple(rgb_grid[y, x])
             current_form_id = rgb_to_form_id.get(current_rgb, None)
             if current_form_id is None:
@@ -528,16 +548,40 @@ def generate_edge_blend(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], blend
 
             neighbors = [
                 tuple(rgb_grid[max(y - 1, 0), x]),
-                tuple(rgb_grid[min(y + 1, rgb_grid.shape[0] - 1), x]),
+                tuple(rgb_grid[min(y + 1, h - 1), x]),
                 tuple(rgb_grid[y, max(x - 1, 0)]),
-                tuple(rgb_grid[y, min(x + 1, rgb_grid.shape[1] - 1)]),
+                tuple(rgb_grid[y, min(x + 1, w - 1)]),
             ]
-            neighbor_form_ids = [rgb_to_form_id.get(rgb, None) for rgb in neighbors]
-            if any(nid != current_form_id and nid is not None for nid in neighbor_form_ids):
+            neighbor_ids = [rgb_to_form_id.get(n, None) for n in neighbors]
+            if any(nid != current_form_id and nid is not None for nid in neighbor_ids):
                 edge_map[y, x] = 1.0
 
-    blurred_map = gaussian_filter(edge_map, sigma=max(0.1, 1 - blend_radius))
-    return blurred_map
+    # --- Step 2: Expand edge zones with Gaussian blur (falloff mask) ---
+    edge_falloff = gaussian_filter(edge_map, sigma=max(1.0, 3 * (1 - blend_radius)))
+    edge_falloff = np.clip(edge_falloff, 0, 1)
+
+    # --- Step 3: Generate Perlin noise map ---
+    from noise import pnoise2
+
+    seed = int(config.get("global_seed", 42))
+    scale = 0.03 + (1.0 - blend_radius) * 0.07  # smaller = smoother noise
+
+    x = np.linspace(0, w, w)
+    y = np.linspace(0, h, h)
+    xv, yv = np.meshgrid(x, y)
+    noise_func = np.vectorize(lambda x, y: pnoise2(x * scale, y * scale, base=seed))
+    perlin = noise_func(xv, yv)
+    perlin -= perlin.min()
+    perlin /= perlin.max() + 1e-6
+
+    # Optional: boost contrast for sharper transition (but still soft)
+    contrast = (config.get("texture_contrast", 0.5) * 3)
+    perlin = np.clip((perlin - 0.1) * contrast + 0.1, 0, 1)
+
+    # --- Step 4: Multiply perlin noise only where edge falloff is active ---
+    blend_mask = edge_falloff * perlin
+
+    return blend_mask.astype(np.float32)
 
 
 def enhance_brightness(image, bright_factor=None):
@@ -545,61 +589,40 @@ def enhance_brightness(image, bright_factor=None):
     handle_news(None)
     if bright_factor is None:
         bright_factor = config.get("texture_brightness", 0.74)
-    scaled_factor = bright_factor * 4
+    scaled_factor = bright_factor * 3
     enhancer = ImageEnhance.Brightness(image)
     return enhancer.enhance(scaled_factor)
 
 
-def adjust_tint(
-    faded_color,
-    texture_saturation,
-    texture_tint,
-    biome_category="",
-    elevation_factor=0.5,
-):
-    """Adjust color with dynamic tinting based on biome category and elevation."""
-
+def adjust_tint(faded_color, texture_saturation, texture_tint):
+    """Adjust color hue and saturation based on user input sliders."""
     r, g, b = [c / 255.0 for c in faded_color]
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
 
-    biome_tint_shifts = {
-        "ocean": -0.1,
-        "forest": -0.05,
-        "desert": 0.05,
-        "lava": 0.15,
-        "tundra": 0.0,
-        "soil": 0.02,
-    }
-    hue_shift = biome_tint_shifts.get(biome_category, 0.0)
-    hue_shift += (texture_tint - 0.5) * 0.25
-    hue_shift += elevation_factor * 0.05
-    h = (h + hue_shift) % 1.0
+    # Shift hue: texture_tint in [0, 1], center 0.5 = no change
+    h = (h + (texture_tint - 0.5) * 0.25) % 1.0
 
-    s = s * (0.8 + 0.4 * elevation_factor)
-    s = min(s, 1.0)
+    # Adjust saturation: center 0.5 = no change
+    s = s * (0.5 + texture_saturation)
 
-    v = v * (0.9 + 0.2 * texture_saturation)
-    v = min(v, 1.0)
-
-    r, g, b = colorsys.hsv_to_rgb(h, s, v)
-
+    r, g, b = colorsys.hsv_to_rgb(h, min(s, 1.0), v)
     return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
 
 
 def desaturate_color(rgb, texture_saturation):
-    """Adjust color saturation in HSV space with support for boosting."""
-
+    """Adjust color saturation: 0.5 = no change, <0.5 = desaturate, >0.5 = boost."""
     r, g, b = [c / 255.0 for c in rgb]
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
 
-    if texture_saturation < 1.0:
-        s = s * texture_saturation
+    if texture_saturation < 0.5:
+        factor = texture_saturation * 2.0  # 0.0 → 0.0, 0.5 → 1.0
+        s *= factor
     else:
-        s = s + (1.0 - s) * (texture_saturation - 1.0)
-        s = min(s, 1.0)
+        boost = (texture_saturation - 0.5) * 2.0  # 0.5 → 0.0, 1.0 → 1.0
+        s = s + (1.0 - s) * boost
 
+    s = min(max(s, 0.0), 1.0)
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
-
     return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
 
 
@@ -743,7 +766,7 @@ def create_biome_image(
     enable_texture_noise = config.get("enable_texture_noise", True)
     enable_texture_edges = config.get("enable_texture_edges", True)
     enable_texture_light = config.get("enable_texture_light", True)
-    enable_texture_craters = config.get("enable_texture_craters", True)
+    enable_texture_terrain = config.get("enable_texture_terrain", True)
     process_images = config.get("process_images", False)
     bright_factor = config.get("texture_brightness", 0.05)
     texture_saturation = config.get("texture_saturation", 0.5)
@@ -760,13 +783,14 @@ def create_biome_image(
             (height, width), scale=config.get("noise_scale", 4.17)
         )
         elevation_map = generate_elevation(rgb_grid, biome_data)
-        if enable_texture_craters:
-            elevation_map = generate_craters(elevation_map)
+        if enable_texture_terrain:
+            height, width = elevation_map.shape
+            elevation_map = generate_terrain(width, height)
         edge_blend_map = generate_edge_blend(rgb_grid, biome_data)
         shading_map = generate_shading(elevation_map)
         elevation_norm = elevation_map / 255.0
         fractal_map = generate_fractal_noise(elevation_norm)
-        atmospheric_fade_map = generate_atmospheric_fade((height, width))
+        atmospheric_fade_map = generate_shadows((height, width))
         if enable_basic_filters:
             bright_factor = config.get("texture_brightness", 0.74)
 
@@ -784,7 +808,7 @@ def create_biome_image(
                     int(c * (0.8 + 0.2 * elevation_factor)) for c in rgb
                 )
                 # Apply light-based shading
-                if enable_texture_light:
+                if enable_basic_filters:
                     light_adjusted_color = tuple(
                         int(c * (0.9 + 0.1 * shading_map[y, x])) for c in shaded_color
                     )
@@ -811,32 +835,30 @@ def create_biome_image(
                 # Apply noise
                 if enable_texture_noise:
                     noisy_color = tuple(
-                        np.clip(int(c * (0.91 + 0.09 * noise_map[y, x])), 0, 255)
+                        np.clip(int(c * (0.95 + 0.05 * noise_map[y, x])), 0, 255)
                         for c in blended_color
                     )
                 else:
                     noisy_color = blended_color
 
                 # Apply atmospheric fade (reduces intensity toward edges)
-                if enable_texture_light:
+                if enable_basic_filters:
                     fade_factor = 1.0 - atmospheric_fade_map[y, x]
                     faded_color = tuple(
                         int(c * (1.0 - 0.3 * fade_factor)) for c in noisy_color
                     )
                 else:
                     faded_color = noisy_color
-                    
+
                 if enable_basic_filters:
                     # Apply biome-specific tint
                     tinted_color = adjust_tint(
                         faded_color,
                         texture_saturation,
                         texture_tint,
-                        category,
-                        elevation_factor,
                     )
                     # Apply desaturation
-                
+
                     desaturated_color = desaturate_color(tinted_color, texture_saturation)
                     color[y, x] = desaturated_color
     else:
@@ -948,6 +970,7 @@ def convert_png_to_dds(
         "ocean": config.get("ocean_format", "BC4_UNORM"),
         "ocean_mask": config.get("ocean_format", "BC4_UNORM"),
         "normal": config.get("normal_format", "BC5_SNORM"),
+        "terrain_normal": config.get("normal_format", "BC5_SNORM"),
         "rough": config.get("rough_format", "BC4_UNORM"),
         "ao": config.get("ao_format", "BC4_UNORM"),
     }
@@ -1073,6 +1096,14 @@ def main():
                         print("Review documentation submitted.")
                         once_per_run = True
 
+                    if texture_type == "ocean":
+                        try:
+                            output_path = planet_png_dir / f"{planet_name}_{hemisphere}_terrain_normal.png"
+                            generate_terrain_normal(png_path, output_path)
+                            handle_news(None, "info", f"Generated terrain normal: {output_path}")
+                        except Exception as e:
+                            handle_news(None, "error", f"Terrain normal generation failed: {e}")
+
             print(
                 f"Generated textures for {planet_name} (North and South: color, surface, ocean, normal, ao)",
                 file=sys.stderr,
@@ -1085,11 +1116,13 @@ def main():
                 "normal",
                 "rough",
                 "ao",
+                "terrain_normal",
             ]:
                 planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
                 suffix_map = {
                     "surface": "surface_metal",
                     "ocean": "ocean_mask",
+                    "terrain_normal": "terrain_normal",
                 }
                 suffix = suffix_map.get(texture_type, texture_type)
                 north_path = planet_png_dir / f"{planet_name}_North_{suffix}.png"
@@ -1115,6 +1148,12 @@ def main():
                             None, "info", f"Combined image saved: {combined_path}"
                         )
 
+                        layer2_path = planet_png_dir / f"{planet_name}_terrain_normal.png"
+                        if layer2_path.exists():
+                            handle_news(None, "info", f"Terrain normal exists: {layer2_path}")
+                        else:
+                            handle_news(None, "warning", f"Missing expected terrain normal: {layer2_path}")
+
                         dds_output_dir = (
                             PLUGINS_DIR
                             / plugin_name
@@ -1132,6 +1171,7 @@ def main():
                             "normal": f"{planet_name}_normal.dds",
                             "rough": f"{planet_name}_rough.dds",
                             "ao": f"{planet_name}_ao.dds",
+                            "terrain_normal": f"{planet_name}_terrain_noraml.dds",
                         }
                         dds_filename = dds_name_map[texture_type]
 

@@ -34,7 +34,7 @@ THEME_PATH = CONFIG_DIR / "custom_themes.json"
 DEFAULT_THEME_PATH = CONFIG_DIR / "default_themes.json"
 
 CSV_PATH = CSV_DIR / "Biomes.csv"
-PREVIEW_PATH = CSV_DIR / "preview.csv2" ###########intentionally broken
+PREVIEW_PATH = CSV_DIR / "preview.csv"
 
 # --- Script and template paths ---
 SCRIPT_PATH = SCRIPT_DIR / "PlanetBiomes.py"
@@ -76,6 +76,7 @@ IMAGE_FILES = [
     "temp_normal.png",
     "temp_ao.png",
     "temp_rough.png",
+    "temp_fault.png"
 ]
 PROCESSING_MAP = {
     "Processing color map": [0],
@@ -105,7 +106,7 @@ BOOLEAN_KEYS = {
     "enable_texture_light",
     "enable_texture_edges",
     "enable_basic_filters",
-    "enable_texture_craters",
+    "enable_texture_terrain",
     "process_images",
     "enable_texture_noise",
     "upscale_image",

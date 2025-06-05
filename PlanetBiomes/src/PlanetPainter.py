@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Dict
 
 # Third Party Libraries
+from pyvistaqt import QtInteractor
 from typing import cast
 import numpy as np
 from PyQt6.uic.load_ui import loadUi
@@ -38,11 +39,14 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QLCDNumber,
     QSlider,
-    QProgressBar
+    QProgressBar,
+    QFrame,
+    QVBoxLayout,
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
+from PlanetMeshes import generate_sphere
 from PlanetNewsfeed import (
     handle_news,
     news_count,
@@ -108,7 +112,7 @@ def load_config():
             "total_news": 351,
             "process_biomes": False,
             "_program_options": "Pluging related options",
-            "plugin_selected": 0,
+            "plugin_selected": -1,
             "plugin_index": ["preview.csv"],
             "plugin_name": "preview.esm",
             "enable_preview_mode": False,
@@ -178,7 +182,7 @@ def load_config():
             "enable_basic_filters": False,
             "enable_texture_edges": False,
             "enable_texture_noise": False,
-            "enable_texture_craters": False,
+            "enable_texture_terrain": False,
             "_texture_basics_group": "Texture basics",
             "texture_brightness": 0.5,
             "texture_saturation": 0.5,
@@ -195,11 +199,14 @@ def load_config():
             "_texture_lighting_group": "Lighting settings",
             "fade_intensity": 0.5,
             "fade_spread": 0.5,
+            "Texture Terrain Settings": "Texture Terrain Settings",
+            "texture_mountains": 0.5,
+            "texture_canyons": 0.5,
             "_image_options_group": "Other image options",
             "enable_normal": True,
             "enable_rough": False,
             "enable_alpha": False,
-            #"plugin_list": ["PlanetBiomes.csv", "preview.csv"],
+            # "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
             "elevation_influence": 0.5,
         }
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -218,7 +225,7 @@ def load_config():
         config["plugin_index"] = ["preview.csv"]
     if "plugin_name" not in config:
         config["plugin_name"] = "preview.esm"
-    #if "plugin_list" not in config:
+    # if "plugin_list" not in config:
     #   config["plugin_list"] = ["preview.csv"]
 
     return config
@@ -596,8 +603,10 @@ class MainWindow(QMainWindow):
     normal_preview_image: QLabel
     ao_preview_image: QLabel
     rough_preview_image: QLabel
+    fault_preview_image: QLabel
     news_label: QLabel
     plugin_name: QLabel
+    sphere_preview_frame: QFrame
     stdout_widget: QTextEdit
     stderr_widget: QTextEdit
     themes_dropdown: QComboBox
@@ -635,6 +644,10 @@ class MainWindow(QMainWindow):
         loadUi(UI_PATH, self)
         self.slider_mappings = {}
         self.checkbox_mappings = {}
+        self.dropdown_vars = {
+            "plugin_selected": self.plugins_dropdown,
+            # Add others here if needed
+        }
 
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
@@ -645,7 +658,7 @@ class MainWindow(QMainWindow):
         # Initialize plugin list
         if not config.get("plugin_index"):
             config["plugin_index"] = ["preview.csv"]
-            #config["plugin_list"] = ["preview.csv"]
+            # config["plugin_list"] = ["preview.csv"]
             config["plugin_selected"] = 0
             config["plugin_name"] = "preview.esm"
             save_config()
@@ -680,6 +693,7 @@ class MainWindow(QMainWindow):
             self.normal_preview_image,
             self.ao_preview_image,
             self.rough_preview_image,
+            self.fault_preview_image,
         ]
 
         self.default_image = (
@@ -744,6 +758,18 @@ class MainWindow(QMainWindow):
             message += f"  [{index}] {plugin}\n"
         self.stderr_widget.insertPlainText(message)
 
+        # Embed a PyVista interactor into your Qt layout
+        # Create the interactor (no parent)
+        self.plotter = QtInteractor()
+
+        # Create a layout and add the interactor
+        layout = QVBoxLayout(self.sphere_preview_frame)
+        layout.addWidget(self.plotter)
+        self.sphere_preview_frame.setLayout(layout)
+
+        # Update 3D Display
+        generate_sphere(self.plotter)
+
     def open_selected_folder(self, index):
         folder_path = self.folders_dropdown.itemData(index)
         if folder_path:
@@ -805,36 +831,52 @@ class MainWindow(QMainWindow):
             global config
             config = default_config
 
+            # --- Set plugin_selected to last item ---
+            plugin_list = config.get("plugin_index", [])
+            last_index = len(plugin_list) - 1 if plugin_list else 0
+            config["plugin_selected"] = last_index
+            config["plugin_name"] = plugin_list[last_index] if plugin_list else ""
+            dropdown = self.dropdown_vars.get("plugin_selected")
+            if dropdown:
+                dropdown.setCurrentIndex(last_index)
+
             # Re-apply UI control values
             for key in self.slider_mappings:
                 slider = self.slider_vars.get(key)
                 if slider:
                     value = config.get(key, 0)
-                    if key in ["number_faults", "fault_width", "user_seed", "texture_resolution_scale"]:
+                    if key in [
+                        "number_faults",
+                        "fault_width",
+                        "user_seed",
+                        "texture_resolution_scale",
+                    ]:
                         slider.setValue(int(value))
                     else:
                         slider.setValue(int(value * 100))
-            for key in self.checkbox_mappings:
-                checkbox = checkbox_vars.get(key)
-                if checkbox:
-                    checkbox.setChecked(config.get(key, False))
+
+            for key in self.dropdown_vars:
+                dropdown = self.dropdown_vars[key]
+                if key == "plugin_selected":
+                    plugin_list = config.get("plugin_index", [])
+                    last_index = len(plugin_list) - 1 if plugin_list else 0
+                    dropdown.setCurrentIndex(last_index)
 
             # Update displays
             self.seed_display.display(config.get("user_seed", 0))
-            self.texture_resolution_display.display(config.get("texture_resolution", 111))
+            self.texture_resolution_display.display(
+                config.get("texture_resolution", 111)
+            )
 
             self.refresh_plugin_list()
-            config["plugin_selected"] = 0
-            config["plugin_name"] = "preview.esm"
-            save_config()
-
-            self.plugins_dropdown.setCurrentIndex(0)
-            update_selected_plugin(0, self, force=True)
+            self.plugins_dropdown.setCurrentIndex(last_index)
+            update_selected_plugin(last_index, self, force=True)
 
             self.refresh_ui_from_config()
             save_config()
 
         except FileNotFoundError:
+            print("Default config file not found.")
             print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
 
     def refresh_plugin_list(self):
@@ -848,8 +890,10 @@ class MainWindow(QMainWindow):
         # Update plugin_index only if new CSVs are found
         current_index = config.get("plugin_index", [])
         if set(csv_names) != set(current_index):
+            if "preview.csv" in csv_names:
+                csv_names.remove("preview.csv")
+                csv_names.insert(0, "preview.csv")  # Always first
             config["plugin_index"] = csv_names
-            #config["plugin_list"] = csv_names
             save_config()
 
         # Preserve existing selection if valid
@@ -950,6 +994,8 @@ class MainWindow(QMainWindow):
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
             "fade_intensity": "fade_intensity",
+            "texture_mountains": "texture_mountains",
+            "texture_canyons": "texture_canyons",
             "fade_spread": "fade_spread",
             "equator_anomaly_count": "equator_anomaly_count",
             "equator_anomaly_spray": "equator_anomaly_spray",
@@ -1004,6 +1050,8 @@ class MainWindow(QMainWindow):
             "texture_roughness_reset",
             "texture_roughness_base_reset",
             "fade_intensity_reset",
+            "texture_canyons_reset",
+            "texture_mountains_reset",
             "fade_spread_reset",
             "distortion_scale_reset",
         ]
@@ -1039,11 +1087,11 @@ class MainWindow(QMainWindow):
                     slider.setRange(0, 99999)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "number_faults" or key == "fault_width":
+                elif key == "fault_width":
                     slider.setRange(1, 16)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "texture_resolution_scale":
+                elif key == "number_faults" or key == "texture_resolution_scale":
                     slider.setRange(1, 8)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
