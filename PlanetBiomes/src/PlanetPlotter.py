@@ -24,15 +24,16 @@ import numpy as np
 from pathlib import Path
 
 TEXTURE_TYPES = [
-    "color",
-    #"biome",
+    "biome",
     "surface_metal",
-    #"resource",
+    "terrain_normal",
+    "ao",
+    "resource",
     "ocean_mask",
     "normal",
-    "ao",
     "rough",
-    #"fault",
+    # "fault",
+    "color",
 ]
 
 
@@ -104,7 +105,7 @@ def generate_sphere(plotter):
     v[north_mask] = v_n
     u[south_mask] = u_s
     v[south_mask] = v_s
-    sphere.active_t_coords = np.column_stack((u, v))
+    sphere.active_texture_coordinates = np.column_stack((u, v))
 
     # Dictionary to store meshes for each texture type
     meshes = {}
@@ -152,20 +153,61 @@ def generate_sphere(plotter):
 
     # Example: Bind toggle to a callback (e.g., for UI or key press)
     # This is a placeholder; integrate with your UI or keybinding system
+    def toggle_biome(state):
+        toggle_mesh("biome", state)
+
+    def toggle_resource(state):
+        toggle_mesh("resource", state)
+
     def toggle_color(state):
         toggle_mesh("color", state)
+
+    def toggle_surface(state):
+        toggle_mesh("surface_metal", state)
+
+    def toggle_ocean(state):
+        toggle_mesh("ocean_mask", state)
 
     def toggle_normal(state):
         toggle_mesh("normal", state)
 
+    def toggle_ambient(state):
+        toggle_mesh("ao", state)
+
+    def toggle_rough(state):
+        toggle_mesh("rough", state)
+
+    def toggle_terrain(state):
+        toggle_mesh("terrain_normal", state)
+
     # Add key bindings for toggling (example for PyVista's built-in key events)
+    plotter.add_key_event(
+        "b", lambda: toggle_biome(not meshes.get("biome", {}).get("visible", False))
+    )
+    plotter.add_key_event(
+        "e", lambda: toggle_resource(not meshes.get("resource", {}).get("visible", False))
+    )
     plotter.add_key_event(
         "c", lambda: toggle_color(not meshes.get("color", {}).get("visible", False))
     )
     plotter.add_key_event(
+        "s", lambda: toggle_surface(not meshes.get("surface_metal", {}).get("visible", False))
+    )
+    plotter.add_key_event(
+        "o", lambda: toggle_ocean(not meshes.get("ocean_mask", {}).get("visible", False))
+    )
+    plotter.add_key_event(
         "n", lambda: toggle_normal(not meshes.get("normal", {}).get("visible", False))
     )
-    # Add more key bindings for other texture types as needed
+    plotter.add_key_event(
+        "a", lambda: toggle_ambient(not meshes.get("ao", {}).get("visible", False))
+    )
+    plotter.add_key_event(
+        "r", lambda: toggle_rough(not meshes.get("rough", {}).get("visible", False))
+    )
+    plotter.add_key_event(
+        "t", lambda: toggle_terrain(not meshes.get("terrain_normal", {}).get("visible", False))
+    )
 
     plotter.reset_camera()
     return meshes  # Return meshes for external control if needed

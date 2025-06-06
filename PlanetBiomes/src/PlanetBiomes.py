@@ -25,6 +25,7 @@ from PlanetConstants import (
     CONFIG_PATH,
     TEMPLATE_PATH,
     PREVIEW_PATH,
+    PNG_OUTPUT_DIR,
 )
 
 # Third Party Libraries
@@ -303,6 +304,7 @@ def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_r
 
     # Save elevation maps for debugging
     save_elevation_map_png(north_elevation, str(temp_dir), "north")
+    save_elevation_map_png(south_elevation, str(temp_dir), "south")
 
     return north_elevation, south_elevation
 
@@ -899,61 +901,98 @@ def tilt_zone_weights(grid: np.ndarray, tilt_factor: float) -> np.ndarray:
     return np.clip(skewed, 0.0, 1.0)
 
 
-def save_biome_grid_png_img(
-    grid: np.ndarray,
+def save_biome_grid_images(
+    gridN: np.ndarray,
+    gridS: np.ndarray,
     biome_colors: dict[int, tuple[int, int, int]],
     path_out: str,
-    suffix: str = "",
+    planet_name: str,
 ):
-    """Save biome grid as a color PNG image based on biome_colors mapping."""
-    biome_path = os.path.join(path_out, "temp_biome.png")
+    """Save both the temporary North-only biome grid and full combined (North + South)."""
     os.makedirs(path_out, exist_ok=True)
 
-    h, w = grid.shape
-    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+    # Save temp north-only biome grid
+    temp_biome_path = os.path.join(path_out, "temp_biome.png")
+    combined_biome_path = os.path.join(path_out, f"{planet_name}_biome.png")
+
+    h, w = gridN.shape
+    color_image_north = np.zeros((h, w, 3), dtype=np.uint8)
 
     for y in range(h):
         for x in range(w):
-            form_id = int(grid[y, x])
-            color = biome_colors.get(form_id, (128, 128, 128))  # fallback: neutral gray
-            color_image[y, x] = color
+            form_id = int(gridN[y, x])
+            color = biome_colors.get(form_id, (128, 128, 128))  # Default gray
+            color_image_north[y, x] = color
 
-    image = Image.fromarray(color_image, mode="RGB")
-    image.save(biome_path)
-    handle_news(None, "info", f"Biome color grid saved to: {biome_path}")
+    image_north = Image.fromarray(color_image_north, mode="RGB")
+    image_north.save(temp_biome_path)
+    handle_news(None, "info", f"Temp biome color grid saved to: {temp_biome_path}")
+
+    # Create combined North + South biome grid
+    combined_grid = np.vstack((gridN, gridS))
+    h_combined, w_combined = combined_grid.shape
+    color_image_combined = np.zeros((h_combined, w_combined, 3), dtype=np.uint8)
+
+    for y in range(h_combined):
+        for x in range(w_combined):
+            form_id = int(combined_grid[y, x])
+            color = biome_colors.get(form_id, (128, 128, 128))
+            color_image_combined[y, x] = color
+
+    image_combined = Image.fromarray(color_image_combined, mode="RGB")
+    image_combined.save(combined_biome_path)
+    handle_news(
+        None, "info", f"Combined biome color grid saved to: {combined_biome_path}"
+    )
 
 
-def save_resource_grid_png_img(resource_grid: np.ndarray, path_out: str):
-    """Save resource grid as a color PNG image with distinct resource band colors."""
-    resource_path = os.path.join(path_out, "temp_resource.png")
+def save_resource_grid_images(
+    gridN: np.ndarray, gridS: np.ndarray, path_out: str, planet_name: str
+):
+    """Save both the temporary North-only resource grid and full combined (North + South)."""
     os.makedirs(path_out, exist_ok=True)
 
-    # Color mapping: 0–4 (life group), 80–84 (nolife group), 8 (ocean), 88 (mixed)
+    # Save temp north-only resource grid
+    temp_resource_path = os.path.join(path_out, "temp_resource.png")
+    combined_resource_path = os.path.join(path_out, f"{planet_name}_resource.png")
+
     color_map = {
-        0: (128, 0, 0),  # Maroon
-        1: (255, 0, 0),  # Red
-        2: (255, 128, 0),  # Orange
-        3: (255, 204, 0),  # Mustard
-        4: (255, 255, 0),  # Bright Yellow
-        8: (0, 0, 0),  # Ocean (Black)
-        80: (153, 204, 255),  # Light Blue
-        81: (0, 255, 255),  # Cyan
-        82: (0, 128, 255),  # Blue
-        83: (0, 200, 0),  # Green
-        84: (0, 255, 0),  # Bright Green
-        88: (255, 255, 255),  # None (White)
+        0: (128, 0, 0),
+        1: (255, 0, 0),
+        2: (255, 128, 0),
+        3: (255, 204, 0),
+        4: (255, 255, 0),
+        8: (0, 0, 0),
+        80: (153, 204, 255),
+        81: (0, 255, 255),
+        82: (0, 128, 255),
+        83: (0, 200, 0),
+        84: (0, 255, 0),
+        88: (255, 255, 255),
     }
 
-    h, w = resource_grid.shape
-    color_image = np.zeros((h, w, 3), dtype=np.uint8)
+    h, w = gridN.shape
+    color_image_north = np.zeros((h, w, 3), dtype=np.uint8)
 
     for key, rgb in color_map.items():
-        color_image[resource_grid == key] = rgb
+        color_image_north[gridN == key] = rgb
 
-    resource_image = Image.fromarray(color_image, mode="RGB")
-    resource_image.save(resource_path)
+    image_north = Image.fromarray(color_image_north, mode="RGB")
+    image_north.save(temp_resource_path)
+    handle_news(None, "header", f"Temp resource grid saved to: {temp_resource_path}")
+
+    # Create combined North + South resource grid
+    combined_grid = np.vstack((gridN, gridS))
+    h_combined, w_combined = combined_grid.shape
+    color_image_combined = np.zeros((h_combined, w_combined, 3), dtype=np.uint8)
+
+    for key, rgb in color_map.items():
+        color_image_combined[combined_grid == key] = rgb
+
+    image_combined = Image.fromarray(color_image_combined, mode="RGB")
+    image_combined.save(combined_resource_path)
     handle_news(
-        None, "header", f"PlanetBiomes: Resource grid saved to: {resource_path}"
+        None, "header", f"Combined resource grid saved to: {combined_resource_path}"
     )
 
 
@@ -1149,14 +1188,19 @@ def main():
         biome_data = load_biome_data(str(CSV_PATH), used_biome_ids)
         biome_colors = {k: v["color"] for k, v in biome_data.items()}
 
-        save_resource_grid_png_img(
-            inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]), str(TEMP_DIR)
+        save_biome_grid_images(
+            inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            inst.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            biome_colors,
+            str(PNG_OUTPUT_DIR / plugin_name / planet),
+            planet,
         )
 
-        save_biome_grid_png_img(
-            inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
-            biome_colors,
-            str(TEMP_DIR),
+        save_resource_grid_images(
+            inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            inst.resrcGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            str(PNG_OUTPUT_DIR / plugin_name / planet),
+            planet,
         )
 
         inst.save(out_dir / f"{planet}.biom")

@@ -28,7 +28,7 @@
     "fault_smooth": 0.5,
     "distort_scale": 5,
     "save_tectonic_maps": true,
-    "squircle_factor": 0.5,
+    "squircle_factor": 0.69,
     "_biome_noise_group": "Bioems Noise Settings",
     "noise_scale": 0.5,
     "noise_amplitude": 0.18,
