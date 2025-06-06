@@ -52,6 +52,7 @@ from PlanetPlotter import (
     generate_sphere,
     auto_connect_toggle_buttons,
     handle_toggle_view,
+    refresh_mesh_opacity,
 )
 from PlanetNewsfeed import (
     handle_news,
@@ -208,6 +209,16 @@ def load_config():
             "Texture Terrain Settings": "Texture Terrain Settings",
             "texture_mountains": 0.5,
             "texture_canyons": 0.5,
+            "3D Viewport Settings": "3D Viewport Settings",
+            "surface_metal_opacity": 1.0,
+            "color_opacity": 1.0,
+            "fault_opacity": 0.2,
+            "resource_opacity": 0.1,
+            "biome_opacity": 0.4,
+            "rough_opacity": 0.2,
+            "normal_opacity": 0.2,
+            "ao_opacity": 0.2,
+            "ocean_mask_opacity": 1.0,
             "_image_options_group": "Other image options",
             "enable_normal": True,
             "enable_rough": False,
@@ -251,7 +262,7 @@ def save_config():
         )
 
 
-def update_value(key, val, index=None):
+def update_value(key, val, index=None, plotter=None, meshes=None):
     if key not in config:
         print(f"Warning: Key '{key}' not found in config.")
         return
@@ -270,6 +281,12 @@ def update_value(key, val, index=None):
         except ValueError:
             print(f"Error: Cannot convert '{val}' to float for '{key}'")
             return
+
+    # Update opacity on change
+    if key.endswith("_opacity") and plotter and meshes:
+        texture_type = key.replace("_opacity", "")
+        refresh_mesh_opacity(texture_type, plotter, meshes)
+
     save_config()
 
 
@@ -1048,6 +1065,14 @@ class MainWindow(QMainWindow):
             "texture_perlin": "texture_perlin",
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
+            "ocean_mask_opacity": "ocean_mask_opacity",
+            "ao_opacity": "ao_opacity",
+            "normal_opacity": "normal_opacity",
+            "rough_opacity": "rough_opacity",
+            "biome_opacity": "biome_opacity",
+            "resource_opacity": "resource_opacity",
+            "fault_opacity": "fault_opacity",
+            "color_opacity": "color_opacity",
         }
 
         reset_buttons = [
@@ -1126,7 +1151,9 @@ class MainWindow(QMainWindow):
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))
                     slider.valueChanged.connect(
-                        lambda val, k=key: update_value(k, val / 100)
+                        lambda val, k=key: update_value(
+                            k, val / 100, plotter=self.plotter, meshes=self.meshes
+                        )
                     )
                 slider_vars[key] = slider
             else:

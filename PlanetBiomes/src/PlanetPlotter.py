@@ -16,6 +16,29 @@ from PlanetConstants import (
 )
 from PlanetNewsfeed import handle_news
 
+config = load_config()
+
+DEFAULT_OPACITIES = {
+    "surface_metal": 1.0,
+    "color": 1.0,
+    "fault": 0.2,
+    "resource": 0.1,
+    "biome": 0.4,
+    "rough": 0.2,
+    "normal": 0.2,
+    "ao": 0.2,
+    "ocean_mask": 0.2,
+}
+
+TEXTURE_OPACITIES = {
+    **DEFAULT_OPACITIES,
+    **{
+        key.replace("_opacity", ""): value
+        for key, value in config.items()
+        if key.endswith("_opacity")
+    },
+}
+
 TEXTURE_TYPES = [
     "surface_metal",
     "color",
@@ -28,44 +51,26 @@ TEXTURE_TYPES = [
     "ocean_mask",
 ]
 
-TEXTURE_OPACITIES = {
-    "surface_metal": 1.0,
-    "color": 1.0,
-    "fault": 0.2,
-    "resource": 0.2,
-    "biome": 0.4,
-    "rough": 0.2,
-    "normal": 0.2,
-    "ao": 0.2,
-    "ocean_mask": 0.2,
-}
-
 
 def toggle_mesh(main_window, texture_type, visible, plotter, meshes):
-    """Toggle mesh visibility with correct opacity."""
-    # Sync checkbox UI if present
-    checkbox_name = f"toggle_{texture_type}_view"
-    checkbox = getattr(plotter.parent(), checkbox_name, None)
-    if checkbox:
-        checkbox.setChecked(visible)
+    """Toggle mesh visibility with correct opacity and sync checkbox."""
     if texture_type not in meshes:
         print(f"[WARN] Unknown texture_type: {texture_type}")
         return
+    checkbox_name = f"toggle_{texture_type}_view"
+    checkbox = getattr(main_window, checkbox_name, None)
+    if checkbox:
+        checkbox.setChecked(visible)
     meshes[texture_type]["visible"] = visible
     if visible:
-        opacity = TEXTURE_OPACITIES.get(texture_type, 1.0)
-        plotter.add_mesh(
-            meshes[texture_type]["mesh"],
-            texture=meshes[texture_type]["texture"],
-            name=texture_type,
-            opacity=opacity,
-        )
+        refresh_mesh_opacity(texture_type, plotter, meshes)
     else:
-        plotter.remove_actor(texture_type)
+        plotter.remove_actor(texture_type, reset_camera=False)
+        print(f"[TOGGLE] {texture_type}: visible={visible}")
 
 
 def handle_toggle_view(main_window, texture_type, plotter, meshes):
-    """Handle toggle view for a texture type, using toggle_mesh."""
+    """Handle toggle view for a texture type."""
     if texture_type not in meshes:
         print(f"[WARN] Unknown texture_type: {texture_type}")
         return
@@ -84,8 +89,43 @@ def auto_connect_toggle_buttons(window, plotter, meshes):
             if callable(getattr(button, "clicked", None)):
                 print(f"Connecting {attr_name} to toggle {texture_type}")
                 button.clicked.connect(
-                    partial(handle_toggle_view, window, texture_type, plotter, meshes)
-                )
+                    partial(handle_toggle_view, window, texture_type, plotter, meshes))
+
+def refresh_mesh_opacity(texture_type, plotter, meshes):
+    """Refresh opacity for a single mesh."""
+    config = load_config()
+    if texture_type not in meshes:
+        print(f"[WARN] Tried to refresh unknown texture: {texture_type}")
+        return
+    if not meshes[texture_type].get("visible", True):
+        print(f"[DEBUG] {texture_type} is hidden; skipping opacity refresh.")
+        return
+    plotter.remove_actor(texture_type, reset_camera=False)
+    opacity = config.get(
+        f"{texture_type}_opacity", TEXTURE_OPACITIES.get(texture_type, 1.0)
+    )
+    plotter.add_mesh(
+        meshes[texture_type]["mesh"],
+        texture=meshes[texture_type]["texture"],
+        name=texture_type,
+        opacity=opacity,
+    )
+    print(
+        f"[REFRESH] {texture_type}: opacity={opacity}, visible={meshes[texture_type].get('visible')}"
+    )
+    plotter.render()
+
+
+def refresh_all_opacities(main_window, plotter, meshes):
+    """Refresh opacities for all visible meshes."""
+    for texture_type in meshes:
+        if meshes[texture_type].get("visible", False):
+            refresh_mesh_opacity(texture_type, plotter, meshes)
+            # Sync checkbox state
+            checkbox_name = f"toggle_{texture_type}_view"
+            checkbox = getattr(main_window, checkbox_name, None)
+            if checkbox:
+                checkbox.setChecked(True)
 
 
 def generate_sphere(main_window, plotter, run_once=[False]):
@@ -192,28 +232,30 @@ def generate_sphere(main_window, plotter, run_once=[False]):
 
     # Add all meshes to the plotter, initially visible
     for index, (texture_type, data) in enumerate(meshes.items()):
-        opacity = TEXTURE_OPACITIES.get(texture_type, 1.0)
+        opacity = config.get(
+            f"{texture_type}_opacity", TEXTURE_OPACITIES.get(texture_type, 1.0)
+        )
         base_mesh = data["mesh"]
         offset_mesh = base_mesh.copy()
-
-        # Offset along normals to preserve shape and avoid distortion
         offset = 0.001 * index
         offset_mesh.compute_normals(inplace=True)
         normals = offset_mesh.point_normals
         offset_mesh.points += normals * offset
-
         plotter.add_mesh(
             offset_mesh,
             texture=data["texture"],
             name=texture_type,
             opacity=opacity,
         )
-        plotter.update()
-        if run_once[0]:
-            time.sleep(0.5)
-
         meshes[texture_type]["mesh"] = offset_mesh
-
+        # Sync checkbox state
+        checkbox_name = f"toggle_{texture_type}_view"
+        checkbox = getattr(main_window, checkbox_name, None)
+        if checkbox:
+            checkbox.setChecked(True)
+    plotter.update()
+    if run_once[0]:
+        time.sleep(0.5)
     run_once[0] = True
 
     # Add key bindings for toggling
@@ -231,13 +273,34 @@ def generate_sphere(main_window, plotter, run_once=[False]):
     for key, texture_type in key_callbacks.items():
         plotter.add_key_event(
             key,
-            lambda t=texture_type: toggle_mesh(main_window,
-                t, not meshes.get(t, {}).get("visible", False), plotter, meshes
+            lambda t=texture_type: toggle_mesh(
+                main_window,
+                t,
+                not meshes.get(t, {}).get("visible", False),
+                plotter,
+                meshes,
             ),
         )
 
-    return meshes
+    # Example: Connect a config update callback (e.g., for sliders)
+    def on_config_updated():
+        global config, TEXTURE_OPACITIES
+        config = load_config()
+        TEXTURE_OPACITIES = {
+            **DEFAULT_OPACITIES,
+            **{
+                key.replace("_opacity", ""): value
+                for key, value in config.items()
+                if key.endswith("_opacity")
+            },
+        }
+        refresh_all_opacities(main_window, plotter, meshes)
 
+    # Placeholder: Assume main_window has a signal for config updates
+    if hasattr(main_window, "config_updated"):
+        main_window.config_updated.connect(on_config_updated)
+
+    return meshes
 
 if __name__ == "__main__":
     plotter = pv.Plotter()
