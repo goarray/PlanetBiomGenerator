@@ -119,6 +119,17 @@ BOOLEAN_KEYS = {
     "random_distortion",
 }
 
+TOGGLE_TEXTURES = {
+    "c": "color",
+    "n": "normal",
+    "f": "fault",
+    "o": "ocean_mask",
+    "s": "surface_metal",
+    "a": "ao",
+    "r": "rough",
+    "b": "biome",
+}
+
 CRC_MAP = [
     0x00000000,
     0x77073096,

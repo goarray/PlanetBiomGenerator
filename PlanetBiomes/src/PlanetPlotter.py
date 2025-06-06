@@ -1,59 +1,94 @@
-from pathlib import Path
-import pyvista as pv
 import numpy as np
+import pyvista as pv
+from pathlib import Path
 import json
 import sys
-from shutil import copyfile
+import time
+import re
+from functools import partial
 from PlanetConstants import (
     PLUGINS_DIR,
-    ASSETS_DIR,
-    MESH_OUTPUT_DIR,
     BIOM_DIR,
-    MESH_PATH,
-    TEMP_DIR,
-    PNG_OUTPUT_DIR,
     TEMPLATE_PATH,
-    IMAGE_DIR,
+    PNG_OUTPUT_DIR,
     CONFIG_PATH,
     load_config,
 )
 from PlanetNewsfeed import handle_news
 
-import pyvista as pv
-import numpy as np
-from pathlib import Path
-
 TEXTURE_TYPES = [
-    "biome",
     "surface_metal",
-    "terrain_normal",
-    "ao",
-    "resource",
-    "ocean_mask",
-    "normal",
-    "rough",
-    # "fault",
     "color",
+    "fault",
+    "resource",
+    "biome",
+    "rough",
+    "normal",
+    "ao",
+    "ocean_mask",
 ]
 
+TEXTURE_OPACITIES = {
+    "surface_metal": 1.0,
+    "color": 1.0,
+    "fault": 0.2,
+    "resource": 0.2,
+    "biome": 0.4,
+    "rough": 0.2,
+    "normal": 0.2,
+    "ao": 0.2,
+    "ocean_mask": 0.2,
+}
 
-# Global configuration
-def load_config():
-    """Load plugin_name from config.json."""
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
 
-    plugin_name = config.get("plugin_name", "default_plugin")
-    if plugin_name == "default_plugin" or not plugin_name.endswith(".esm"):
-        handle_news(
-            None,
-            "error",
-            f"[ERROR] Invalid or missing plugin_name in config: {plugin_name}",
+def toggle_mesh(main_window, texture_type, visible, plotter, meshes):
+    """Toggle mesh visibility with correct opacity."""
+    # Sync checkbox UI if present
+    checkbox_name = f"toggle_{texture_type}_view"
+    checkbox = getattr(plotter.parent(), checkbox_name, None)
+    if checkbox:
+        checkbox.setChecked(visible)
+    if texture_type not in meshes:
+        print(f"[WARN] Unknown texture_type: {texture_type}")
+        return
+    meshes[texture_type]["visible"] = visible
+    if visible:
+        opacity = TEXTURE_OPACITIES.get(texture_type, 1.0)
+        plotter.add_mesh(
+            meshes[texture_type]["mesh"],
+            texture=meshes[texture_type]["texture"],
+            name=texture_type,
+            opacity=opacity,
         )
-        sys.exit(1)
+    else:
+        plotter.remove_actor(texture_type)
 
 
-def generate_sphere(plotter):
+def handle_toggle_view(main_window, texture_type, plotter, meshes):
+    """Handle toggle view for a texture type, using toggle_mesh."""
+    if texture_type not in meshes:
+        print(f"[WARN] Unknown texture_type: {texture_type}")
+        return
+    visible = not meshes[texture_type].get("visible", False)
+    toggle_mesh(main_window, texture_type, visible, plotter, meshes)
+
+
+def auto_connect_toggle_buttons(window, plotter, meshes):
+    """Connect UI toggle buttons to handle_toggle_view."""
+    pattern = re.compile(r"toggle_(.+)_view")
+    for attr_name in dir(window):
+        match = pattern.fullmatch(attr_name)
+        if match:
+            texture_type = match.group(1)
+            button = getattr(window, attr_name)
+            if callable(getattr(button, "clicked", None)):
+                print(f"Connecting {attr_name} to toggle {texture_type}")
+                button.clicked.connect(
+                    partial(handle_toggle_view, window, texture_type, plotter, meshes)
+                )
+
+
+def generate_sphere(main_window, plotter, run_once=[False]):
     config = load_config()
     plugin_name = config.get("plugin_name", "PLUGINNOTFOUND")
 
@@ -65,7 +100,9 @@ def generate_sphere(plotter):
         biom_files = sorted(TEMPLATE_PATH.glob("*.biom"))
 
     if not biom_files:
-        raise FileNotFoundError(f"No .biom files found in {biom_dir} or {TEMPLATE_PATH}")
+        raise FileNotFoundError(
+            f"No .biom files found in {biom_dir} or {TEMPLATE_PATH}"
+        )
 
     planet_name = biom_files[0].stem
 
@@ -79,24 +116,38 @@ def generate_sphere(plotter):
     theta = np.mod(theta, 2 * np.pi)
 
     # Hemisphere masks
-    north_mask = phi <= (np.pi / 2)
-    south_mask = ~north_mask
+    north_mask = phi <= np.pi / 2
+    south_mask = phi > np.pi / 2
 
     # North hemisphere UVs
     phi_n = phi[north_mask]
     theta_n = theta[north_mask]
     r_n = phi_n / (np.pi / 2)
+    r_n = np.clip(r_n, 0, 1)
     u_n = 0.5 + 0.5 * r_n * np.cos(theta_n)
     v_n = 0.5 + 0.5 * r_n * np.sin(theta_n)
     v_n = v_n * 0.5 + 0.5  # top half
 
     # South hemisphere UVs with longitude inversion
     phi_s = phi[south_mask]
-    theta_s = np.mod(-theta[south_mask], 2 * np.pi)  # Invert longitude
+    theta_s = np.mod(-theta[south_mask], 2 * np.pi)
     r_s = (np.pi - phi_s) / (np.pi / 2)
+    r_s = np.clip(r_s, 0, 1)
     u_s = 0.5 + 0.5 * r_s * np.cos(theta_s)
     v_s = 0.5 + 0.5 * r_s * np.sin(theta_s)
     v_s = v_s * 0.5  # bottom half
+
+    # Ensure exact UV alignment at equator
+    equator_mask = np.isclose(phi, np.pi / 2, atol=1e-6)
+    if np.any(equator_mask):
+        r_eq = 1.0
+        u_eq = 0.5 + 0.5 * r_eq * np.cos(theta[equator_mask])
+        v_eq = 0.5 + 0.5 * r_eq * np.sin(theta[equator_mask])
+        v_eq = v_eq * 0.5 + 0.5
+        u_n[phi_n >= 1.0 - 1e-6] = u_eq
+        v_n[phi_n >= 1.0 - 1e-6] = v_eq
+        u_s[phi_s <= np.pi / 2 + 1e-6] = u_eq
+        v_s[phi_s <= np.pi / 2 + 1e-6] = v_eq
 
     # Assemble full texture coordinates
     u = np.zeros_like(phi)
@@ -127,94 +178,68 @@ def generate_sphere(plotter):
 
         # Create a copy of the sphere for this texture
         mesh = sphere.copy()
-        mesh.active_texture_coordinates = np.column_stack((u, v))  # Reapply UVs to copy
+        mesh.active_texture_coordinates = np.column_stack((u, v))
         meshes[texture_type] = {"mesh": mesh, "texture": texture, "visible": True}
 
     # Plotting and toggling logic
     plotter.clear()
     plotter.set_background("black")
+    plotter.enable_depth_peeling(number_of_peels=100)
+    plotter.camera.azimuth += 0.01
+    plotter.render()
+    plotter.reset_camera()
+    plotter.camera.zoom(0.9)
 
     # Add all meshes to the plotter, initially visible
-    for texture_type, data in meshes.items():
-        plotter.add_mesh(data["mesh"], texture=data["texture"], name=texture_type)
+    for index, (texture_type, data) in enumerate(meshes.items()):
+        opacity = TEXTURE_OPACITIES.get(texture_type, 1.0)
+        base_mesh = data["mesh"]
+        offset_mesh = base_mesh.copy()
 
-    # Function to toggle mesh visibility
-    def toggle_mesh(texture_type, visible):
-        if texture_type in meshes:
-            meshes[texture_type]["visible"] = visible
-            if visible:
-                plotter.add_mesh(
-                    meshes[texture_type]["mesh"],
-                    texture=meshes[texture_type]["texture"],
-                    name=texture_type,
-                )
-            else:
-                plotter.remove_actor(texture_type)
+        # Offset along normals to preserve shape and avoid distortion
+        offset = 0.001 * index
+        offset_mesh.compute_normals(inplace=True)
+        normals = offset_mesh.point_normals
+        offset_mesh.points += normals * offset
 
-    # Example: Bind toggle to a callback (e.g., for UI or key press)
-    # This is a placeholder; integrate with your UI or keybinding system
-    def toggle_biome(state):
-        toggle_mesh("biome", state)
+        plotter.add_mesh(
+            offset_mesh,
+            texture=data["texture"],
+            name=texture_type,
+            opacity=opacity,
+        )
+        plotter.update()
+        if run_once[0]:
+            time.sleep(0.5)
 
-    def toggle_resource(state):
-        toggle_mesh("resource", state)
+        meshes[texture_type]["mesh"] = offset_mesh
 
-    def toggle_color(state):
-        toggle_mesh("color", state)
+    run_once[0] = True
 
-    def toggle_surface(state):
-        toggle_mesh("surface_metal", state)
+    # Add key bindings for toggling
+    key_callbacks = {
+        "f": "fault",
+        "b": "biome",
+        "e": "resource",
+        "c": "color",
+        "s": "surface_metal",
+        "o": "ocean_mask",
+        "n": "normal",
+        "a": "ao",
+        "r": "rough",
+    }
+    for key, texture_type in key_callbacks.items():
+        plotter.add_key_event(
+            key,
+            lambda t=texture_type: toggle_mesh(main_window,
+                t, not meshes.get(t, {}).get("visible", False), plotter, meshes
+            ),
+        )
 
-    def toggle_ocean(state):
-        toggle_mesh("ocean_mask", state)
-
-    def toggle_normal(state):
-        toggle_mesh("normal", state)
-
-    def toggle_ambient(state):
-        toggle_mesh("ao", state)
-
-    def toggle_rough(state):
-        toggle_mesh("rough", state)
-
-    def toggle_terrain(state):
-        toggle_mesh("terrain_normal", state)
-
-    # Add key bindings for toggling (example for PyVista's built-in key events)
-    plotter.add_key_event(
-        "b", lambda: toggle_biome(not meshes.get("biome", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "e", lambda: toggle_resource(not meshes.get("resource", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "c", lambda: toggle_color(not meshes.get("color", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "s", lambda: toggle_surface(not meshes.get("surface_metal", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "o", lambda: toggle_ocean(not meshes.get("ocean_mask", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "n", lambda: toggle_normal(not meshes.get("normal", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "a", lambda: toggle_ambient(not meshes.get("ao", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "r", lambda: toggle_rough(not meshes.get("rough", {}).get("visible", False))
-    )
-    plotter.add_key_event(
-        "t", lambda: toggle_terrain(not meshes.get("terrain_normal", {}).get("visible", False))
-    )
-
-    plotter.reset_camera()
-    return meshes  # Return meshes for external control if needed
+    return meshes
 
 
-# Example usage
 if __name__ == "__main__":
     plotter = pv.Plotter()
-    meshes = generate_sphere(plotter)
+    meshes = generate_sphere(None, plotter)
     plotter.show()

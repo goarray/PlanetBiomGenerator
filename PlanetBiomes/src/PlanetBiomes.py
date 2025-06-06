@@ -166,7 +166,7 @@ def get_seed(config):
 #############################################################################
 
 
-def process_biomes(shape, config):
+def process_biomes(shape, config, planet):
     """
     Process biome patterns, integrating amplified tectonic effects.
     """
@@ -230,6 +230,14 @@ def process_biomes(shape, config):
         north_pattern = np.clip(north_pattern, 0.0, 1.0)
         south_pattern = np.clip(south_pattern, 0.0, 1.0)
 
+        save_elevation_map_png(
+            north_elevation,
+            south_elevation,
+            str(TEMP_DIR),
+            str(PNG_OUTPUT_DIR / plugin_name / planet),
+            planet,
+        )
+
     # If biome processing is disabled, return early
     if not config.get("process_biomes", True):
         north_pattern = (north_pattern - north_pattern.min()) / (
@@ -238,6 +246,7 @@ def process_biomes(shape, config):
         south_pattern = (south_pattern - south_pattern.min()) / (
             south_pattern.max() - south_pattern.min() + 1e-6
         )
+        
         return north_pattern, south_pattern
 
     if config.get("enable_biases", False):
@@ -301,10 +310,6 @@ def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_r
     south_elevation = generate_plate_elevation(
         shape, plate_map, fault_map, fault_lines, seed, rng
     )
-
-    # Save elevation maps for debugging
-    save_elevation_map_png(north_elevation, str(temp_dir), "north")
-    save_elevation_map_png(south_elevation, str(temp_dir), "south")
 
     return north_elevation, south_elevation
 
@@ -582,8 +587,8 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
         divergent_dip[divergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(divergent_mask))  # Deeper trenches
 
         # Smooth and localize the effects
-        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=1)
-        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=1)
+        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=0.2)
+        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=0.2)
 
         elevation_map += convergent_bump
         elevation_map -= divergent_dip
@@ -905,6 +910,7 @@ def save_biome_grid_images(
     gridN: np.ndarray,
     gridS: np.ndarray,
     biome_colors: dict[int, tuple[int, int, int]],
+    temp_out: str,
     path_out: str,
     planet_name: str,
 ):
@@ -912,7 +918,7 @@ def save_biome_grid_images(
     os.makedirs(path_out, exist_ok=True)
 
     # Save temp north-only biome grid
-    temp_biome_path = os.path.join(path_out, "temp_biome.png")
+    temp_biome_path = os.path.join(temp_out, "temp_biome.png")
     combined_biome_path = os.path.join(path_out, f"{planet_name}_biome.png")
 
     h, w = gridN.shape
@@ -947,13 +953,17 @@ def save_biome_grid_images(
 
 
 def save_resource_grid_images(
-    gridN: np.ndarray, gridS: np.ndarray, path_out: str, planet_name: str
+    gridN: np.ndarray,
+    gridS: np.ndarray,
+    temp_out: str,
+    path_out: str,
+    planet_name: str,
 ):
     """Save both the temporary North-only resource grid and full combined (North + South)."""
     os.makedirs(path_out, exist_ok=True)
 
     # Save temp north-only resource grid
-    temp_resource_path = os.path.join(path_out, "temp_resource.png")
+    temp_resource_path = os.path.join(temp_out, "temp_resource.png")
     combined_resource_path = os.path.join(path_out, f"{planet_name}_resource.png")
 
     color_map = {
@@ -1038,17 +1048,35 @@ def save_boundary_map_png(
 
 
 def save_elevation_map_png(
-    elevation_map: np.ndarray, path_out: str, hemisphere: str, suffix: str = ""
+    elevation_north: np.ndarray,
+    elevation_south: np.ndarray,
+    temp_out: str,
+    final_out: str,
+    planet_name: str,
 ):
-    path = os.path.join(path_out, f"temp_fault.png")
-    os.makedirs(path_out, exist_ok=True)
-    norm_elevation = (elevation_map - elevation_map.min()) / (
-        elevation_map.max() - elevation_map.min() + 1e-6
+    os.makedirs(temp_out, exist_ok=True)
+    os.makedirs(final_out, exist_ok=True)
+
+    # Normalize and save temp north elevation
+    norm_north = (elevation_north - elevation_north.min()) / (
+        elevation_north.max() - elevation_north.min() + 1e-6
     )
-    color_image = (norm_elevation * 255).astype(np.uint8)
-    image = Image.fromarray(color_image, mode="L")
-    image.save(path)
-    handle_news(None, "info", f"Fault map saved to: {path}")
+    image_north = Image.fromarray((norm_north * 255).astype(np.uint8), mode="L")
+    temp_path = os.path.join(temp_out, "temp_fault.png")
+    image_north.save(temp_path)
+    handle_news(None, "info", f"Temp fault map saved to: {temp_path}")
+
+    # Combine and save final full elevation
+    elevation_south = np.flipud(elevation_south)
+    combined = np.vstack((elevation_north, elevation_south))
+    norm_combined = (combined - combined.min()) / (
+        combined.max() - combined.min() + 1e-6
+    )
+    image_combined = Image.fromarray((norm_combined * 255).astype(np.uint8), mode="L")
+    combined_path = os.path.join(final_out, f"{planet_name}_fault.png")
+    image_combined.save(combined_path)
+    handle_news(None, "info", f"Combined fault map saved to: {combined_path}")
+
 
 ######################################################################################
 
@@ -1172,7 +1200,7 @@ def main():
         inst.load(TEMPLATE_PATH)
 
         grid_dim = GRID_SIZE
-        north_pattern, south_pattern = process_biomes(grid_dim, config)
+        north_pattern, south_pattern = process_biomes(grid_dim, config, planet)
 
         # Sort biomes to ensure low-to-high elevation mapping (optional, if needed)
         # biomes = sorted(biomes)  # Ensure biomes are ordered (e.g., ocean to mountain)
@@ -1192,6 +1220,7 @@ def main():
             inst.biomeGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
             inst.biomeGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]),
             biome_colors,
+            str(TEMP_DIR),
             str(PNG_OUTPUT_DIR / plugin_name / planet),
             planet,
         )
@@ -1199,6 +1228,7 @@ def main():
         save_resource_grid_images(
             inst.resrcGridN.reshape(GRID_SIZE[1], GRID_SIZE[0]),
             inst.resrcGridS.reshape(GRID_SIZE[1], GRID_SIZE[0]),
+            str(TEMP_DIR),
             str(PNG_OUTPUT_DIR / plugin_name / planet),
             planet,
         )

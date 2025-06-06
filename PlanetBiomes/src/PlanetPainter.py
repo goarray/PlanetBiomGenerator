@@ -42,11 +42,17 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QFrame,
     QVBoxLayout,
+    QRadioButton,
+    QCheckBox,
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
-from PlanetPlotter import generate_sphere
+from PlanetPlotter import (
+    generate_sphere,
+    auto_connect_toggle_buttons,
+    handle_toggle_view,
+)
 from PlanetNewsfeed import (
     handle_news,
     news_count,
@@ -488,7 +494,7 @@ def start_planet_biomes(main_window):
                         main_window.image_labels[index].setMovie(None)
                     main_window.image_labels[index].setPixmap(pixmap)
 
-            generate_sphere(main_window.plotter)
+            generate_sphere(main_window, main_window.plotter)
 
         if "Visual inspection" in output:
             output_dir = Path(OUTPUT_DIR)
@@ -631,6 +637,14 @@ class MainWindow(QMainWindow):
     open_plugins_button: QPushButton
     open_output_button: QPushButton
     open_input_button: QPushButton
+    toggle_color_view: QCheckBox
+    toggle_ocean_mask_view: QCheckBox
+    toggle_normal_view: QCheckBox
+    toggle_ao_view: QCheckBox
+    toggle_rough_view: QCheckBox
+    toggle_biome_view: QCheckBox
+    toggle_resource_view: QCheckBox
+    toggle_fault_view: QCheckBox
 
     def __init__(self):
         super().__init__()
@@ -770,7 +784,14 @@ class MainWindow(QMainWindow):
         self.sphere_preview_frame.setLayout(layout)
 
         # Update 3D Display
-        generate_sphere(self.plotter)
+        self.meshes = generate_sphere(self, self.plotter)
+        auto_connect_toggle_buttons(self, self.plotter, self.meshes)
+
+        for texture_type in self.meshes:
+            checkbox_name = f"toggle_{texture_type}_view"
+            checkbox = getattr(self, checkbox_name, None)
+            if checkbox:
+                checkbox.setChecked(self.meshes[texture_type]["visible"])
 
     def open_selected_folder(self, index):
         folder_path = self.folders_dropdown.itemData(index)
