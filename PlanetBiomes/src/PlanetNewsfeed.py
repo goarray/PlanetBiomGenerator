@@ -6,6 +6,8 @@ import sys
 import csv
 import re
 import json
+from pathlib import Path
+from typing import List
 from PlanetConstants import CONFIG_PATH, DEFAULT_CONFIG_PATH, PREVIEW_PATH, INPUT_DIR
 
 # Shared global variables
@@ -67,7 +69,7 @@ def update_news_count(main_window=None):
     # Textures percentage (starts after total_biom)
     if news_count > total_biom:
         completed = news_count - total_biom
-        text_percent = min((completed / total_text) * 100, 100.0)
+        text_percent = min((completed / (1 + total_text)) * 100, 100.0)
     else:
         text_percent = 0.0
 
@@ -80,13 +82,12 @@ def update_news_count(main_window=None):
         if hasattr(main_window, "text_count_progressBar"):
             main_window.text_count_progressBar.setValue(int(text_percent))
     
-    """print(
+    print(
         f"news_count: {news_count}, "
         f"biom_percent: {biom_percent:.1f}%, "
         f"text_percent: {text_percent:.1f}%, "
         f"news_percent: {news_percent:.1f}%"
-    )"""
-
+    )
 
 def reset_news_count():
     """Reset news_count and news_percent."""
@@ -125,57 +126,59 @@ def handle_news(main_window, kind: str = "info", message: str = "", flush=False)
     print(f"{clean}", file=stream, flush=flush)
 
 
-def calc_biom_count(config):
-    base = 10 * unique_planets  # base number of biomes
+def calc_biom_count(config: dict, num_planets: int) -> int:
+    base = 15 * num_planets #(-39 shifted to planettextures)
+    print(f"Number of planets: {num_planets}")
+
     if config.get("process_biomes", False):
-        base += sum(
-            2
-            for key in [
-                "enable_noise",
-                "enable_distortion",
-                "enable_biases",
-                "enable_anomalies",
-            ]
-            if config.get(key, False)
-        )
+        # Optional extras
+        if config.get("enable_biases", False):
+            base += 2 * num_planets
+        if config.get("enable_anomalies", False):
+            base += 2 * num_planets
         if config.get("enable_tectonic_plates", False):
-            base += 15
+            base += 18 * num_planets
+        if config.get("enable_distortion", False):
+            base += 2 * num_planets
+        if config.get("enable_noise", False):
+            base += 2 * num_planets
+
+        # Baseline finalization steps
+        base += 2 * num_planets
+
     return base
 
 
-def calc_text_count(config):
-    base = 127 + calc_biom_count(config) * unique_planets  # 127 = textures base
+def calc_text_count(config: dict, num_planets: int) -> int:
+    base = 174 * num_planets #(+32 taken from planetbiomes)
     if config.get("process_images", False):
-        base += 18
+        if config.get("enable_basic_filters", False):
+            base += 2 * num_planets
+        if config.get("enable_texture_noise", False):
+            base += 4 * num_planets
+        if config.get("enable_texture_edges", False):
+            base += 2 * num_planets
+        if config.get("enable_texture_light", False):
+            base += 4 * num_planets
+        if config.get("enable_texture_terrain", False):
+            base += 2 * num_planets
+
+        base += 8
+
+    return base
+
+
+def calc_other_count(config: dict, num_planets: int) -> int:
+    base = 57 * num_planets  # (+2 taken from planetbiomes)
+    if config.get("process_other", False):
+        base += 10 * num_planets  # baseline count
         base += sum(
             2
             for key in [
-                "enable_basic_filters",
-                #"enable_texture_noise",
-                #"enable_texture_edges",
-                #"enable_texture_light",
-                #"enable_texture_terrain",
+
             ]
             if config.get(key, False)
         )
-    return base
-
-
-def calc_other_count(config):
-    base = (total_news - total_biom - total_text) * unique_planets
-    # if config.get("process_other", False):
-    #    base += 18
-    #    base += sum(
-    #        2
-    #        for key in [
-    #            "enable_basic_filters",
-    #            #"enable_texture_noise",
-    #            #"enable_texture_edges",
-    #            #"enable_texture_light",
-    #            #"enable_texture_terrain",
-    #        ]
-    #        if config.get(key, False)
-    #    )
     return base
 
 
@@ -187,8 +190,8 @@ def load_global_config():
         with open(config_path, "r") as f:
             config = json.load(f)
 
-            total_biom = calc_biom_count(config)
-            total_text = calc_text_count(config)
+            total_biom = calc_biom_count(config, unique_planets)
+            total_text = calc_text_count(config, unique_planets)
             total_news = total_biom + total_text + total_other
 
             handle_news(
@@ -202,33 +205,39 @@ def load_global_config():
         )
     except json.JSONDecodeError as e:
         handle_news(None, "error", f"Error parsing config file {config_path}: {e}")
-        total_news = 351
-
-
-# Initialize total_news after all functions are defined
-load_global_config()
+        total_news = 100
 
 
 def precompute_total_news(config: dict):
     global unique_planets
-    if config.get("enable_preview_mode", True):
-        csv_files = [PREVIEW_PATH]
-    else:
-        csv_files = list(INPUT_DIR.glob("*.csv"))
-        if not csv_files:
-            csv_files = [PREVIEW_PATH]
 
-    selected_index = min(config.get("plugin_selected", 0), max(len(csv_files) - 1, 0))
-    selected_index = max(0, selected_index)
-    input_path = csv_files[selected_index]
+    csv_files: List[Path] = list(INPUT_DIR.glob("*.csv"))
+    csv_names = [f.name for f in csv_files]
 
+    # Always include preview.csv first if it's not already in the list
+    if "preview.csv" not in csv_names:
+        csv_names.insert(0, "preview.csv")
+
+    config["plugin_index"] = csv_names
+
+    # Fallback if plugin name is missing or file not found
+    plugin_csv = config.get("plugin_name", "preview.esm").replace(".esm", ".csv")
+    input_path = INPUT_DIR / plugin_csv
+
+    if not input_path.exists():
+        input_path = PREVIEW_PATH
+        plugin_csv = "preview.csv"
+        config["plugin_name"] = "preview.esm"
+        config["plugin_selected"] = 0  # reset selection since we fallback
+
+    # Load CSV and count unique planets
     planet_names = set()
     with open(input_path, newline="") as f:
-        f.readline()
+        f.readline()  # skip first
+        f.readline()  # skip second (header)
         reader = csv.DictReader(
-            f, fieldnames=["PlanetName", "BIOM_FormID", "BIOM_EditorID"]
+            f, fieldnames=["PlanetName", "BIOM_FormID", "BIOM_EditorID", "ResourceID"]
         )
-        next(reader, None)
         for row in reader:
             name = row["PlanetName"].strip()
             if name:
@@ -236,16 +245,18 @@ def precompute_total_news(config: dict):
 
     unique_planets = len(planet_names)
 
-    total = len(planet_names) * 120
-    config["total_news"] = total
-    save_json(CONFIG_PATH, config)
+    if unique_planets == 0:
+        unique_planets = 1
 
-    # ✅ SET GLOBAL COUNTS HERE
+    # Calculate totals
     global total_news, total_biom, total_text, total_other
-    total_news = total
-    total_biom = calc_biom_count(config)
-    total_text = calc_text_count(config)
-    total_other = calc_other_count(config)
+    total_biom = calc_biom_count(config, unique_planets)
+    total_text = calc_text_count(config, unique_planets)
+    total_other = calc_other_count(config, unique_planets)
+    total_news = total_biom + total_text + total_other
+
+    config["total_news"] = total_news
+    save_json(CONFIG_PATH, config)
 
     return {
         "total_news": total_news,
@@ -253,3 +264,7 @@ def precompute_total_news(config: dict):
         "total_text": total_text,
         "total_other": total_other,
     }
+
+
+# Initialize total_news after all functions are defined
+load_global_config()

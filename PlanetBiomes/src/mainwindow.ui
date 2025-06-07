@@ -961,6 +961,9 @@
             <property name="toolTip">
              <string>'b, e, c, s, o, n, a, r, t' to toggle biome, rEsource, color, shiny, ocean, normal, ambient, rough or terrain.</string>
             </property>
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::RightToLeft</enum>
+            </property>
             <property name="frameShape">
              <enum>QFrame::Shape::StyledPanel</enum>
             </property>
@@ -1289,7 +1292,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_3.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_3.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1323,7 +1326,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_3.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_3.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1354,7 +1357,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_2.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_2.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1385,7 +1388,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_0.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_0.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1416,7 +1419,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_1.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_1.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1450,7 +1453,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_3.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_3.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1522,7 +1525,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_1.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_1.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1652,7 +1655,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/progress_3.gif</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/progress_3.gif</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1739,7 +1742,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../assets/images/default.png</pixmap>
+           <pixmap>../../../../../../.designer/assets/images/default.png</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1835,7 +1838,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
                 <number>0</number>
                </property>
                <property name="textVisible">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -2059,7 +2062,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
                 <number>0</number>
                </property>
                <property name="textVisible">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="invertedAppearance">
                 <bool>false</bool>
@@ -2188,7 +2191,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
          </layout>
         </item>
         <item>
-         <widget class="QGroupBox" name="groupBox_5">
+         <widget class="QGroupBox" name="enable_surface_metal_view">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -2212,50 +2215,20 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
           <layout class="QGridLayout" name="gridLayout_15">
-           <item row="3" column="1">
-            <widget class="QCheckBox" name="toggle_ao_view">
+           <item row="14" column="1">
+            <widget class="QCheckBox" name="enable_resource_view">
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Ambient</string>
+              <string>Resource</string>
              </property>
              <property name="checked">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="1">
-            <widget class="QCheckBox" name="toggle_biome_view">
-             <property name="layoutDirection">
-              <enum>Qt::LayoutDirection::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Biome</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QCheckBox" name="toggle_rough_view">
-             <property name="layoutDirection">
-              <enum>Qt::LayoutDirection::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Rough</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="17" column="0">
-            <widget class="QSlider" name="color_opacity">
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -2270,14 +2243,54 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
             </widget>
            </item>
            <item row="15" column="0">
+            <widget class="QSlider" name="rough_opacity">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QCheckBox" name="enable_ao_view">
+             <property name="layoutDirection">
+              <enum>Qt::LayoutDirection::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Ambient</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="0">
+            <widget class="QSlider" name="biome_opacity">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
             <widget class="QSlider" name="fault_opacity">
              <property name="orientation">
               <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="12" column="0">
-            <widget class="QSlider" name="resource_opacity">
+           <item row="11" column="1">
+            <widget class="QCheckBox" name="enable_biome_view">
+             <property name="layoutDirection">
+              <enum>Qt::LayoutDirection::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Biome</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QSlider" name="color_opacity">
              <property name="orientation">
               <enum>Qt::Orientation::Horizontal</enum>
              </property>
@@ -2293,42 +2306,21 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
              </property>
             </widget>
            </item>
-           <item row="9" column="0">
-            <widget class="QSlider" name="biome_opacity">
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QSlider" name="rough_opacity">
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QCheckBox" name="toggle_normal_view">
+           <item row="15" column="1">
+            <widget class="QCheckBox" name="enable_rough_view">
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Normals</string>
+              <string>Rough</string>
              </property>
              <property name="checked">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <widget class="QSlider" name="normal_opacity">
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="1">
-            <widget class="QCheckBox" name="toggle_ocean_mask_view">
+            <widget class="QCheckBox" name="enable_ocean_mask_view">
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
@@ -2340,8 +2332,21 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
              </property>
             </widget>
            </item>
-           <item row="15" column="1">
-            <widget class="QCheckBox" name="toggle_fault_view">
+           <item row="5" column="1">
+            <widget class="QCheckBox" name="enable_color_view">
+             <property name="layoutDirection">
+              <enum>Qt::LayoutDirection::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Color</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="1">
+            <widget class="QCheckBox" name="enable_fault_view">
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
@@ -2353,29 +2358,30 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
              </property>
             </widget>
            </item>
-           <item row="12" column="1">
-            <widget class="QCheckBox" name="toggle_resource_view">
+           <item row="14" column="0">
+            <widget class="QSlider" name="resource_opacity">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="16" column="1">
+            <widget class="QCheckBox" name="enable_normal_view">
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Resource</string>
+              <string>Normals</string>
              </property>
              <property name="checked">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="17" column="1">
-            <widget class="QCheckBox" name="toggle_color_view">
-             <property name="layoutDirection">
-              <enum>Qt::LayoutDirection::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Color</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
+           <item row="16" column="0">
+            <widget class="QSlider" name="normal_opacity">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>

@@ -50,8 +50,8 @@ from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
 from PlanetThemes import THEMES
 from PlanetPlotter import (
     generate_sphere,
-    auto_connect_toggle_buttons,
-    handle_toggle_view,
+    auto_connect_enable_buttons,
+    handle_enable_view,
     refresh_mesh_opacity,
 )
 from PlanetNewsfeed import (
@@ -116,10 +116,10 @@ def load_config():
             None, "error", f"Error: Config file {config_path} not found. Creating default config."
         )
         raw_config = {
-            "total_news": 351,
+            "total_news": 0,
             "process_biomes": False,
             "_program_options": "Pluging related options",
-            "plugin_selected": -1,
+            "plugin_selected": 0,
             "plugin_index": ["preview.csv"],
             "plugin_name": "preview.esm",
             "enable_preview_mode": False,
@@ -210,6 +210,15 @@ def load_config():
             "texture_mountains": 0.5,
             "texture_canyons": 0.5,
             "3D Viewport Settings": "3D Viewport Settings",
+            "enable_surface_metal_view": True,
+            "enable_color_view": True,
+            "enable_fault_view": True,
+            "enable_resource_view": True,
+            "enable_biome_view": True,
+            "enable_rough_view": True,
+            "enable_normal_view": True,
+            "enable_ao_view": True,
+            "enable_ocean_mask_view": True,
             "surface_metal_opacity": 1.0,
             "color_opacity": 1.0,
             "fault_opacity": 0.2,
@@ -414,6 +423,7 @@ def start_planet_biomes(main_window):
     global planet_biomes_process, process_list
     global total_news, total_biom, total_text, total_other
     global news_count, news_percent, biom_percent, text_percent
+    handle_news(None)
 
     main_window.stdout_widget.clear()
     main_window.stderr_widget.clear()
@@ -431,6 +441,8 @@ def start_planet_biomes(main_window):
     total_text = totals["total_text"]
     total_other = totals["total_other"]
 
+    reset_news_count()
+
     # Initialize progress bars and labels
     main_window.news_count_progressBar.setValue(0)
     main_window.biom_count_progressBar.setValue(0)
@@ -443,6 +455,18 @@ def start_planet_biomes(main_window):
         )
         main_window.stderr_widget.moveCursor(QTextCursor.MoveOperation.End)
         return
+
+    for key in config:
+        if key.startswith("enable_") and key.endswith("_view"):
+            # Force it True in the config
+            update_value(key, True)
+
+            # Also update the UI checkbox if it exists
+            checkbox = getattr(main_window, f"{key}_checkbox", None)
+            if checkbox is not None:
+                checkbox.setChecked(True)
+                checkbox.toggled.emit(True)  # optional
+                checkbox.click()
 
     seed = get_seed(config)
     update_seed_display(main_window, config)
@@ -546,7 +570,15 @@ def start_planet_biomes(main_window):
         main_window.news_count_progressBar.setValue(int(100))
         main_window.biom_count_progressBar.setValue(int(100))
         main_window.text_count_progressBar.setValue(int(100))
-        # save_config()
+
+        # Clear the plotter and regenerate all meshes
+        main_window.plotter.clear()  # removes all meshes
+
+        # Recreate all meshes from current data
+        main_window.meshes = generate_sphere(main_window, main_window.plotter)
+
+        # Force PyVista to redraw the scene
+        main_window.plotter.render()
 
     planet_biomes_process.finished.connect(on_planet_biomes_finished)
 
@@ -654,14 +686,14 @@ class MainWindow(QMainWindow):
     open_plugins_button: QPushButton
     open_output_button: QPushButton
     open_input_button: QPushButton
-    toggle_color_view: QCheckBox
-    toggle_ocean_mask_view: QCheckBox
-    toggle_normal_view: QCheckBox
-    toggle_ao_view: QCheckBox
-    toggle_rough_view: QCheckBox
-    toggle_biome_view: QCheckBox
-    toggle_resource_view: QCheckBox
-    toggle_fault_view: QCheckBox
+    enable_color_view: QCheckBox
+    enable_ocean_mask_view: QCheckBox
+    enable_normal_view: QCheckBox
+    enable_ao_view: QCheckBox
+    enable_rough_view: QCheckBox
+    enable_biome_view: QCheckBox
+    enable_resource_view: QCheckBox
+    enable_fault_view: QCheckBox
 
     def __init__(self):
         super().__init__()
@@ -802,10 +834,10 @@ class MainWindow(QMainWindow):
 
         # Update 3D Display
         self.meshes = generate_sphere(self, self.plotter)
-        auto_connect_toggle_buttons(self, self.plotter, self.meshes)
+        auto_connect_enable_buttons(self, self.plotter, self.meshes)
 
         for texture_type in self.meshes:
-            checkbox_name = f"toggle_{texture_type}_view"
+            checkbox_name = f"enable_{texture_type}_view"
             checkbox = getattr(self, checkbox_name, None)
             if checkbox:
                 checkbox.setChecked(self.meshes[texture_type]["visible"])
@@ -1013,6 +1045,7 @@ class MainWindow(QMainWindow):
             "enable_basic_filters": "enable_basic_filters",
             "process_images": "process_images",
             "enable_texture_noise": "enable_texture_noise",
+            "enable_texture_terrain": "enable_texture_terrain",
             "upscale_image": "upscale_image",
             "output_dds_files": "output_dds_files",
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
@@ -1021,6 +1054,15 @@ class MainWindow(QMainWindow):
             "enable_seed_anomalies": "enable_seed_anomalies",
             "random_distortion": "random_distortion",
             "enable_tectonic_plates": "enable_tectonic_plates",
+            "enable_surface_metal_view": "enable_surface_metal_view",
+            "enable_color_view": "enable_color_view",
+            "enable_fault_view": "enable_fault_view",
+            "enable_resource_view": "enable_resource_view",
+            "enable_biome_view": "enable_biome_view",
+            "enable_rough_view": "enable_rough_view",
+            "enable_normal_view": "enable_normal_view",
+            "enable_ao_view": "enable_ao_view",
+            "enable_ocean_mask_view": "enable_ocean_mask_view",
         }
 
         slider_mappings = {
@@ -1144,8 +1186,10 @@ class MainWindow(QMainWindow):
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 else:
-                    if key == "noise_amplitude" or key == "texture_roughness_base":
+                    if key in ("noise_amplitude", "texture_roughness_base"):
                         max_val = 0.25
+                    if key in ("ocean_mask_opacity", "ao_opacity"):
+                        min_val, max_val = 0.001, 0.2
                     if key == "distortion_scale":
                         max_val = 1
                     slider.setRange(int(min_val * 100), int(max_val * 100))

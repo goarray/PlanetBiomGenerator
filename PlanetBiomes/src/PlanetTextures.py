@@ -322,7 +322,8 @@ def upscale_grid(
 
 def generate_noise(shape, scale=None):
     """Generate larger-patch high-contrast salt-and-pepper noise."""
-    handle_news(None)
+    if config.get("enable_texture_noise", False):
+        handle_news(None)
     if scale is None:
         scale = config.get("noise_scale", 4.17)
     noise = np.random.rand(*shape)
@@ -394,7 +395,8 @@ def generate_shading(
     grid, light_source_x=0.5, light_source_y=0.5, fade_intensity=0.5, fade_spread=0.5
 ):
     """Generate anisotropic shading based on terrain gradients with fade controls."""
-    handle_news(None)
+    if config.get("enable_texture_noise", False):
+        handle_news(None)
 
     # Compute gradient
     grad_x = np.gradient(grid, axis=1)
@@ -526,7 +528,8 @@ def generate_edge_blend(
     Non-edge areas stay untouched. Edge-adjacent pixels get a noise mask
     with smooth radial falloff (like an edge feather).
     """
-    handle_news(None)
+    if config.get("enable_texture_edges", False):
+        handle_news(None)
 
     if not config.get("enable_texture_edges", False):
         return np.zeros(rgb_grid.shape[:2], dtype=np.float32)
@@ -923,6 +926,8 @@ def generate_ao_map(
     fade_intensity: float = 0.1,  # Range: 0.1–1.0 (darkness strength)
     fade_spread: float = 0.1,  # Range: 0.1–1.0 (contrast shaping)
 ) -> Image.Image:
+    if config.get("enable_texture_light", False):
+        handle_news(None)
     fade_intensity = config.get("fade_intensity", 0.5)
     fade_spread = config.get("fade_spread", 0.5)
     elevation = generate_elevation(rgb_grid, biome_data)

@@ -76,6 +76,7 @@ def generate_normal_map(height_img, invert_height=True):
 
 
 def generate_terrain(width, height, scale=RIDGE_SCALE, strength=RIDGE_STRENGTH, invert=INVERT_ELEVATION):
+    handle_news(None)
     terrain = np.zeros((height, width))
     ridge_mask = np.zeros((height, width))
     falloff_mask = np.zeros((height, width))

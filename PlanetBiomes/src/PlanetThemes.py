@@ -209,8 +209,8 @@ THEMES = {
         QProgressBar::chunk {{
             background: qlineargradient(
                 x1: 0, y1: 0, x2: 1, y2: 0,
-                stop: 0 {theme.get('primary_hover_color', '#00FFFF')},
-                stop: 1 {theme.get('color', '#0099FF')}
+                stop: 0 {theme.get('background', '#00FFFF')},
+                stop: 1 {theme.get('primary_hover_color', '#0099FF')}
             );
             border-radius: 4px;
         }}
@@ -307,9 +307,25 @@ THEMES = {
             margin: 4px;
         }}
 
+        QGroupBox::indicator {{
+            background-color: transparent;
+            background-image: none;
+            border-radius: 3px;
+        }}
+
+        QGroupBox::indicator:checked {{
+            background-color: {theme.get('checkbox_checked_color', theme.get('selection_color', '#00ffff'))};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+        }}
+
+        QGroupBox::indicator:unchecked {{
+            background-color: {theme.get('button_color', '#2c2e33')};
+            border: 1px solid {theme.get('border_color', '#6e9bac')};
+        }}
+
         QTabBar::tab {{
             background:{theme.get('background', '#1e1e1e')}; 
-            color: {theme.get('tooltip_color', '#d9f6ff')};
+            color: {theme.get('color', '#d9f6ff')};
             padding: 8px 15px;
             border: 1px solid {theme.get('border_color', '#6e9bac')};
             border-bottom: none; /* To blend with the pane */
@@ -326,8 +342,8 @@ THEMES = {
         }}
 
         QTabBar::tab:hover {{
-            background: {theme.get('primary_hover_color', '#00FFFF')};
-            color: {theme.get('hover_text_color', theme['color'])};
+            background: {theme.get('background', '#00FFFF')};
+            color: {theme.get('border_color', theme['color'])};
         }}
 
         /* Scoped styles only for images_tabwidget */

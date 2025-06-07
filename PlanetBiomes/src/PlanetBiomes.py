@@ -49,7 +49,6 @@ from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Arr
 GRID_SIZE = (256, 256)
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
-
 class CsSF_BiomContainer(NamedTuple):
     magic: int
     numBiomes: int
@@ -192,6 +191,17 @@ def process_biomes(shape, config, planet):
         south_pattern, tilt_factor=config.get("zoom_factor", 0.5)
     )
 
+    # If biome processing is disabled, return early
+    if not config.get("process_biomes", True):
+        north_pattern = (north_pattern - north_pattern.min()) / (
+            north_pattern.max() - north_pattern.min() + 1e-6
+        )
+        south_pattern = (south_pattern - south_pattern.min()) / (
+            south_pattern.max() - south_pattern.min() + 1e-6
+        )
+
+        return north_pattern, south_pattern
+
     if config.get("enable_tectonic_plates", False):
         north_elevation, south_elevation = generate_faults(
             shape,
@@ -221,12 +231,9 @@ def process_biomes(shape, config, planet):
         )
 
         # Blend elevation effects only near faults
-        north_pattern = (1 - fault_influence) * north_pattern + fault_influence * (
-            north_pattern + elevation_weight * north_elevation
-        )
-        south_pattern = (1 - fault_influence) * south_pattern + fault_influence * (
-            south_pattern + elevation_weight * south_elevation
-        )
+        north_pattern = (1 - fault_influence) * north_pattern + fault_influence * (north_elevation * elevation_weight)
+        south_pattern = (1 - fault_influence) * south_pattern + fault_influence * (south_elevation * elevation_weight)
+
         north_pattern = np.clip(north_pattern, 0.0, 1.0)
         south_pattern = np.clip(south_pattern, 0.0, 1.0)
 
@@ -237,17 +244,6 @@ def process_biomes(shape, config, planet):
             str(PNG_OUTPUT_DIR / plugin_name / planet),
             planet,
         )
-
-    # If biome processing is disabled, return early
-    if not config.get("process_biomes", True):
-        north_pattern = (north_pattern - north_pattern.min()) / (
-            north_pattern.max() - north_pattern.min() + 1e-6
-        )
-        south_pattern = (south_pattern - south_pattern.min()) / (
-            south_pattern.max() - south_pattern.min() + 1e-6
-        )
-        
-        return north_pattern, south_pattern
 
     if config.get("enable_biases", False):
         north_pattern = remap_biome_weights(north_pattern, weights)
@@ -277,38 +273,93 @@ def process_biomes(shape, config, planet):
         south_pattern.max() - south_pattern.min() + 1e-6
     )
 
+    # Apply edge fade to copy north_pattern to south_pattern at edges
+    if config.get("fade_south_edges", True):
+        edge_fade_mask = generate_edge_fade_mask(
+            shape, fade_ratio=config.get("fade_ratio", 0.5)
+        )
+        south_pattern = (
+            edge_fade_mask * north_pattern + (1 - edge_fade_mask) * south_pattern
+        )
+
     south_pattern = np.flipud(south_pattern)
 
     # Unify equator seam
-    if config.get("unify_equator", True):
+    if config.get("unify_equator", False):
         north_pattern, south_pattern = unify_equator_edges(north_pattern, south_pattern)
+    # return north_pattern, south_pattern
+
+    # Debug edge alignment
+    def check_edge_alignment(north, south):
+        equator_diff = np.abs(north[-1, :] - south[0, :]).max()
+        north_lr_diff = np.abs(north[:, 0] - north[:, -1]).max()
+        south_lr_diff = np.abs(south[:, 0] - south[:, -1]).max()
+        handle_news(
+            None,
+            "debug",
+            f"Edge alignment: equator_diff={equator_diff:.4f}, north_lr_diff={north_lr_diff:.4f}, south_lr_diff={south_lr_diff:.4f}",
+        )
+
+    check_edge_alignment(north_pattern, south_pattern)
+
     return north_pattern, south_pattern
 
 
 def generate_faults(shape, number_faults, seed, temp_dir, fault_width, rng, py_rng):
     """
-    Generate a single fault map and elevation maps for both hemispheres.
+    Generate a single fault map and elevation maps for both hemispheres with shared edge seeds but different interiors.
     """
-    # Generate edge faults and inward fault lines
+    # Generate shared edge faults for both hemispheres
     fault_map, edge_points = generate_edge_faults(shape, number_faults, py_rng)
-    fault_lines = generate_inward_faults(
-        shape, edge_points, seed_offset=seed, rng=rng, py_rng=py_rng
+
+    # Generate inward fault lines with different seeds for each hemisphere
+    north_fault_lines = generate_inward_faults(
+        shape, edge_points, seed, rng, py_rng, hemisphere="north"
+    )
+    south_fault_lines = generate_inward_faults(
+        shape, edge_points, seed + 1, rng, py_rng, hemisphere="south"
     )
 
-    # Dilate fault lines to widen them
-    fault_lines = dilate_fault_lines(
-        fault_lines, fault_width=fault_width, py_rng=py_rng
+    # Dilate fault lines to widen them (shared for consistency near edges)
+    north_fault_lines = dilate_fault_lines(
+        north_fault_lines, fault_width=fault_width, py_rng=py_rng
+    )
+    south_fault_lines = dilate_fault_lines(
+        south_fault_lines, fault_width=fault_width, py_rng=py_rng
     )
 
-    # Generate plate assignments
-    plate_map = rng.integers(0, number_faults, shape, dtype=int)
+    # Generate different plate assignments for each hemisphere
+    north_plate_map = rng.integers(0, number_faults, shape, dtype=int)
+    south_plate_map = np.random.default_rng(seed + 1).integers(
+        0, number_faults, shape, dtype=int
+    )
 
-    # Generate elevation maps for both hemispheres
+    # Generate elevation maps with shared fault_map but different interiors
     north_elevation = generate_plate_elevation(
-        shape, plate_map, fault_map, fault_lines, seed, rng
+        shape,
+        north_plate_map,
+        fault_map,
+        north_fault_lines,
+        seed,
+        rng,
+        hemisphere="north",
     )
     south_elevation = generate_plate_elevation(
-        shape, plate_map, fault_map, fault_lines, seed, rng
+        shape,
+        south_plate_map,
+        fault_map,
+        south_fault_lines,
+        seed + 1,
+        np.random.default_rng(seed + 1),
+        hemisphere="south",
+    )
+
+    # Verify equator continuity
+    equator_diff = np.abs(north_elevation[-1, :] - south_elevation[0, :]).max()
+    handle_news(
+        None,
+        "biom",
+        f"Equator elevation difference: {equator_diff:.4f}",
     )
 
     return north_elevation, south_elevation
@@ -379,8 +430,8 @@ def draw_noise_driven_squiggle_line(
     direction,
     noise_x,
     noise_y,
-    steps=200,
-    distort_scale=5,
+    steps=50,
+    distort_scale=8,
     fault_jitter=0.3,
     seed=0,
     rng=None,
@@ -414,21 +465,32 @@ def draw_noise_driven_squiggle_line(
 
     # Random walk with noise, less direct pull to p1
     remaining_steps = steps - perp_steps
+    center_y, center_x = height / 2, width / 2  # center of the grid
+    max_pull = rng.uniform(0.1, 0.4)
+
     for i in range(remaining_steps):
         gy, gx = int(current_y), int(current_x)
+
         # Noise-driven perturbation
         noise_dx = (noise_x[gy, gx] - 0.5) * fault_jitter * distort_scale
         noise_dy = (noise_y[gy, gx] - 0.5) * fault_jitter * distort_scale
+
         # Random walk component
         random_dx = rng.uniform(-1, 1) * fault_jitter * distort_scale
         random_dy = rng.uniform(-1, 1) * fault_jitter * distort_scale
-        # Slight pull toward target, reduced influence
-        pull_factor = i / remaining_steps * 0.2  # Weaker pull to p1
+
+        # Slight pull toward p1 (endpoint)
+        pull_factor = (i / remaining_steps) * max_pull
         target_dx = (x1 - current_x) * pull_factor
         target_dy = (y1 - current_y) * pull_factor
 
-        current_x += noise_dx + random_dx + target_dx
-        current_y += noise_dy + random_dy + target_dy
+        # Pull toward center to curve the line inward
+        center_pull_strength = 0.03  # lower = gentler curve
+        center_dx = (center_x - current_x) * center_pull_strength
+        center_dy = (center_y - current_y) * center_pull_strength
+
+        current_x += noise_dx + random_dx + target_dx + center_dx
+        current_y += noise_dy + random_dy + target_dy + center_dy
         current_y = np.clip(current_y, 0, height - 1)
         current_x = np.clip(current_x, 0, width - 1)
         path.append((int(current_y), int(current_x)))
@@ -436,77 +498,81 @@ def draw_noise_driven_squiggle_line(
     return path
 
 
+def inward_pull_force(point, center, strength=0.05):
+    direction = np.array(center) - np.array(point)
+    norm = np.linalg.norm(direction)
+    if norm == 0:
+        return (0, 0)
+    return tuple((direction / norm) * strength)
+
+
 def generate_inward_faults(
-    grid_size, edge_points, seed_offset=0, rng=None, py_rng=None
+    grid_size, edge_points, seed_offset=0, rng=None, py_rng=None, hemisphere="north"
 ):
     """
-    Generate fault lines connecting edge points, starting perpendicular to edges,
-    with flexible connections to nearby points on opposite edges.
+    Generate fault lines connecting edge points to other edge points with the same type,
+    using different seeds for each hemisphere's interior.
     """
     height, width = grid_size
+    seed = seed_offset + (1 if hemisphere == "south" else 0)  # Different seed for south
     if rng is None:
-        rng = np.random.default_rng(seed_offset)
+        rng = np.random.default_rng(seed)
     if py_rng is None:
-        py_rng = random.Random(seed_offset)
-    if rng is None:
-        rng = np.random.default_rng(seed_offset)
+        py_rng = random.Random(seed)
+
+    # Use different noise for each hemisphere
     noise_x = gaussian_filter(rng.random((height, width)), sigma=2)
     noise_y = gaussian_filter(rng.random((height, width)), sigma=2)
     fault_line_type_map = np.full(grid_size, -1, dtype=int)
-    base_seed = 42 + seed_offset
 
-    edge_pairs = [("top", "bottom"), ("left", "right")]
+    # Flatten all points into one list with edge label
+    all_points = []
+    for edge_name, points in edge_points.items():
+        for point in points:
+            all_points.append((edge_name, *point))  # (edge, p0, t0, dir)
 
-    for edge1, edge2 in edge_pairs:
-        starters1 = edge_points[edge1]
-        starters2 = edge_points[edge2]
+    used_indices = set()
 
-        used_indices = set()
-        for i, (p0, t0, direction) in enumerate(starters1):
-            # Find nearby candidates, not just the closest
-            candidates = [
-                (j, p1, d1)
-                for j, (p1, t1, d1) in enumerate(starters2)
-                if t1 == t0 and j not in used_indices
-            ]
-            if not candidates:
-                continue
+    for i, (edge0, p0, t0, direction) in enumerate(all_points):
+        # Build list of all other points with same t0 but on different edge
+        candidates = [
+            (j, p1, d1)
+            for j, (edge1, p1, t1, d1) in enumerate(all_points)
+            if t1 == t0 and edge1 != edge0 and j not in used_indices
+        ]
+        if not candidates:
+            continue
 
-            # Sort by distance, but allow some randomness in selection
-            candidates.sort(key=lambda item: math.dist(p0, item[1]))
-            # Pick one of the closest 3 (if available) for natural variation
-            top_candidates = candidates[:3]
-            j, p1_closest, _ = (
-                py_rng.choice(top_candidates) if top_candidates else candidates[0]
-            )
-            used_indices.add(j)
+        candidates.sort(key=lambda item: math.dist(p0, item[1]))
+        top_candidates = candidates[:3]
+        j, p1_closest, _ = (
+            py_rng.choice(top_candidates) if top_candidates else candidates[0]
+        )
+        used_indices.add(j)
 
-            start = time.perf_counter()
-            path = draw_noise_driven_squiggle_line(
-                p0,
-                p1_closest,
-                direction,
-                noise_x,
-                noise_y,
-                steps=200,
-                distort_scale=5,
-                fault_jitter=0.3,
-                seed=base_seed + i,
-                rng=rng,
-            )
-            handle_news(
-                None, "success", f"Squiggle time: {time.perf_counter() - start:.3f}s"
-            )
-            for y, x in path:
-                if 0 <= y < height and 0 <= x < width:  # Ensure bounds
-                    fault_line_type_map[y, x] = t0
+        path = draw_noise_driven_squiggle_line(
+            p0,
+            p1_closest,
+            direction,
+            noise_x,
+            noise_y,
+            steps=800,
+            distort_scale=5,
+            fault_jitter=0.3,
+            seed=seed + i,
+            rng=rng,
+        )
+
+        for y, x in path:
+            if 0 <= y < height and 0 <= x < width:
+                fault_line_type_map[y, x] = t0
 
     convergent_lines = np.sum(fault_line_type_map == 0)
     divergent_lines = np.sum(fault_line_type_map == 1)
     handle_news(
         None,
-        "debug",
-        f"Inward faults: {convergent_lines} convergent, {divergent_lines} divergent",
+        "biom",
+        f"{hemisphere.capitalize()} inward faults: {convergent_lines} convergent, {divergent_lines} divergent",
     )
 
     return fault_line_type_map
@@ -553,11 +619,13 @@ def dilate_fault_lines(fault_map, fault_width=3, py_rng=None):
     return dilated_fault_map
 
 
-def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed, rng):
+def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed, rng, hemisphere="north"):
     """
-    Generate elevation map with fault effects localized near fault lines.
+    Generate elevation map with fault effects localized near fault lines, using different seeds for each hemisphere.
     """
     h, w = grid_size
+    seed = seed + (1 if hemisphere == "south" else 0)  # Different seed for south
+    rng = np.random.default_rng(seed)
     elevation_map = np.zeros((h, w), dtype=np.float32)
 
     # Define fault masks
@@ -572,23 +640,23 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
             ~fault_mask, return_distances=True, return_indices=False
         ),
     )
-    fault_influence = np.exp(-distance_from_faults / config.get("fault_influence_width", 10))  # Exponential decay
+    fault_influence = np.exp(-distance_from_faults / config.get("fault_influence_width", 10))
 
     for plate_id in np.unique(plate_map):
         plate_mask = plate_map == plate_id
-        base_elevation = rng.uniform(-0.01, 0.01)  # Slight base elevation variation
+        base_elevation = rng.uniform(-0.03, 0.03)  # Unique base elevation
         elevation_map[plate_mask] = base_elevation
 
         convergent_bump = np.zeros((h, w), dtype=np.float32)
         divergent_dip = np.zeros((h, w), dtype=np.float32)
 
         # Apply elevation changes only near faults
-        convergent_bump[convergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(convergent_mask))  # Stronger mountains
-        divergent_dip[divergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(divergent_mask))  # Deeper trenches
+        convergent_bump[convergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(convergent_mask))  # Random mountains
+        divergent_dip[divergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(divergent_mask))  # Random trenches
 
         # Smooth and localize the effects
-        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=0.2)
-        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=0.2)
+        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=0.9)
+        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=0.9)
 
         elevation_map += convergent_bump
         elevation_map -= divergent_dip
@@ -601,8 +669,8 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
     # Log elevation stats
     handle_news(
         None,
-        "debug",
-        f"Elevation range: {elevation_map.min():.4f} to {elevation_map.max():.4f}",
+        "biom",
+        f"{hemisphere.capitalize()} elevation range: {elevation_map.min():.4f} to {elevation_map.max():.4f}",
     )
 
     return elevation_map
@@ -629,6 +697,26 @@ def unify_equator_edges(north: np.ndarray, south: np.ndarray, blend_strength: fl
         south[:, -(i + 1)] = beta * south[:, i] + alpha * south[:, -(i + 1)]
 
     return north, south
+
+
+def generate_edge_fade_mask(
+    shape: tuple[int, int], fade_ratio: float = 0.4
+) -> np.ndarray:
+    """Generate a mask that is 1 at the edges and fades to 0 at the center."""
+    h, w = shape
+    y = np.linspace(0, 1, h)
+    x = np.linspace(0, 1, w)
+    yy, xx = np.meshgrid(y, x, indexing="ij")
+
+    # Compute vertical and horizontal distances from edges
+    vertical = np.minimum(yy / fade_ratio, (1 - yy) / fade_ratio)
+    horizontal = np.minimum(xx / fade_ratio, (1 - xx) / fade_ratio)
+
+    # Combine fades and invert to make edges 1 and center 0
+    fade = np.clip(np.minimum(vertical, horizontal), 0, 1)
+    fade = 1 - fade  # Invert so edges=1, center=0
+
+    return fade
 
 
 def generate_squircle_pattern(
