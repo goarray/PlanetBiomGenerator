@@ -1177,21 +1177,23 @@ class MainWindow(QMainWindow):
                     slider.setRange(0, 99999)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "fault_width":
-                    slider.setRange(1, 16)
-                    slider.setValue(int(value))
-                    slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
-                elif key == "number_faults" or key == "texture_resolution_scale":
+                elif key in (
+                    "number_faults",
+                    "texture_resolution_scale",
+                    "fault_width",
+                    ):
                     slider.setRange(1, 8)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 else:
-                    if key in ("noise_amplitude", "texture_roughness_base"):
+                    if key in (
+                        "noise_amplitude",
+                        "texture_roughness_base",
+                        "distortion_scale",
+                    ):
                         max_val = 0.25
                     if key in ("ocean_mask_opacity", "ao_opacity"):
-                        min_val, max_val = 0.001, 0.2
-                    if key == "distortion_scale":
-                        max_val = 1
+                        min_val, max_val = 0.01, 0.2
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))
                     slider.valueChanged.connect(

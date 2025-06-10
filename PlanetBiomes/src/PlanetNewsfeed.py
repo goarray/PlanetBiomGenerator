@@ -150,7 +150,7 @@ def calc_biom_count(config: dict, num_planets: int) -> int:
 
 
 def calc_text_count(config: dict, num_planets: int) -> int:
-    base = 174 * num_planets #(+32 taken from planetbiomes)
+    base = 74 * num_planets #(+32 taken from planetbiomes)
     if config.get("process_images", False):
         if config.get("enable_basic_filters", False):
             base += 2 * num_planets
@@ -169,7 +169,7 @@ def calc_text_count(config: dict, num_planets: int) -> int:
 
 
 def calc_other_count(config: dict, num_planets: int) -> int:
-    base = 57 * num_planets  # (+2 taken from planetbiomes)
+    base = 668 * num_planets  # (+2 taken from planetbiomes)
     if config.get("process_other", False):
         base += 10 * num_planets  # baseline count
         base += sum(

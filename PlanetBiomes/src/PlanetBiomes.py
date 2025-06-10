@@ -202,6 +202,29 @@ def process_biomes(shape, config, planet):
 
         return north_pattern, south_pattern
 
+    if config.get("enable_anomalies", False):
+        north_pattern = apply_anomalies(north_pattern, config, hemisphere="north")
+        south_pattern = apply_anomalies(south_pattern, config, hemisphere="south")
+
+    if config.get("enable_distortion", False):
+        north_pattern += generate_distortion(shape, config, hemisphere="north")
+        south_pattern += generate_distortion(shape, config, hemisphere="south")
+
+    if config.get("enable_biases", False):
+        north_pattern = remap_biome_weights(north_pattern, weights)
+        south_pattern = remap_biome_weights(south_pattern, weights)
+
+    if config.get("enable_noise", False):
+        north_pattern += generate_noise(shape, config, hemisphere="north")
+        south_pattern += generate_noise(shape, config, hemisphere="south")
+
+    if config.get("enable_smoothing", False):
+        north_pattern = gaussian_filter(north_pattern, sigma=8)
+        south_pattern = gaussian_filter(south_pattern, sigma=8)
+
+        if south_pattern:
+            south_pattern = np.rot90(south_pattern, k=1)
+
     if config.get("enable_tectonic_plates", False):
         north_elevation, south_elevation = generate_faults(
             shape,
@@ -219,20 +242,32 @@ def process_biomes(shape, config, planet):
         fault_lines = generate_inward_faults(
             shape, _, seed_offset=seed, rng=rng, py_rng=py_rng
         )
-        fault_mask = (fault_map == 0) | (fault_map == 1) | (fault_lines == 0) | (fault_lines == 1)
+        fault_mask = (
+            (fault_map == 0)
+            | (fault_map == 1)
+            | (fault_lines == 0)
+            | (fault_lines == 1)
+        )
         fault_mask = fault_mask.astype(bool)
 
-        distance_map = cast(np.ndarray, distance_transform_edt(
-            ~fault_mask, return_distances=True, return_indices=False
-        ))
+        distance_map = cast(
+            np.ndarray,
+            distance_transform_edt(
+                ~fault_mask, return_distances=True, return_indices=False
+            ),
+        )
 
         fault_influence = np.exp(
             -distance_map / config.get("fault_influence_width", 10)
         )
 
         # Blend elevation effects only near faults
-        north_pattern = (1 - fault_influence) * north_pattern + fault_influence * (north_elevation * elevation_weight)
-        south_pattern = (1 - fault_influence) * south_pattern + fault_influence * (south_elevation * elevation_weight)
+        north_pattern = (1 - fault_influence) * north_pattern + fault_influence * (
+            north_elevation * elevation_weight
+        )
+        south_pattern = (1 - fault_influence) * south_pattern + fault_influence * (
+            south_elevation * elevation_weight
+        )
 
         north_pattern = np.clip(north_pattern, 0.0, 1.0)
         south_pattern = np.clip(south_pattern, 0.0, 1.0)
@@ -245,25 +280,14 @@ def process_biomes(shape, config, planet):
             planet,
         )
 
-    if config.get("enable_biases", False):
-        north_pattern = remap_biome_weights(north_pattern, weights)
-        south_pattern = remap_biome_weights(south_pattern, weights)
-
-    if config.get("enable_noise", False):
-        north_pattern += generate_noise(shape, config)
-        south_pattern += generate_noise(shape, config)
-
-    if config.get("enable_distortion", False):
-        north_pattern += generate_distortion(shape, config)
-        south_pattern += generate_distortion(shape, config)
-
-    if config.get("enable_smoothing", False):
-        north_pattern = gaussian_filter(north_pattern, sigma=8)
-        south_pattern = gaussian_filter(south_pattern, sigma=8)
-
-    if config.get("enable_anomalies", False):
-        north_pattern = apply_anomalies(north_pattern, config)
-        south_pattern = apply_anomalies(south_pattern, config)
+    # Apply edge fade to copy north_pattern to south_pattern at edges
+    if config.get("fade_south_edges", True):
+        edge_fade_mask = generate_edge_fade_mask(
+            shape, fade_ratio=config.get("fade_ratio", 0.001)
+        )
+        south_pattern = (
+            edge_fade_mask * north_pattern + (1 - edge_fade_mask) * south_pattern
+        )
 
     # Normalize patterns
     north_pattern = (north_pattern - north_pattern.min()) / (
@@ -273,21 +297,7 @@ def process_biomes(shape, config, planet):
         south_pattern.max() - south_pattern.min() + 1e-6
     )
 
-    # Apply edge fade to copy north_pattern to south_pattern at edges
-    if config.get("fade_south_edges", True):
-        edge_fade_mask = generate_edge_fade_mask(
-            shape, fade_ratio=config.get("fade_ratio", 0.5)
-        )
-        south_pattern = (
-            edge_fade_mask * north_pattern + (1 - edge_fade_mask) * south_pattern
-        )
-
     south_pattern = np.flipud(south_pattern)
-
-    # Unify equator seam
-    if config.get("unify_equator", False):
-        north_pattern, south_pattern = unify_equator_edges(north_pattern, south_pattern)
-    # return north_pattern, south_pattern
 
     # Debug edge alignment
     def check_edge_alignment(north, south):
@@ -430,7 +440,7 @@ def draw_noise_driven_squiggle_line(
     direction,
     noise_x,
     noise_y,
-    steps=50,
+    steps=500,
     distort_scale=8,
     fault_jitter=0.3,
     seed=0,
@@ -466,7 +476,7 @@ def draw_noise_driven_squiggle_line(
     # Random walk with noise, less direct pull to p1
     remaining_steps = steps - perp_steps
     center_y, center_x = height / 2, width / 2  # center of the grid
-    max_pull = rng.uniform(0.1, 0.4)
+    max_pull = rng.uniform(0.5, 0.8)
 
     for i in range(remaining_steps):
         gy, gx = int(current_y), int(current_x)
@@ -498,7 +508,7 @@ def draw_noise_driven_squiggle_line(
     return path
 
 
-def inward_pull_force(point, center, strength=0.05):
+def inward_pull_force(point, center, strength=0.9):
     direction = np.array(center) - np.array(point)
     norm = np.linalg.norm(direction)
     if norm == 0:
@@ -640,7 +650,9 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
             ~fault_mask, return_distances=True, return_indices=False
         ),
     )
-    fault_influence = np.exp(-distance_from_faults / config.get("fault_influence_width", 10))
+    fault_influence = np.exp(
+        -distance_from_faults / config.get("fault_smooth", 0.5)
+    )
 
     for plate_id in np.unique(plate_map):
         plate_mask = plate_map == plate_id
@@ -651,20 +663,26 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
         divergent_dip = np.zeros((h, w), dtype=np.float32)
 
         # Apply elevation changes only near faults
-        convergent_bump[convergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(convergent_mask))  # Random mountains
-        divergent_dip[divergent_mask] = rng.uniform(0.5, 1.5, size=np.sum(divergent_mask))  # Random trenches
+        convergent_bump[convergent_mask] = rng.uniform(0.1, 0.5, size=np.sum(convergent_mask))  # Random mountains
+        divergent_dip[divergent_mask] = rng.uniform(0.1, 0.5, size=np.sum(divergent_mask))  # Random trenches
+
+        sigma = config.get("fault_smooth", 0.5) * 0.5
 
         # Smooth and localize the effects
-        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=0.9)
-        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=0.9)
+        convergent_bump = gaussian_filter(convergent_bump * fault_influence, sigma=4)
+        divergent_dip = gaussian_filter(divergent_dip * fault_influence, sigma=4)
 
         elevation_map += convergent_bump
         elevation_map -= divergent_dip
 
     # Normalize to [0, 1]
-    elevation_map = (elevation_map - elevation_map.min()) / (
-        elevation_map.max() - elevation_map.min() + 1e-6
-    )
+    active_mask = plate_map >= 0
+    elevation_values = elevation_map[active_mask]
+
+    min_val = elevation_values.min()
+    max_val = elevation_values.max()
+
+    elevation_map[active_mask] = (elevation_values - min_val) / (max_val - min_val + 1e-6)
 
     # Log elevation stats
     handle_news(
@@ -676,31 +694,8 @@ def generate_plate_elevation(grid_size, plate_map, fault_map, fault_lines, seed,
     return elevation_map
 
 
-def unify_equator_edges(north: np.ndarray, south: np.ndarray, blend_strength: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
-    """Blend the top and bottom rows of north/south patterns to unify equator."""
-    height, width = north.shape
-    blend_rows = int(height * blend_strength)
-
-    for i in range(blend_rows):
-        alpha = i / blend_rows
-        beta = 1 - alpha
-
-        # Blend north bottom with south top
-        north[-(i + 1), :] = alpha * north[-(i + 1), :] + beta * south[i, :]
-        south[i, :] = beta * north[-(i + 1), :] + alpha * south[i, :]
-
-        # Optional: also blend left/right edges if you want full wrapping compatibility
-        north[:, i] = alpha * north[:, i] + beta * north[:, -(i + 1)]
-        north[:, -(i + 1)] = beta * north[:, i] + alpha * north[:, -(i + 1)]
-
-        south[:, i] = alpha * south[:, i] + beta * south[:, -(i + 1)]
-        south[:, -(i + 1)] = beta * south[:, i] + alpha * south[:, -(i + 1)]
-
-    return north, south
-
-
 def generate_edge_fade_mask(
-    shape: tuple[int, int], fade_ratio: float = 0.4
+    shape: tuple[int, int], fade_ratio: float = 0.1
 ) -> np.ndarray:
     """Generate a mask that is 1 at the edges and fades to 0 at the center."""
     h, w = shape
@@ -714,7 +709,7 @@ def generate_edge_fade_mask(
 
     # Combine fades and invert to make edges 1 and center 0
     fade = np.clip(np.minimum(vertical, horizontal), 0, 1)
-    fade = 1 - fade  # Invert so edges=1, center=0
+    #fade = 1 - fade  # Invert so edges=1, center=0
 
     return fade
 
@@ -802,7 +797,7 @@ def remap_biome_weights(grid: np.ndarray, weights: List[float]) -> np.ndarray:
 
     return remapped
 
-def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
+def generate_noise(shape: Tuple[int, int], config: Dict, hemisphere="north") -> np.ndarray:
     """Generate smooth noise with configurable parameters, normalized to 0..1."""
     handle_news(None)
     if not config.get("enable_noise", True):
@@ -853,41 +848,53 @@ def generate_noise(shape: Tuple[int, int], config: Dict) -> np.ndarray:
     # Final amplitude adjustment
     noise = noise * noise_amplitude
 
+    if hemisphere == "south":
+        noise = np.rot90(noise, k=1)
+
     return noise
 
 
-def generate_distortion(shape: tuple[int, int], config: dict) -> np.ndarray:
+def generate_distortion(
+    shape: tuple[int, int], config: dict, hemisphere="north"
+) -> np.ndarray:
     """Generate contrast-preserving distortion with large-scale disturbances."""
     handle_news(None)
     h, w = shape
     raw_scale = config.get("distortion_scale", 0.5)
     # Map [0.1, 1.0] → [0.1, 0.5]
-    scale = 0.1 + ((np.clip(raw_scale, 0.1, 1.0) - 0.1) / 0.9) * 0.4
+    # scale = 0.1 + ((np.clip(raw_scale, 0.1, 1.0) - 0.1) / 0.9) * 0.4
 
     # Initialize random number generator
     seed = get_seed(config)
     rng = np.random.default_rng(seed)
 
-    # Generate low-frequency simplex noise for large-scale distortions
-    freq = 0.02 * (1.0 + scale)  # Lower frequency for larger patterns
+    # Randomize noise parameters for diversity
+    freq = 0.02 * (1.0 + raw_scale) * rng.uniform(0.5, 1.5)  # Vary frequency ±50%
+    octaves = rng.choice([1, 2, 3])  # Randomly choose 1 to 3 octaves
+    persistence = rng.uniform(0.3, 0.7)  # Vary persistence for different noise textures
+    lacunarity = rng.uniform(1.5, 2.5)  # Vary lacunarity for pattern variation
+
+    # Generate low-frequency simplex noise with random offsets
+    offset_x, offset_y = rng.uniform(0, 1000, size=2)  # Random spatial offsets
     noise_grid = np.zeros((h, w))
     for i in range(h):
         for j in range(w):
             noise_grid[i, j] = snoise2(
-                i * freq,
-                j * freq,
-                octaves=2,
-                persistence=0.5,
-                lacunarity=2.0,
+                (i * freq) + offset_x,
+                (j * freq) + offset_y,
+                octaves=octaves,
+                persistence=persistence,
+                lacunarity=lacunarity,
                 base=seed,
             )
 
-    # Add a layer of higher-frequency noise for detail
+    # Add high-frequency noise with randomized strength
+    high_freq_scale = rng.uniform(0.2, 0.4)  # Randomize high-frequency contribution
     high_freq_noise = rng.normal(loc=0.0, scale=0.3, size=(h, w))
-    combined_noise = noise_grid + 0.3 * high_freq_noise  # Blend low and high frequency
+    combined_noise = noise_grid + high_freq_scale * high_freq_noise
 
-    # Apply light smoothing to reduce jaggedness but preserve large features
-    sigma = max(0.5, 3.0 * (1.0 - scale))  # Lower sigma for sharper, larger distortions
+    # Apply light smoothing with randomized sigma
+    sigma = max(0.5, 3.0 * (1.0 - raw_scale))  # Lower sigma for sharper, larger distortions
     smoothed_noise = gaussian_filter(combined_noise, sigma=sigma)
 
     # Normalize to [-1, 1] range
@@ -895,13 +902,16 @@ def generate_distortion(shape: tuple[int, int], config: dict) -> np.ndarray:
     smoothed_noise /= np.abs(smoothed_noise).max()
 
     # Scale to desired distortion strength
-    distortion = smoothed_noise * scale
+    distortion = smoothed_noise * raw_scale
+
+    if hemisphere == "south":
+        distortion = np.rot90(distortion, k=1)
 
     # Ensure zero-centered output
     return distortion
 
 
-def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
+def apply_anomalies(grid: np.ndarray, config: Dict, hemisphere: str = "north") -> np.ndarray:
     handle_news(None)
     h, w = grid.shape
     modified_grid = grid.copy()
@@ -924,7 +934,7 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
         y, x = np.ogrid[:h, :w]
         cy, cx = h // 2, w // 2
         dist = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
-        return dist / dist.max()
+        return dist / (dist.max()+ 1e-6)
 
     radial = radial_mask(h, w)
 
@@ -938,13 +948,25 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
     if enable_equator_anomalies:
         equator_mask = make_mask(center=1.0, width=equator_anomaly_count)
         equator_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
-        boosted_equator_strength = 2 * equator_anomaly_spray
+
+        if hemisphere == "south":
+            equator_mask = np.rot90(equator_mask, k=1)
+
+        seed = get_seed(config)
+        rng = np.random.default_rng(seed + 42)  # +42 if hemisphere variation
+        strength_factor = rng.uniform(2, 10)  # Or based on spray
+
+        boosted_equator_strength = strength_factor * equator_anomaly_spray
         modified_grid += equator_mask * equator_noise * boosted_equator_strength
 
-    # 2. Polar anomaly (centered at 1.0)
+    # 2. Polar anomaly (centered at 0.0)
     if enable_polar_anomalies:
         polar_mask = make_mask(center=0.0, width=polar_anomaly_count)
         polar_noise = gaussian_filter(np.random.randn(h, w), sigma=4)
+
+        if hemisphere == "south":
+            polar_mask = np.rot90(polar_mask, k=1)
+
         boosted_polar_strength = 2 * polar_anomaly_spray
         modified_grid += polar_mask * polar_noise * boosted_polar_strength
 
@@ -959,8 +981,11 @@ def apply_anomalies(grid: np.ndarray, config: Dict) -> np.ndarray:
         noise_max = anomaly_noise.max()
         normalized_noise = (anomaly_noise - noise_min) / (noise_max - noise_min + 1e-6)
 
+        if hemisphere == "south":
+            normalized_noise = np.rot90(normalized_noise, k=1)
+
         # Compress values toward 0.5 to favor mid-biomes
-        centered_noise = 0.5 + (normalized_noise - 0.5) * 0.5  # result in [0.25–0.75]
+        centered_noise = 0.5 + (normalized_noise - 0.5) * 0.9  # result in [0.25–0.75]
 
         modified_grid += centered_noise * strength
 

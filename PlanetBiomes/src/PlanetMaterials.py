@@ -27,6 +27,7 @@ def load_config():
 
 def replace_placeholders_recursive(data, plugin_name: str, planet_name: str) -> None:
     """Recursively replace plugin_name and planet_name placeholders in all strings."""
+    handle_news(None)
     if isinstance(data, dict):
         for key, value in data.items():
             if isinstance(value, str):

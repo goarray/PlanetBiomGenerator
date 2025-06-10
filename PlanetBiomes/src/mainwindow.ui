@@ -360,10 +360,10 @@
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="tickPosition">
-               <enum>QSlider::TickPosition::TicksBelow</enum>
+               <enum>QSlider::TickPosition::NoTicks</enum>
               </property>
               <property name="tickInterval">
-               <number>1</number>
+               <number>0</number>
               </property>
              </widget>
             </item>
@@ -384,21 +384,21 @@
             <item row="3" column="0">
              <widget class="QPushButton" name="fault_jitter_reset">
               <property name="text">
-               <string>Fault Jitter</string>
+               <string>Fault Noise</string>
               </property>
              </widget>
             </item>
             <item row="5" column="0">
              <widget class="QPushButton" name="fault_width_reset">
               <property name="text">
-               <string>Fault Width</string>
+               <string>Fault Impact</string>
               </property>
              </widget>
             </item>
             <item row="7" column="0">
              <widget class="QPushButton" name="fault_smooth_reset">
               <property name="text">
-               <string>Fault Edge</string>
+               <string>Fault Blend</string>
               </property>
              </widget>
             </item>
@@ -959,7 +959,7 @@
           <item row="0" column="0">
            <widget class="QFrame" name="sphere_preview_frame">
             <property name="toolTip">
-             <string>'b, e, c, s, o, n, a, r, t' to toggle biome, rEsource, color, shiny, ocean, normal, ambient, rough or terrain.</string>
+             <string/>
             </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::RightToLeft</enum>
@@ -2056,7 +2056,7 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
                 </size>
                </property>
                <property name="toolTip">
-                <string/>
+                <string>May appear to stall, it's still working.</string>
                </property>
                <property name="value">
                 <number>0</number>
@@ -2209,8 +2209,11 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
             <strikeout>false</strikeout>
            </font>
           </property>
+          <property name="toolTip">
+           <string>Hotkey: 8</string>
+          </property>
           <property name="title">
-           <string>3D Viewport</string>
+           <string>3D Viewport (8) - (hotkey)</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -2221,11 +2224,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
           <layout class="QGridLayout" name="gridLayout_15">
            <item row="14" column="1">
             <widget class="QCheckBox" name="enable_resource_view">
+             <property name="toolTip">
+              <string>Hotkey: 5</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Resource</string>
+              <string>Deposits (5)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2251,11 +2257,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="3" column="1">
             <widget class="QCheckBox" name="enable_ao_view">
+             <property name="toolTip">
+              <string>Hotkey: 1</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Ambient</string>
+              <string>Ambient (1)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2278,11 +2287,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="11" column="1">
             <widget class="QCheckBox" name="enable_biome_view">
+             <property name="toolTip">
+              <string>Hotkey: 4</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Biome</string>
+              <string>Biome (4)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2308,11 +2320,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="15" column="1">
             <widget class="QCheckBox" name="enable_rough_view">
+             <property name="toolTip">
+              <string>Hotkey: 6</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Rough</string>
+              <string>Rough (6)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2321,11 +2336,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="0" column="1">
             <widget class="QCheckBox" name="enable_ocean_mask_view">
+             <property name="toolTip">
+              <string>Hotkey: 0</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Ocean</string>
+              <string>Ocean (0)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2334,11 +2352,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="5" column="1">
             <widget class="QCheckBox" name="enable_color_view">
+             <property name="toolTip">
+              <string>Hotkey: 2</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Color</string>
+              <string>Color (2)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2347,11 +2368,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="9" column="1">
             <widget class="QCheckBox" name="enable_fault_view">
+             <property name="toolTip">
+              <string>Hotkey: 3</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Faults</string>
+              <string>Faults (3)</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -2367,11 +2391,14 @@ Delete the entire /Output/PNGS --&gt;/Plugin Name/&lt;-- directory after a run!<
            </item>
            <item row="16" column="1">
             <widget class="QCheckBox" name="enable_normal_view">
+             <property name="toolTip">
+              <string>Hotkey: 7</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LayoutDirection::RightToLeft</enum>
              </property>
              <property name="text">
-              <string>Normals</string>
+              <string>Normals (7)</string>
              </property>
              <property name="checked">
               <bool>true</bool>

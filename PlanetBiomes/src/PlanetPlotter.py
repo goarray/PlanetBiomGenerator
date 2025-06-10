@@ -72,7 +72,7 @@ def enable_mesh(main_window, texture_type, visible, plotter, meshes):
         refresh_mesh_opacity(texture_type, plotter, meshes)
     else:
         plotter.remove_actor(texture_type, reset_camera=False)
-        print(f"[ENABLED] {texture_type}: visible={visible}")
+        handle_news(None, "info", f"[ENABLED] {texture_type}: visible={visible}")
 
 
 def handle_enable_view(main_window, texture_type, plotter, meshes):
@@ -93,7 +93,7 @@ def auto_connect_enable_buttons(window, plotter, meshes):
             texture_type = match.group(1)
             button = getattr(window, attr_name)
             if callable(getattr(button, "clicked", None)):
-                print(f"Connecting {attr_name} to enable {texture_type}")
+                handle_news(None, "info", f"Connecting {attr_name} to enable {texture_type}")
                 button.clicked.connect(
                     partial(handle_enable_view, window, texture_type, plotter, meshes))
 
@@ -104,7 +104,7 @@ def refresh_mesh_opacity(texture_type, plotter, meshes):
         print(f"[WARN] Tried to refresh unknown texture: {texture_type}")
         return
     if not meshes[texture_type].get("visible", True):
-        print(f"[DEBUG] {texture_type} is hidden; skipping opacity refresh.")
+        handle_news(None, "info", f"[DEBUG] {texture_type} is hidden; skipping opacity refresh.")
         return
     plotter.remove_actor(texture_type, reset_camera=False)
     opacity = config.get(
@@ -116,7 +116,7 @@ def refresh_mesh_opacity(texture_type, plotter, meshes):
         name=texture_type,
         opacity=opacity,
     )
-    print(
+    handle_news(None, "info", 
         f"[REFRESH] {texture_type}: opacity={opacity}, visible={meshes[texture_type].get('visible')}"
     )
     plotter.render()
@@ -152,7 +152,7 @@ def generate_sphere(main_window, plotter, run_once=[False]):
 
     if not biom_files:
         print(f"No .biom files in {biom_dir}, checking template path...")
-        biom_files = sorted(TEMPLATE_PATH.glob("*.biom"))
+        biom_files = [TEMPLATE_PATH]
 
     if not biom_files:
         raise FileNotFoundError(
@@ -168,8 +168,12 @@ def generate_sphere(main_window, plotter, run_once=[False]):
 
     resolution = 256 * scale
 
+    # Dictionary to store meshes for each texture type
+    meshes = {}
+
     # Fully reset plotter
     plotter.clear()  # Clear all actors, lights, and cameras
+    meshes.clear()
 
     # Create base sphere geometry
     sphere = pv.Sphere(theta_resolution=resolution, phi_resolution=(2 * resolution))
@@ -184,11 +188,13 @@ def generate_sphere(main_window, plotter, run_once=[False]):
     north_mask = phi <= np.pi / 2
     south_mask = phi > np.pi / 2
 
+    def normalize_radius(theta):
+        return 1.0 / np.maximum(np.abs(np.cos(theta)), np.abs(np.sin(theta)))
+
     # North hemisphere UVs
     phi_n = phi[north_mask]
     theta_n = theta[north_mask]
-    r_n = phi_n / (np.pi / 2)
-    r_n = np.clip(r_n, 0, 1)
+    r_n = (phi_n / (np.pi / 2)) * normalize_radius(theta_n)
     u_n = 0.5 + 0.5 * r_n * np.cos(theta_n)
     v_n = 0.5 + 0.5 * r_n * np.sin(theta_n)
     v_n = v_n * 0.5 + 0.5  # top half
@@ -196,8 +202,7 @@ def generate_sphere(main_window, plotter, run_once=[False]):
     # South hemisphere UVs with longitude inversion
     phi_s = phi[south_mask]
     theta_s = np.mod(-theta[south_mask], 2 * np.pi)
-    r_s = (np.pi - phi_s) / (np.pi / 2)
-    r_s = np.clip(r_s, 0, 1)
+    r_s = ((np.pi - phi_s) / (np.pi / 2)) * normalize_radius(theta_s)
     u_s = 0.5 + 0.5 * r_s * np.cos(theta_s)
     v_s = 0.5 + 0.5 * r_s * np.sin(theta_s)
     v_s = v_s * 0.5  # bottom half
@@ -221,10 +226,33 @@ def generate_sphere(main_window, plotter, run_once=[False]):
     v[north_mask] = v_n
     u[south_mask] = u_s
     v[south_mask] = v_s
-    sphere.active_texture_coordinates = np.column_stack((u, v))
 
-    # Dictionary to store meshes for each texture type
-    meshes = {}
+    # Debug UV ranges
+    print(
+        f"[DEBUG] North UV: u_min={u[north_mask].min():.3f}, u_max={u[north_mask].max():.3f}, "
+        f"v_min={v[north_mask].min():.3f}, v_max={v[north_mask].max():.3f}"
+    )
+    print(
+        f"[DEBUG] South UV: u_min={u[south_mask].min():.3f}, u_max={u[south_mask].max():.3f}, "
+        f"v_min={v[south_mask].min():.3f}, v_max={v[south_mask].max():.3f}"
+    )
+    # Debug UV ranges with additional angles
+    angles = [45, 135, 225, 315]  # 45° and 135° east/west in both hemispheres
+    angle_radians = np.radians(angles)
+
+    for angle in angle_radians:
+        mask_angle = np.isclose(
+            theta, angle, atol=np.radians(2)
+        )  # Allow slight tolerance
+        if np.any(mask_angle):
+            print(
+                f"[DEBUG] Angle {np.degrees(angle):.0f}° UV: "
+                f"u_min={u[mask_angle].min():.3f}, u_max={u[mask_angle].max():.3f}, "
+                f"v_min={v[mask_angle].min():.3f}, v_max={v[mask_angle].max():.3f}"
+            )
+
+    sphere.active_texture_coordinates = np.column_stack((u, v))
+    sphere.active_texture_coordinates = np.column_stack((u, v))
 
     # Load textures and create meshes
     for texture_type in TEXTURE_TYPES:
@@ -283,21 +311,24 @@ def generate_sphere(main_window, plotter, run_once=[False]):
         if checkbox:
             checkbox.setChecked(True)
     plotter.update()
-    if run_once[0]:
-        time.sleep(0.5)
-    run_once[0] = True
+
+    def suppress_vtk_stereo_mode():
+        # Override stereo keys with no-op
+        for key in ['1','2','3','4','5','6','7','8','9']:
+            plotter.add_key_event(key, lambda: None)
+    suppress_vtk_stereo_mode()
 
     # Add key bindings for toggling
     key_callbacks = {
-        "f": "fault",
-        "b": "biome",
-        "e": "resource",
-        "c": "color",
-        "s": "surface_metal",
-        "o": "ocean_mask",
-        "n": "normal",
-        "a": "ao",
-        "r": "rough",
+        "8": "surface_metal",
+        "7": "normal",
+        "6": "rough",
+        "5": "resource",
+        "4": "biome",
+        "3": "fault",
+        "2": "color",
+        "1": "ao",
+        "0": "ocean_mask",
     }
     for key, texture_type in key_callbacks.items():
         plotter.add_key_event(
@@ -311,7 +342,7 @@ def generate_sphere(main_window, plotter, run_once=[False]):
             ),
         )
 
-    # Example: Connect a config update callback (e.g., for sliders)
+    # Connect a config update callback
     def on_config_updated():
         global config, TEXTURE_OPACITIES
         config = load_config()

@@ -35,3 +35,8 @@ PlanetBiomes/csv/BaseGameMergedColors.csv
 PlanetBiomes/Input/zswwhitesun.csv
 PlanetBiomes/assets/images/background_image.jpg
 PlanetBiomes/assets/images/background_image.png
+PlanetBiomes/src/createsphere.py
+PlanetBiomes/BiomGridN.png
+PlanetBiomes/height_map.png
+PlanetBiomes/heightmap.png
+PlanetBiomes/plain_biom.biom
