@@ -2,7 +2,7 @@
 """
 Planet Textures Generator
 
-Generates PNG and DDS texture images for planet biomes based on .biom files.
+Generates PNG and DDS texture images for planet biomes.
 Outputs four maps per hemisphere: color, surface, ocean, ambient, normal, rough.
 Applies effects like noise, elevation, shading, craters, and edge blending
 to create realistic planetary visuals when process_images is True.
@@ -40,8 +40,9 @@ import shutil
 import math
 from PIL import Image, ImageEnhance
 from PlanetNewsfeed import handle_news
-from PlanetTerrain import generate_terrain_normal, generate_terrain
+from PlanetTerrain import generate_terrain_normal, generate_normal_map
 from PlanetConstants import (
+    get_config,
     TEXCONV_PATH,
     BASE_DIR,
     CONFIG_DIR,
@@ -71,51 +72,12 @@ from PlanetConstants import (
 
 
 # Global configuration
-def load_config():
-    """Load plugin_name from config.json."""
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
-
-
-config = load_config()
+config = get_config()
 plugin_name = config.get("plugin_name", "default_plugin")
-if plugin_name == "default_plugin" or not plugin_name.endswith(".esm"):
-    handle_news(None, "error", f"[ERROR] Invalid or missing plugin_name in config: {plugin_name}")
-    sys.exit(1)
+planet_name = config.get("planet_name", "default_planet")
 
 GRID_SIZE = (256, 256)
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
-
-class CsSF_BiomContainer(NamedTuple):
-    magic: int
-    numBiomes: int
-    biomeIds: List[int]
-    biomeGridN: List[int]
-    resrcGridN: List[int]
-    biomeGridS: List[int]
-    resrcGridS: List[int]
-
-
-# .biom Structure
-CsSF_Biom = Struct(
-    "magic" / Const(0x105, UInt16),
-    "numBiomes" / Rebuild(UInt32, len_(this.biomeIds)),
-    "biomeIds" / Array(this.numBiomes, UInt32),
-    Const(2, UInt32),
-    Const(GRID_SIZE[0], UInt32),
-    Const(GRID_SIZE[1], UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "biomeGridN" / Array(GRID_FLATSIZE, UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "resrcGridN" / Array(GRID_FLATSIZE, UInt8),
-    Const(GRID_SIZE[0], UInt32),
-    Const(GRID_SIZE[1], UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "biomeGridS" / Array(GRID_FLATSIZE, UInt32),
-    Const(GRID_FLATSIZE, UInt32),
-    "resrcGridS" / Array(GRID_FLATSIZE, UInt8),
-)
-
 
 def load_biome_data(
     csv_path: Path | str, used_biome_ids: set[int] | None = None
@@ -264,69 +226,28 @@ def load_biome_data(
     return biome_data
 
 
-def load_biom_file(output_dir, planet_name, used_biome_ids, biome_data):
-    """Load biome-related images and convert to RGB grids using biome_data."""
+def load_biom_file(output_dir, planet_name, biome_data, config):
+    color_path = output_dir / f"{planet_name}_color.png"
+    print(f"Loading color PNG: {color_path}")
+    if not color_path.exists():
+        handle_news(None, "error", f"Color PNG not found: {color_path}")
+        raise FileNotFoundError(f"Color PNG not found: {color_path}")
 
-    # Define file paths
-    fault_path = output_dir / f"{planet_name}_fault.png"
-    biome_path = output_dir / f"{planet_name}_biome.png"
-    resource_path = output_dir / f"{planet_name}_resource.png"
+    try:
+        biome_img = Image.open(color_path).convert("RGB")
+        biome_array = np.array(biome_img, dtype=np.uint8)
+        print(f"Color image shape: {biome_array.shape}")
+    except Exception as e:
+        handle_news(None, "error", f"Failed to load color PNG {color_path}: {e}")
+        raise
 
-    # Load images
-    fault_img = np.array(Image.open(biome_path), dtype=np.uint32)
-    biome_img = np.array(Image.open(biome_path), dtype=np.uint32)
-    resource_img = np.array(Image.open(biome_path), dtype=np.uint32)
-
-    # Extract top and bottom halves for biome_grid_n and biome_grid_s
-    biome_grid_n = np.array(biome_img[:128, :], dtype=np.uint32)
-    biome_grid_s = np.array(biome_img[128:, :], dtype=np.uint32)
-
-    # Update biome IDs
-    used_biome_ids.update(biome_grid_n.flatten())
-    used_biome_ids.update(biome_grid_s.flatten())
-
-    # Apply upscale transformation
-    upscale_factor = config["texture_resolution"] // 256
-    biome_grid_n = upscale_grid(biome_grid_n, upscale_factor, biome_data=biome_data)
-    biome_grid_s = upscale_grid(biome_grid_s, upscale_factor, biome_data=biome_data)
-
-    # Update grid size
+    # Set GRID_SIZE once
     global GRID_SIZE, GRID_FLATSIZE
-    GRID_SIZE = biome_grid_n.shape[:2]
+    GRID_SIZE = biome_array.shape[:2]
     GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
+    print(f"Updated GRID_SIZE: {GRID_SIZE}, GRID_FLATSIZE: {GRID_FLATSIZE}")
 
-    return biome_grid_n, biome_grid_s
-
-
-def upscale_grid(
-    grid: np.ndarray, factor: int, biome_data: Dict[int, Dict]
-) -> np.ndarray:
-    """Upscale biome grid and convert to RGB using biome_data with smoothing."""
-    handle_news(None)
-    factor = 2 ** int(math.ceil(math.log2(factor)))
-    h, w = grid.shape
-    new_h, new_w = h * factor, w * factor
-
-    # Convert grid to RGB
-    color_grid = np.zeros((h, w, 3), dtype=np.uint8)
-    default_color = (128, 128, 128)
-    for form_id in np.unique(grid):
-        color = biome_data.get(form_id, {}).get("color", default_color)
-        color_grid[grid == form_id] = color
-
-    # Upscale with bilinear interpolation
-    image = Image.fromarray(color_grid, mode="RGB")
-    upscaled = image.resize((new_w, new_h), resample=Image.Resampling.BILINEAR)
-
-    # Apply Gaussian blur to smooth transitions
-    upscaled_array = np.array(upscaled, dtype=np.float32)
-    #sigma = max(1.0, factor / 2.0)  # Scale blur with upscale factor
-    #for channel in range(3):
-    #    upscaled_array[:, :, channel] = gaussian_filter(
-    #       upscaled_array[:, :, channel], sigma=sigma
-    #    )
-
-    return np.clip(upscaled_array, 0, 255).astype(np.uint8)
+    return biome_array
 
 
 def generate_noise(shape, scale=None):
@@ -494,11 +415,11 @@ def generate_fractal_noise(
     # **Apply Erosion Effects for Valleys**
     grad_x, grad_y = np.gradient(combined)
     erosion_map = np.abs(grad_x) + np.abs(grad_y)
-    combined -= erosion_map * 0.5  # ✅ Valleys deepen while mountains stabilize
+    combined -= erosion_map * 0.5  # Valleys deepen while mountains stabilize
 
     # **Normalize and Strengthen Terrain Growth**
     combined = safe_normalize(combined)
-    combined = np.power(combined, 2.3)  # ✅ Enhances ridge prominence
+    combined = np.power(combined, 2.3)  # Enhances ridge prominence
 
     return safe_normalize(combined)
 
@@ -638,25 +559,6 @@ def desaturate_color(rgb, texture_saturation):
     return tuple(int(np.clip(c * 255, 0, 255)) for c in (r, g, b))
 
 
-def generate_heightmap(rgb_grid: np.ndarray, biome_data: Dict[int, Dict], min_out=80, max_out=175) -> Image.Image:
-    """Generate heightmap from RGB grid using biome_data heights."""
-    handle_news(None)
-    height, width, _ = rgb_grid.shape
-    elevation = np.zeros((height, width), dtype=np.uint8)
-    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
-
-    for y in range(height):
-        for x in range(width):
-            rgb = tuple(rgb_grid[y, x])
-            form_id = rgb_to_form_id.get(rgb, None)
-            raw_height = biome_data.get(form_id, {}).get("height", 127) if form_id is not None else 127
-            norm_height = np.clip(raw_height, 0, 255)
-            scaled = min_out + (norm_height / 255) * (max_out - min_out)
-            elevation[y, x] = int(scaled)
-
-    return Image.fromarray(elevation, mode="L")
-
-
 def generate_rough_map(
     height_img,
     rgb_grid,
@@ -744,32 +646,6 @@ def generate_rough_map(
     )
 
 
-def generate_ocean_mask(
-    rgb_grid: np.ndarray, biome_data: Dict[int, Dict]
-) -> Image.Image:
-    """Generate ocean mask where height <= 4 is black (ocean), else remains white (land)."""
-    handle_news(None)
-    h, w, _ = rgb_grid.shape
-    ocean_mask = np.full((h, w), 255, dtype=np.uint8)  # Start with all white (land)
-
-    rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
-
-    for y in range(h):
-        for x in range(w):
-            rgb = tuple(rgb_grid[y, x])
-            form_id = rgb_to_form_id.get(rgb, None)
-            height = (
-                biome_data.get(form_id, {}).get("height", 255)
-                if form_id is not None
-                else 255
-            )
-
-            if height <= 4:
-                ocean_mask[y, x] = 0
-
-    return Image.fromarray(ocean_mask, mode="L")
-
-
 def create_biome_image(
     rgb_grid: np.ndarray, biome_data: Dict[int, Dict]
 ) -> Dict[str, Image.Image]:
@@ -785,8 +661,34 @@ def create_biome_image(
     texture_tint = config.get("texture_tint", 0.5)
     fractal_map = None
 
+    png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
+    ocean_image_path = png_dir / f"{planet_name}_ocean_mask.png"
+    surface_image_path = png_dir / f"{planet_name}_height.png"
+    terrain_image_path = png_dir / f"{planet_name}_terrain.png"
+    color_image_path = (
+        png_dir / f"{planet_name}_color.png"
+    )  # Path to original color.png
+
+    # Load input images
+    ocean_image = Image.open(ocean_image_path).convert("L")
+    surface_image = Image.open(surface_image_path).convert("L")
+
+    # Load original color.png instead of using rgb_grid
+    if not color_image_path.exists():
+        handle_news(None, "error", f"Original color PNG not found: {color_image_path}")
+        raise FileNotFoundError(f"Original color PNG not found: {color_image_path}")
+    color_image = Image.open(color_image_path).convert("RGB")
+    color = np.array(color_image, dtype=np.uint8)  # Use original color map
+
     height, width, _ = rgb_grid.shape
-    color = rgb_grid.copy()
+    if color.shape[:2] != (height, width):
+        handle_news(
+            None,
+            "warning",
+            f"Resizing color image to match biome grid {height}x{width}",
+        )
+        color_image = color_image.resize((width, height), Image.Resampling.LANCZOS)
+        color = np.array(color_image, dtype=np.uint8)
 
     handle_news(None)
 
@@ -794,11 +696,14 @@ def create_biome_image(
         noise_map = generate_noise(
             (height, width), scale=config.get("noise_scale", 4.17)
         )
-        elevation_map = generate_elevation(rgb_grid, biome_data)
-        if enable_texture_terrain:
-            height, width = elevation_map.shape
-            elevation_map = generate_terrain(width, height)
-        edge_blend_map = generate_edge_blend(rgb_grid, biome_data)
+        elevation_map = generate_elevation(rgb_grid, biome_data)  # Use biome grid
+        generate_terrain_normal(
+            river_mask_path=str(png_dir / f"{planet_name}_river_mask.png"),
+            terrain_image_path=str(terrain_image_path),
+            mountain_mask_path=str(terrain_image_path),
+            output_path=str(png_dir / f"{planet_name}_terrain_normal.png"),
+        )
+        edge_blend_map = generate_edge_blend(rgb_grid, biome_data)  # Use biome grid
         shading_map = generate_shading(elevation_map)
         elevation_norm = elevation_map / 255.0
         fractal_map = generate_fractal_noise(elevation_norm)
@@ -809,13 +714,17 @@ def create_biome_image(
         rgb_to_form_id = {tuple(v["color"]): k for k, v in biome_data.items()}
         for y in range(height):
             for x in range(width):
-                rgb = tuple(rgb_grid[y, x])
-                form_id = rgb_to_form_id.get(rgb, None)
-                category = biome_data.get(form_id, {}).get("category", "") if form_id is not None else ""
+                rgb = tuple(color[y, x])  # Start with original color
+                form_id = rgb_to_form_id.get(tuple(rgb_grid[y, x]), None)  # Biome ID
+                category = (
+                    biome_data.get(form_id, {}).get("category", "")
+                    if form_id is not None
+                    else ""
+                )
                 lat_factor = abs((y / height) - 0.5) * 0.4
                 elevation_factor = elevation_map[y, x] / 255.0
+
                 # Apply elevation-based shading
-                # under noise
                 shaded_color = tuple(
                     int(c * (0.8 + 0.2 * elevation_factor)) for c in rgb
                 )
@@ -827,19 +736,20 @@ def create_biome_image(
                 else:
                     light_adjusted_color = shaded_color
 
-                # Apply fractal noise # under noise
+                # Apply fractal noise
                 fractal_adjusted_color = tuple(
                     int(c * (0.85 + 0.15 * fractal_map[y, x]))
                     for c in light_adjusted_color
                 )
-                # Apply latitude-based darkening # Under bacis
+                # Apply latitude-based darkening
                 lat_adjusted_color = tuple(
-                    int(c * (1 - lat_factor)) for c in fractal_adjusted_color
+                    int(c * (1.0 - lat_factor)) for c in fractal_adjusted_color
                 )
                 # Apply edge blending
                 if enable_texture_edges:
                     blended_color = tuple(
-                        int(c * (1 - 0.5 * edge_blend_map[y, x])) for c in lat_adjusted_color
+                        int(c * (1 - 0.5 * edge_blend_map[y, x]))
+                        for c in lat_adjusted_color
                     )
                 else:
                     blended_color = lat_adjusted_color
@@ -853,7 +763,7 @@ def create_biome_image(
                 else:
                     noisy_color = blended_color
 
-                # Apply atmospheric fade (reduces intensity toward edges)
+                # Apply atmospheric fade
                 if enable_basic_filters:
                     fade_factor = 1.0 - atmospheric_fade_map[y, x]
                     faded_color = tuple(
@@ -870,19 +780,17 @@ def create_biome_image(
                         texture_tint,
                     )
                     # Apply desaturation
-
-                    desaturated_color = desaturate_color(tinted_color, texture_saturation)
+                    desaturated_color = desaturate_color(
+                        tinted_color, texture_saturation
+                    )
                     color[y, x] = desaturated_color
-    else:
-        color = rgb_grid
+                else:
+                    color[y, x] = faded_color
 
     color_image = Image.fromarray(color, mode="RGB")
-    if process_images:
-        if enable_basic_filters:
-            color_image = enhance_brightness(color_image, bright_factor)
+    if process_images and enable_basic_filters:
+        color_image = enhance_brightness(color_image, bright_factor)
 
-    surface_image = generate_heightmap(rgb_grid, biome_data)
-    ocean_image = generate_ocean_mask(rgb_grid, biome_data)
     ao_image = generate_ao_map(rgb_grid, biome_data)
     rough_image = generate_rough_map(
         height_img=surface_image,
@@ -898,7 +806,7 @@ def create_biome_image(
     color_image_grayscale = color_image.convert("L")
     normal_image = generate_normal_map(color_image_grayscale)
 
-    return {
+    maps = {
         "color": color_image,
         "surface": surface_image,
         "ocean": ocean_image,
@@ -907,26 +815,10 @@ def create_biome_image(
         "ao": ao_image,
     }
 
-
-def generate_normal_map(height_img, invert_height=True):
-    handle_news(None)
-    strength = config.get("texture_roughness", 0.5)
-    height = np.asarray(height_img).astype(np.float32) / 255.0
-    if invert_height:
-        height = 1.0 - height
-    dx = sobel(height, axis=1) * strength
-    dy = -sobel(height, axis=0) * strength
-    dz = np.ones_like(height)
-    length = np.sqrt(dx**2 + dy**2 + dz**2)
-    nx = dx / (length + 1e-8)
-    ny = dy / (length + 1e-8)
-    nz = dz / (length + 1e-8)
-    r = ((nx + 1) * 0.5 * 255).astype(np.uint8)
-    g = ((ny + 1) * 0.5 * 255).astype(np.uint8)
-    b = ((nz + 1) * 0.5 * 255).astype(np.uint8)
-    normal_map = np.stack([r, g, b], axis=-1)
-
-    return Image.fromarray(normal_map, mode="RGB")
+    print(f"Generated maps: {list(maps.keys())}")
+    for key, img in maps.items():
+        print(f"Map {key} mode: {img.mode}, size: {img.size}")
+    return maps
 
 
 def generate_ao_map(
@@ -1024,220 +916,131 @@ def convert_png_to_dds(
 
 def main():
     global plugin_name
+    global planet_name
     print(f"Landscaping permit approved for: {plugin_name}", flush=True)
     print("=== Starting PlanetTextures ===", flush=True)
 
     PNG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     handle_news(None, "info", f"PNG output directory: {PNG_OUTPUT_DIR}")
 
-    biom_dir = PLUGINS_DIR / plugin_name / BIOM_DIR / plugin_name
-    biom_files = list(biom_dir.glob("*.biom"))
-
-    handle_news(None, "info", f"Found .biom files: {biom_files}")
-
-    if not biom_files:
-        print("Error: No .biom files found for plugin.")
-        sys.exit(1)
-
-    used_biome_ids = set()
-    # Load biome data without filtering by used_biome_ids initially
+    # Load biome data
     biome_data = load_biome_data(CSV_PATH)
     if not biome_data:
         raise ValueError("No valid biome data loaded from Biomes.csv")
 
-    for biom_path in biom_files:
-        planet_name = biom_path.stem  # Extract planet name from file name
-        output_dir = PNG_OUTPUT_DIR / plugin_name / planet_name  # Define correct output dir
+    output_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-        try:
-            biome_grid_n, biome_grid_s = load_biom_file(output_dir, planet_name, used_biome_ids, biome_data)
-            handle_news(None, "info", f"Loaded {biom_path.name}: biome IDs = {used_biome_ids}")
-        except Exception as e:
-            print(f"Error processing {biom_path.name}: {e}")
-            continue
-
-    handle_news(None, "info", f"Used biome IDs: {used_biome_ids}")
+    try:
+        biome_grid = load_biom_file(output_dir, planet_name, biome_data, config)
+        handle_news(None, "info", f"Loaded unified biome for {planet_name}")
+    except Exception as e:
+        print(f"Error loading biome for {planet_name}: {e}")
+        sys.exit(1)
 
     keep_pngs = config.get("keep_pngs_after_conversion", True)
-    for biom_path in biom_files:
-        planet_name = biom_path.stem
-        output_dir = (
-            PNG_OUTPUT_DIR / plugin_name / planet_name
-        )  # Define correct output dir
-        handle_news(None, "info", f"Processing blueprint for planet {biom_path.name}")
-        try:
-            biome_grid_n, biome_grid_s = load_biom_file(
-                output_dir, planet_name, used_biome_ids, biome_data
+    handle_news(None, "info", f"Processing blueprint for planet {planet_name}")
+
+    try:
+        handle_news(None, "info", f"Generating textures for {planet_name}...")
+        maps = create_biome_image(biome_grid, biome_data)
+        handle_news(None, "debug", f"Maps generated: {list(maps.keys())}")
+
+        copied_textures = set()
+
+        dds_output_dir = (
+            PLUGINS_DIR
+            / plugin_name
+            / "textures"
+            / plugin_name
+            / "planets"
+            / planet_name
+        )
+
+        dds_name_map = {
+            "color": f"{planet_name}_color.dds",
+            "surface": f"{planet_name}_surface_metal.dds",
+            "ocean": f"{planet_name}_ocean_mask.dds",
+            "normal": f"{planet_name}_normal.dds",
+            "rough": f"{planet_name}_rough.dds",
+            "ao": f"{planet_name}_ao.dds",
+            "terrain_normal": f"{planet_name}_terrain_normal.dds",
+        }
+
+        for texture_type, img in maps.items():
+            suffix_map = {
+                "surface": "surface_metal",
+                "ocean": "ocean_mask",
+            }
+            suffix = suffix_map.get(texture_type, texture_type)
+            png_filename = f"{planet_name}_{suffix}.png"
+            png_path = output_dir / png_filename
+
+            img.save(png_path)
+            handle_news(None, "info", f"Saved PNG: {png_path}")
+
+            dds_filename = dds_name_map.get(texture_type, f"{planet_name}_{suffix}.dds")
+            dds_path = convert_png_to_dds(
+                png_path,
+                dds_output_dir,
+                plugin_name,
+                texture_type,
+                dds_filename,
             )
-            handle_news(None, "info", f"Generating textures for {planet_name} North...")
-            maps_n = create_biome_image(biome_grid_n, biome_data)
-            handle_news(None, "info", f"Generating textures for {planet_name} South...")
-            maps_s = create_biome_image(biome_grid_s, biome_data)
+            handle_news(None, "info", f"DDS saved: {dds_path}")
 
-            once_per_run = False
-            copied_textures = set()
-            for hemisphere, maps in [("North", maps_n), ("South", maps_s)]:
-                preview_dir = TEMP_DIR
-                preview_dir.mkdir(parents=True, exist_ok=True)
+            if not keep_pngs:
+                os.remove(png_path)
+                handle_news(None, "info", f"Deleted PNG: {png_path}")
 
-                for texture_type in [
-                    "color",
-                    "surface",
-                    "ocean",
-                    "ao",
-                    "normal",
-                    "rough",
-                ]:
-                    temp_filename = f"temp_{texture_type}.png"
-                    suffix_map = {
-                        "surface": "surface_metal",
-                        "ocean": "ocean_mask",
-                    }
-                    suffix = suffix_map.get(texture_type, texture_type)
-                    png_filename = f"{planet_name}_{hemisphere}_{suffix}.png"
-                    planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
-                    planet_png_dir.mkdir(parents=True, exist_ok=True)
+        # Generate terrain normal if needed
+        if "ocean" in maps:
+            try:
+                terrain_path = output_dir / f"{planet_name}_terrain.png"
+                terrain_normal_path = output_dir / f"{planet_name}_terrain_normal.png"
+                if terrain_path.exists():
+                    generate_terrain_normal(
+                        river_mask_path=str(
+                            output_dir / f"{planet_name}_river_mask.png"
+                        ),
+                        terrain_image_path=str(terrain_path),
+                        mountain_mask_path=str(terrain_path),
+                        output_path=str(terrain_normal_path),
+                    )
+                    handle_news(
+                        None, "info", f"Generated terrain normal: {terrain_normal_path}"
+                    )
+                    # Convert terrain normal to DDS
+                    dds_path = convert_png_to_dds(
+                        terrain_normal_path,
+                        dds_output_dir,
+                        plugin_name,
+                        "terrain_normal",
+                        dds_name_map["terrain_normal"],
+                    )
+                    handle_news(None, "info", f"DDS saved: {dds_path}")
+                    if not keep_pngs:
+                        os.remove(terrain_normal_path)
+                        handle_news(None, "info", f"Deleted PNG: {terrain_normal_path}")
+                else:
+                    handle_news(
+                        None, "warning", f"Terrain map not found: {terrain_path}"
+                    )
+            except Exception as e:
+                handle_news(None, "error", f"Terrain normal generation failed: {e}")
 
-                    png_path = planet_png_dir / png_filename
-                    try:
-                        maps[texture_type].save(png_path)
-                        handle_news(None, "info", f"Saved PNG: {png_path}")
-                    except KeyError:
-                        handle_news(
-                            None,
-                            "error",
-                            f"Texture type '{texture_type}' not found in maps",
-                        )
-                        continue
+        print(f"Generated textures for {planet_name}: {list(maps.keys())}")
 
-                    if texture_type not in copied_textures:
-                        shutil.copy(png_path, preview_dir / temp_filename)
-                        copied_textures.add(texture_type)
+    except Exception as e:
+        print(f"Error processing {planet_name}: {e}")
+        sys.exit(1)
 
-                    if not once_per_run:
-                        print("Review documentation submitted.")
-                        once_per_run = True
-
-                    if texture_type == "ocean":
-                        try:
-                            output_path = planet_png_dir / f"{planet_name}_{hemisphere}_terrain_normal.png"
-                            generate_terrain_normal(png_path, output_path)
-                            handle_news(None, "info", f"Generated terrain normal: {output_path}")
-                        except Exception as e:
-                            handle_news(None, "error", f"Terrain normal generation failed: {e}")
-
-            print(
-                f"Generated textures for {planet_name} (North and South: color, surface, ocean, normal, ao)",
-                file=sys.stderr,
-            )
-
-            for texture_type in [
-                "color",
-                "surface",
-                "ocean",
-                "normal",
-                "rough",
-                "ao",
-                "terrain_normal",
-            ]:
-                planet_png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
-                suffix_map = {
-                    "surface": "surface_metal",
-                    "ocean": "ocean_mask",
-                    "terrain_normal": "terrain_normal",
-                }
-                suffix = suffix_map.get(texture_type, texture_type)
-                north_path = planet_png_dir / f"{planet_name}_North_{suffix}.png"
-                south_path = planet_png_dir / f"{planet_name}_South_{suffix}.png"
-                combined_path = planet_png_dir / f"{planet_name}_{suffix}.png"
-
-                if north_path.exists() and south_path.exists():
-                    try:
-                        north_img = Image.open(north_path)
-                        south_img = Image.open(south_path)
-                        combined_img = Image.new(
-                            (
-                                "RGB"
-                                if texture_type not in ["ao", "ocean", "rough"]
-                                else "L"
-                            ),
-                            (north_img.width, north_img.height + south_img.height),
-                        )
-                        combined_img.paste(north_img, (0, 0))
-                        combined_img.paste(south_img, (0, north_img.height))
-                        combined_img.save(combined_path)
-                        handle_news(
-                            None, "info", f"Combined image saved: {combined_path}"
-                        )
-
-                        layer2_path = planet_png_dir / f"{planet_name}_terrain_normal.png"
-                        if layer2_path.exists():
-                            handle_news(None, "info", f"Terrain normal exists: {layer2_path}")
-                        else:
-                            handle_news(None, "warning", f"Missing expected terrain normal: {layer2_path}")
-
-                        dds_output_dir = (
-                            PLUGINS_DIR
-                            / plugin_name
-                            / "textures"
-                            / plugin_name
-                            / "planets"
-                            / planet_name
-                        )
-                        dds_output_dir.mkdir(parents=True, exist_ok=True)
-
-                        dds_name_map = {
-                            "color": f"{planet_name}_color.dds",
-                            "surface": f"{planet_name}_surface_metal.dds",
-                            "ocean": f"{planet_name}_ocean_mask.dds",
-                            "normal": f"{planet_name}_normal.dds",
-                            "rough": f"{planet_name}_rough.dds",
-                            "ao": f"{planet_name}_ao.dds",
-                            "terrain_normal": f"{planet_name}_terrain_noraml.dds",
-                        }
-                        dds_filename = dds_name_map[texture_type]
-
-                        try:
-                            dds_path = convert_png_to_dds(
-                                combined_path,
-                                dds_output_dir,
-                                plugin_name,
-                                texture_type,
-                                dds_filename,
-                            )
-                            handle_news(None, "info", f"Combined DDS saved: {dds_path}")
-                        except Exception as e:
-                            handle_news(
-                                None,
-                                "error",
-                                f"Failed to convert {combined_path} to DDS: {e}",
-                            )
-
-                        if not keep_pngs:
-                            plugin_dir = (
-                                north_path.parent.parent
-                            )
-                            try:
-                                shutil.rmtree(plugin_dir)
-                                print(f"Deleted plugin directory: {plugin_dir}", file=sys.stderr)
-                            except Exception as e:
-                                print(f"Error deleting plugin directory: {plugin_dir}: {e}", file=sys.stderr)
-
-                    except Exception as e:
-                        handle_news(
-                            None,
-                            "error",
-                            f"Error combining textures for {planet_name} ({texture_type}): {e}",
-                        )
-
-            print(f"Visual inspection of {planet_name} complete.")
-
-        except Exception as e:
-            print(f"Error processing {biom_path.name}: {e}")
-
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.py")], check=True)
-    sys.stdout.flush()
-    sys.exit()
+    print(f"Visual inspection of {planet_name} complete.")
+    if config.get("run_planet_materials", True):
+        subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetMaterials.py")], check=True)
+    else:
+        sys.stdout.flush()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

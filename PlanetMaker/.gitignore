@@ -1,0 +1,5 @@
+# Ignore output, plugins, and pycache directories
+output/
+Plugins/
+src/__pycache__/
+src/temp.py/

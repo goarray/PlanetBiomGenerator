@@ -1348,7 +1348,7 @@ def main():
 
         inst.save(out_dir / f"{planet}.biom")
 
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetTextures.py")], check=True)
+    subprocess.run([sys.executable, str(SCRIPT_DIR / "PlanetSphere.py")], check=True)
 
 
 if __name__ == "__main__":

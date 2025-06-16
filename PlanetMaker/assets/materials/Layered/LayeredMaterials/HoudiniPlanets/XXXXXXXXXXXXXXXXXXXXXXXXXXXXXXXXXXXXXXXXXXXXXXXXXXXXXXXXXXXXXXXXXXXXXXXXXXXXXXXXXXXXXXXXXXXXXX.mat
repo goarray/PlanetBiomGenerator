@@ -1,0 +1,1068 @@
+{
+	"Filename" : "materials\\plugin_name\\planets\\planet_name.mat",
+	"Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\2LayerStandard.mat" ],
+	"Objects" : 
+	[
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC22564F:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::BlenderID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC22565D:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC225668:000636B6:A021B43F"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : ""
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::LODMaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"NumLODMaterials" : "0"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::LevelOfDetailSettings",
+					"Version" : 1
+				}
+			],
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\2LayerStandard.mat"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Blender1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : ""
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 2,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 6,
+					"Type" : "BSMaterial::ParamBool"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC22564F:000636B6:A021B43F",
+			"Parent" : "res:9ADFE7D4:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Layer1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC225660:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC225665:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC22565D:000636B6:A021B43F",
+			"Parent" : "res:87106673:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC225663:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Multiply"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialOverrideColorTypeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC22565D:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC225660:000636B6:A021B43F",
+			"Parent" : "res:8747510A:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"DisableMipBiasHint" : "false"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MipBiasSetting"
+				},
+				{
+					"Data" : 
+					{
+						"Color" : 
+						{
+							"Data" : 
+							{
+								"Value" : 
+								{
+									"Data" : 
+									{
+										"w" : "1",
+										"x" : "0.8",
+										"y" : "0.8",
+										"z" : "0.8"
+									},
+									"Type" : "XMFLOAT4"
+								}
+							},
+							"Type" : "BSMaterial::Color",
+							"Version" : 1
+						}
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_color.dds"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_rough.dds"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_surface_metal.dds"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ao.dds"
+					},
+					"Index" : 5,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ocean_mask.dds"
+					},
+					"Index" : 10,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.55"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC225660:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC225663:000636B6:A021B43F",
+			"Parent" : "res:8774BBFC:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC22565D:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC225665:000636B6:A021B43F",
+			"Parent" : "res:88D32867:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Layer2"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC22566A:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC22566E:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC225668:000636B6:A021B43F",
+			"Parent" : "res:972BBAD0:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_Material1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:CC22566C:000636B6:A021B43F"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC225668:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC22566A:000636B6:A021B43F",
+			"Parent" : "res:986BA81D:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_TextureSet1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_terrain_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.15"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC22566A:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC22566C:000636B6:A021B43F",
+			"Parent" : "res:98CBCE74:0005A3FB:A06346EA"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "planet_name_UVStreamA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:CC225668:000636B6:A021B43F",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:CC22566E:000636B6:A021B43F",
+			"Parent" : "res:88D32867:0005A3FB:A06346EA"
+		}
+	],
+	"Summary" : 
+	{
+		"Layer1" : 
+		{
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\2LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_color.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ao.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_ocean_mask.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_surface_metal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Normal" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_normal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_rough.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.80000001192092896,
+						"y" : 0.80000001192092896,
+						"z" : 0.80000001192092896
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"UseVertexColorAsTint" : false
+		},
+		"Layer2" : 
+		{
+			"Blender" : 
+			{
+				"BlendMask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"BlendMode" : "PositionContrast",
+				"BlendTextureAdditiveNormal" : true,
+				"BlendTextureAlbedo" : false,
+				"BlendTextureAo" : false,
+				"BlendTextureMetal" : false,
+				"BlendTextureNormal" : true,
+				"BlendTextureRoughness" : false,
+				"MaskIntensity" : 1,
+				"VertexAlpha" : false,
+				"VertexColorChannel" : "Red"
+			},
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\2LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Normal" : 
+				{
+					"File" : "Data\\Textures\\plugin_name\\planets\\planet_name\\planet_name_terrain_normal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"UseVertexColorAsTint" : false
+		}
+	},
+	"Version" : 1
+}

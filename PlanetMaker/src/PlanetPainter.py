@@ -3,7 +3,7 @@
 Biome Config Editor
 
 A PyQt6-based GUI application for editing biome configuration settings.
-Uses a .ui file for the interface and supports loading/saving JSON configs and running PlanetBiomes.py.
+Uses a .ui file for the interface and supports loading/saving JSON configs and running PlanetMaker.py.
 
 Dependencies:
 - Python 3.8+
@@ -26,6 +26,7 @@ from typing import Dict
 
 # Third Party Libraries
 from pyvistaqt import QtInteractor
+from functools import partial
 from typing import cast
 import numpy as np
 from PyQt6.uic.load_ui import loadUi
@@ -47,7 +48,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QTimer, QProcess, Qt
 from PyQt6.QtGui import QPixmap, QFont, QMovie, QTextCursor
-from PlanetThemes import THEMES
+from PlanetThemes import THEMES, get_biome_palette_stylesheet
+from PlanetUtils import BiomeDatabase, update_biome_selection, biome_db
 from PlanetPlotter import (
     generate_sphere,
     auto_connect_enable_buttons,
@@ -58,10 +60,10 @@ from PlanetNewsfeed import (
     handle_news,
     news_count,
     news_percent,
-    biom_percent,
+    make_percent,
     text_percent,
     total_news,
-    total_biom,
+    total_make,
     total_text,
     total_other,
     reset_news_count,
@@ -69,9 +71,13 @@ from PlanetNewsfeed import (
     load_global_config,
 )
 from PlanetConstants import (
+    # Modules
+    get_config,
+    save_config,
     # Core directories
     BASE_DIR,
     CONFIG_DIR,
+    SCRIPT_DIR,
     INPUT_DIR,
     OUTPUT_DIR,
     PLUGINS_DIR,
@@ -83,7 +89,6 @@ from PlanetConstants import (
     CSV_DIR,
     PREVIEW_PATH,
     # Script and template paths
-    SCRIPT_PATH,
     FOLDER_PATHS,
     TEMPLATE_PATH,
     # UI and static assets
@@ -94,183 +99,16 @@ from PlanetConstants import (
     # Logic/data maps
     BOOLEAN_KEYS,
     PROCESSING_MAP,
-    SPHERE_PATH
+    MAKER_PATH
 )
 
 # Global declarations
-config = {}
+# config = {}
 checkbox_vars = {}
 slider_vars = {}
 process_list = []
 
-
-def load_config():
-    """Load configuration from custom or default JSON file."""
-    global config
-    config_path = CONFIG_PATH if CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
-
-    try:
-        with open(config_path, "r") as f:
-            raw_config = json.load(f)
-    except FileNotFoundError:
-        handle_news(
-            None, "error", f"Error: Config file {config_path} not found. Creating default config."
-        )
-        raw_config = {
-            "total_news": 0,
-            "process_biomes": False,
-            "_program_options": "Pluging related options",
-            "plugin_selected": 0,
-            "plugin_index": ["preview.csv"],
-            "plugin_name": "preview.esm",
-            "enable_preview_mode": False,
-            "_theme_group": "Parameters related to themes",
-            "theme": "Starfield",
-            "_biome_toggles_group": "Biome-related options",
-            "enable_noise": False,
-            "enable_distortion": False,
-            "enable_biases": False,
-            "enable_anomalies": False,
-            "_generation_seed_group": "Random seed settings",
-            "use_random": False,
-            "user_seed": 99999,
-            "_biome_basic_group": "Basic biome parameters",
-            "zoom_factor": 0.5,
-            "enable_tectonic_plates": False,
-            "number_faults": 8,
-            "fault_width": 8,
-            "fault_jitter": 0.5,
-            "fault_smooth": 0.5,
-            "distort_scale": 5,
-            "save_tectonic_maps": True,
-            "squircle_factor": 0.5,
-            "_biome_noise_group": "Noise configuration",
-            "noise_scale": 0.5,
-            "noise_amplitude": 0.5,
-            "noise_scatter": 0.5,
-            "biome_perlin": 0.5,
-            "biome_swap": 0.5,
-            "biome_fractal": 0.5,
-            "_biome_bias_group": "Bias settings for different zones",
-            "set_equator_bias": "Button used to adjust to an equator bias",
-            "set_balanced_bias": "Button used to adjust to an equator bias",
-            "set_polar_bias": "Button used to adjust to an equator bias",
-            "zone_00": 0.5,
-            "zone_01": 0.5,
-            "zone_02": 0.5,
-            "zone_03": 0.5,
-            "zone_04": 0.5,
-            "zone_05": 0.5,
-            "zone_06": 0.5,
-            "_biome_distortion_group": "Distortion settings",
-            "random_distortion": False,
-            "distortion_scale": 0.5,
-            "biome_bias": "biome_bias_cc",
-            "_biome_anomaly_group": "Anomaly settings",
-            "enable_equator_anomalies": True,
-            "enable_seed_anomalies": False,
-            "enable_polar_anomalies": True,
-            "equator_anomaly_count": 0.5,
-            "equator_anomaly_spray": 0.5,
-            "polar_anomaly_count": 0.5,
-            "polar_anomaly_spray": 0.5,
-            "_file_toggles_group": "File output settings",
-            "output_biom_files": False,
-            "keep_pngs_after_conversion": True,
-            "output_dds_files": False,
-            "output_mat_files": False,
-            "output_csv_files": False,
-            "enable_output_log": False,
-            "_texture_toggles_group": "Texture processing toggles",
-            "upscale_image": True,
-            "texture_resolution_scale": 8,
-            "texture_resolution": 2048,
-            "process_images": False,
-            "enable_texture_light": True,
-            "enable_basic_filters": False,
-            "enable_texture_edges": False,
-            "enable_texture_noise": False,
-            "enable_texture_terrain": False,
-            "_texture_basics_group": "Texture basics",
-            "texture_brightness": 0.5,
-            "texture_saturation": 0.5,
-            "texture_edges": 0.5,
-            "texture_contrast": 0.5,
-            "texture_tint": 0.5,
-            "_texture_noise_group": "Noise parameters for textures",
-            "texture_roughness": 0.5,
-            "texture_roughness_base": 0.5,
-            "texture_noise": 0.5,
-            "texture_perlin": 0.5,
-            "texture_swap": 0.5,
-            "texture_fractal": 0.5,
-            "_texture_lighting_group": "Lighting settings",
-            "fade_intensity": 0.5,
-            "fade_spread": 0.5,
-            "Texture Terrain Settings": "Texture Terrain Settings",
-            "texture_mountains": 0.5,
-            "texture_canyons": 0.5,
-            "3D Viewport Settings": "3D Viewport Settings",
-            "enable_surface_metal_view": True,
-            "enable_color_view": True,
-            "enable_fault_view": True,
-            "enable_resource_view": True,
-            "enable_biome_view": True,
-            "enable_rough_view": True,
-            "enable_normal_view": True,
-            "enable_ao_view": True,
-            "enable_ocean_mask_view": True,
-            "surface_metal_opacity": 1.0,
-            "color_opacity": 1.0,
-            "fault_opacity": 0.2,
-            "resource_opacity": 0.1,
-            "biome_opacity": 0.4,
-            "rough_opacity": 0.2,
-            "normal_opacity": 0.2,
-            "ao_opacity": 0.2,
-            "ocean_mask_opacity": 1.0,
-            "_image_options_group": "Other image options",
-            "enable_normal": True,
-            "enable_rough": False,
-            "enable_alpha": False,
-            # "plugin_list": ["PlanetBiomes.csv", "preview.csv"],
-            "elevation_influence": 0.5,
-        }
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        with open(DEFAULT_CONFIG_PATH, "w") as f:
-            json.dump(raw_config, f, indent=4)
-
-    for key, value in raw_config.items():
-        if key in BOOLEAN_KEYS and isinstance(value, (float, int)):
-            raw_config[key] = bool(int(value))
-    config = raw_config
-
-    # Ensure plugin settings are initialized
-    if "plugin_selected" not in config:
-        config["plugin_selected"] = 0
-    if "plugin_index" not in config or not config["plugin_index"]:
-        config["plugin_index"] = ["preview.csv"]
-    if "plugin_name" not in config:
-        config["plugin_name"] = "preview.esm"
-    # if "plugin_list" not in config:
-    #   config["plugin_list"] = ["preview.csv"]
-
-    return config
-
-
-def save_config():
-    """Save current configuration to JSON file with error handling."""
-    try:
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(config, f, indent=4)
-        global total_news
-        total_news = config.get("total_news", 37)
-    except Exception as e:
-        handle_news(
-            None, "error",
-            f"Error saving JSON: {e}"
-        )
-
+config = get_config()
 
 def update_value(key, val, index=None, plotter=None, meshes=None):
     if key not in config:
@@ -279,8 +117,6 @@ def update_value(key, val, index=None, plotter=None, meshes=None):
     elif (
         key == "user_seed"
         or key == "texture_resolution_scale"
-        or key == "number_faults"
-        or key == "fault_width"
     ):
         config[key] = int(val)
     elif isinstance(config[key], bool):
@@ -299,7 +135,6 @@ def update_value(key, val, index=None, plotter=None, meshes=None):
 
     save_config()
 
-
 def update_selected_plugin(index, main_window, force=False):
     """Update the selected plugin in config and UI when the user selects a plugin."""
     if "plugin_index" not in config or not config["plugin_index"]:
@@ -307,7 +142,7 @@ def update_selected_plugin(index, main_window, force=False):
             None, "error", "plugin_index missing or empty, restoring fallback list."
         )
         config["plugin_index"] = ["preview.csv"]
-        #config["plugin_list"] = ["preview.csv"]
+        # config["plugin_list"] = ["preview.csv"]
         config["plugin_selected"] = 0
         config["plugin_name"] = "preview.esm"
         save_config()
@@ -363,8 +198,23 @@ def update_selected_plugin(index, main_window, force=False):
             f"Selected plugin: index={index}, name={config['plugin_name']}, csv={selected_csv}",
         )
 
-    main_window.plugin_name.setText("Plugin: " + config["plugin_name"])
     main_window.plugins_dropdown.setCurrentIndex(config["plugin_selected"])
+
+    # Handle biomes selection dropdowns
+    biome_keys = [f"biome0{i}" for i in range(7)]
+    biome_boxes = [
+        main_window.biome00_qcombobox,
+        main_window.biome01_qcombobox,
+        main_window.biome02_qcombobox,
+        main_window.biome03_qcombobox,
+        main_window.biome04_qcombobox,
+        main_window.biome05_qcombobox,
+        main_window.biome06_qcombobox,
+    ]
+
+    for key, box in zip(biome_keys, biome_boxes):
+        index = config.get(key, 0)
+        box.setCurrentIndex(index)
 
 
 def get_seed(config) -> int:
@@ -387,7 +237,7 @@ def update_seed_display(main_window, config):
     main_window.seed_display.display(seed)
 
 # At the module level
-planet_biomes_process: QProcess | None = None
+planet_maker_process: QProcess | None = None
 
 
 def apply_bias(bias_type: str) -> Dict[str, float]:
@@ -412,18 +262,19 @@ def update_ui_bias(bias_type: str):
             slider.setValue(int(new_values[key] * 100))
 
 
-def get_planet_biomes_process() -> QProcess:
-    """Retrieve the planet_biomes_process, ensuring it's initialized."""
-    global planet_biomes_process
-    if planet_biomes_process is None:
-        raise RuntimeError("planet_biomes_process is not initialized")
-    return planet_biomes_process
+def get_planet_maker_process() -> QProcess:
+    """Retrieve the planet_maker_process, ensuring it's initialized."""
+    global planet_maker_process
+    if planet_maker_process is None:
+        raise RuntimeError("planet_maker_process is not initialized")
+    return planet_maker_process
 
 
-def start_planet_biomes(main_window):
-    global planet_biomes_process, process_list
-    global total_news, total_biom, total_text, total_other
-    global news_count, news_percent, biom_percent, text_percent
+def start_planet_maker(main_window):
+    global planet_maker_process, process_list
+    global total_news, total_make, total_text, total_other
+    global news_count, news_percent, make_percent, text_percent 
+    planet_maker_process = QProcess()
     handle_news(None)
 
     main_window.stdout_widget.clear()
@@ -432,27 +283,28 @@ def start_planet_biomes(main_window):
     # Reset progress counters
     news_count = 0
     news_percent = 0.0
-    biom_percent = 0.0
+    make_percent = 0.0
     text_percent = 0.0
 
     # Precompute totals based on input
     totals = precompute_total_news(config)
     total_news = totals["total_news"]
-    total_biom = totals["total_biom"]
+    total_make = totals["total_make"]
     total_text = totals["total_text"]
     total_other = totals["total_other"]
 
     reset_news_count()
 
     # Initialize progress bars and labels
+    main_window.biome_palette_progressBar.setValue(100)
     main_window.news_count_progressBar.setValue(0)
-    main_window.biom_count_progressBar.setValue(0)
+    main_window.make_count_progressBar.setValue(0)
     main_window.text_count_progressBar.setValue(0)
     main_window.news_label.setText("Working...")
 
-    if not SCRIPT_PATH.exists():
+    if not MAKER_PATH.exists():
         main_window.stderr_widget.insertPlainText(
-            f"Error: PlanetBiomes.py not found at {SCRIPT_PATH}"
+            f"Error: PlanetMaker.py not found at {MAKER_PATH}"
         )
         main_window.stderr_widget.moveCursor(QTextCursor.MoveOperation.End)
         return
@@ -477,27 +329,48 @@ def start_planet_biomes(main_window):
         disable_upscaling()
 
     save_config()
-
-    # Initialize planet_biomes_process
-    planet_biomes_process = QProcess()
-    planet_biomes_process.setProgram(sys.executable)
-    args = [str(SCRIPT_PATH)]
+    
+    args = [str(MAKER_PATH)]
     if config.get("enable_preview_mode", False):
         args.append(str(TEMPLATE_PATH))
-    planet_biomes_process.setArguments(args)
-    planet_biomes_process.setWorkingDirectory(str(BASE_DIR))
 
-    process_list.append(planet_biomes_process)
+    if config.get("run_planet_scripts", True):
+        if config.get("run_planet_maker", True):
+            # Launch PlanetMaker asynchronously — it will call subsequent steps internally
+            planet_maker_process.setProgram(sys.executable)
+            planet_maker_process.setArguments(args)
+            planet_maker_process.setWorkingDirectory(str(BASE_DIR))
+            process_list.append(planet_maker_process)
+
+            # Connect signals and start process
+            planet_maker_process.start()
+        else:
+            # No PlanetMaker, so run full pipeline synchronously from UI:
+            steps = [
+                ("run_planet_textures", SCRIPT_DIR / "PlanetTextures.py", "PlanetTextures"),
+                (
+                    "run_planet_materials",
+                    SCRIPT_DIR / "PlanetMaterials.py",
+                    "PlanetMaterials",
+                ),
+                ("run_planet_meshes", SCRIPT_DIR / "PlanetMeshes.py", "PlanetMeshes"),
+                ("run_planet_surface", SCRIPT_DIR / "PlanetSurface.py", "PlanetSurface"),
+            ] #("run_planet_biomes", SCRIPT_DIR / "PlanetBiomes.py", "PlanetBiomes"),
+            for config_key, script_path, description in steps:
+                if config.get(config_key, True):
+                    subprocess.run([sys.executable, str(script_path)], check=True)
+                else:
+                    handle_news(main_window, "info", f"{description} step skipped.")
 
     # Handle output for image updates
     def handle_output():
-        if planet_biomes_process is None:
+        if planet_maker_process is None:
             handle_news(
-                main_window, "error", "Error: planet_biomes_process is not initialized"
+                main_window, "error", "Error: planet_maker_process is not initialized"
             )
             return
 
-        output = planet_biomes_process.readAllStandardOutput().data().decode()
+        output = planet_maker_process.readAllStandardOutput().data().decode()
         updated = False
 
         for line in output.splitlines():
@@ -509,7 +382,7 @@ def start_planet_biomes(main_window):
             if message in output:
                 handle_news(main_window, "debug", message)
                 for index in indices:
-                    output_image = TEMP_DIR / IMAGE_FILES[index]
+                    output_image = main_window.png_dir / IMAGE_FILES[index]
                     if output_image.exists():
                         pixmap = QPixmap(str(output_image)).scaled(
                             main_window.image_labels[index].width(),
@@ -524,7 +397,7 @@ def start_planet_biomes(main_window):
 
         if not updated and "complete" in output.lower():
             for index in range(len(IMAGE_FILES)):
-                output_image = TEMP_DIR / IMAGE_FILES[index]
+                output_image = main_window.png_dir / IMAGE_FILES[index]
                 if output_image.exists():
                     pixmap = QPixmap(str(output_image)).scaled(
                         main_window.image_labels[index].width(),
@@ -544,21 +417,21 @@ def start_planet_biomes(main_window):
             handle_news(main_window, "success", f"Forms filed correctly: {num_files}")
 
     def handle_error():
-        if planet_biomes_process is None:
+        if planet_maker_process is None:
             handle_news(
-                main_window, "error", "Error: planet_biomes_process is not initialized"
+                main_window, "error", "Error: planet_maker_process is not initialized"
             )
             return
 
-        error_output = planet_biomes_process.readAllStandardError().data().decode()
+        error_output = planet_maker_process.readAllStandardError().data().decode()
         for line in error_output.splitlines():
             handle_news(main_window, "error", line)
 
     # Connect signals
-    planet_biomes_process.readyReadStandardOutput.connect(handle_output)
-    planet_biomes_process.readyReadStandardError.connect(handle_error)
+    planet_maker_process.readyReadStandardOutput.connect(handle_output)
+    planet_maker_process.readyReadStandardError.connect(handle_error)
 
-    def on_planet_biomes_finished(exit_code):
+    def on_planet_maker_finished(exit_code):
         message = (
             f"Permit {seed} complete!\nDon't panic!"
             if exit_code == 0
@@ -568,8 +441,9 @@ def start_planet_biomes(main_window):
         kind = "success" if exit_code == 0 else "error"
         handle_news(main_window, kind, message)
 
+        main_window.biome_palette_progressBar.setValue(int(100))
         main_window.news_count_progressBar.setValue(int(100))
-        main_window.biom_count_progressBar.setValue(int(100))
+        main_window.make_count_progressBar.setValue(int(100))
         main_window.text_count_progressBar.setValue(int(100))
 
         # Clear the plotter and regenerate all meshes
@@ -581,19 +455,19 @@ def start_planet_biomes(main_window):
         # Force PyVista to redraw the scene
         main_window.plotter.render()
 
-    planet_biomes_process.finished.connect(on_planet_biomes_finished)
+    planet_maker_process.finished.connect(on_planet_maker_finished)
 
-    planet_biomes_process.errorOccurred.connect(
+    planet_maker_process.errorOccurred.connect(
         lambda _: handle_news(
             main_window,
             "error",
-            f"Error: {planet_biomes_process.errorString() if planet_biomes_process else 'Process not initialized'}",
+            f"Error: {planet_maker_process.errorString() if planet_maker_process else 'Process not initialized'}",
         )
     )
 
     # Start GIFs for processing, but only for labels without existing images
     for index in [1, 2, 3, 4, 5, 6, 7]:
-        output_image = TEMP_DIR / IMAGE_FILES[index]
+        output_image = PNG_OUTPUT_DIR / IMAGE_FILES[index]
         if not output_image.exists():  # Only set GIF if no image exists
             movie = QMovie(str(GIF_PATHS.get(index)))
             if movie.isValid():
@@ -601,9 +475,9 @@ def start_planet_biomes(main_window):
                 movie.start()
 
     main_window.stderr_widget.insertPlainText(
-        f"Starting PlanetBiomes.py with args: {args}"
+        f"Starting PlanetMaker.py with args: {args}"
     )
-    planet_biomes_process.start()
+    #planet_maker_process.start()
 
 
 def cleanup_and_exit(exit_code=0):
@@ -632,7 +506,7 @@ def create_planet():
     # Initialize planet_sphere_process
     planet_sphere_process = QProcess()
     planet_sphere_process.setProgram(sys.executable)
-    args = [str(SPHERE_PATH)]
+    args = [str(MAKER_PATH)]
     if config.get("enable_preview_mode", False):
         args.append(str(TEMPLATE_PATH))
     planet_sphere_process.setArguments(args)
@@ -661,35 +535,36 @@ def disable_upscaling():
     except Exception as e:
         print(f"Error disabling upscaling: {e}")
 
-
-def start_processing(main_window):
-    """Start processing by calling start_planet_biomes."""
-    start_planet_biomes(main_window)
-
-
 class MainWindow(QMainWindow):
 
     color_preview_image: QLabel
     biome_preview_image: QLabel
     surface_preview_image: QLabel
     resource_preview_image: QLabel
-    ocean_preview_image: QLabel
+    ocean_mask_preview_image: QLabel
     normal_preview_image: QLabel
-    ao_preview_image: QLabel
+    colony_mask_preview_image: QLabel
     rough_preview_image: QLabel
-    fault_preview_image: QLabel
+    terrain_preview_image: QLabel
     news_label: QLabel
-    plugin_name: QLabel
     sphere_preview_frame: QFrame
     stdout_widget: QTextEdit
     stderr_widget: QTextEdit
     themes_dropdown: QComboBox
     plugins_dropdown: QComboBox
     folders_dropdown: QComboBox
+    biome00_qcombobox: QComboBox
+    biome01_qcombobox: QComboBox
+    biome02_qcombobox: QComboBox
+    biome03_qcombobox: QComboBox
+    biome04_qcombobox: QComboBox
+    biome05_qcombobox: QComboBox
+    biome06_qcombobox: QComboBox
     seed_display: QLCDNumber
-    texture_resolution_display: QLCDNumber
+    resolution_display: QLCDNumber
+    biome_palette_progressBar: QProgressBar
     news_count_progressBar: QProgressBar
-    biom_count_progressBar: QProgressBar
+    make_count_progressBar: QProgressBar
     text_count_progressBar: QProgressBar
     user_seed: QSlider
     texture_resolution_scale: QSlider
@@ -698,24 +573,26 @@ class MainWindow(QMainWindow):
     halt_command_button: QPushButton
     exit_command_button: QPushButton
     reset_command_button: QPushButton
-    set_equator_bias_button: QPushButton
-    set_balanced_bias_button: QPushButton
-    set_polar_bias_button: QPushButton
+    set_canyon_bias_button: QPushButton
+    set_water_bias_button: QPushButton
+    set_mountain_bias_button: QPushButton
     open_plugins_button: QPushButton
     open_output_button: QPushButton
     open_input_button: QPushButton
     enable_color_view: QCheckBox
     enable_ocean_mask_view: QCheckBox
     enable_normal_view: QCheckBox
-    enable_ao_view: QCheckBox
+    enable_colony_mask_view: QCheckBox
     enable_rough_view: QCheckBox
     enable_biome_view: QCheckBox
     enable_resource_view: QCheckBox
-    enable_fault_view: QCheckBox
+    enable_terrain_normal_view: QCheckBox
 
     def __init__(self):
         super().__init__()
         self.slider_vars = {}
+        self.biome_db = BiomeDatabase()
+        self.biome_db.load_csv(CSV_DIR / "Biomes.csv")
 
         # Determine base directory based on whether we're running as a PyInstaller bundle
         if getattr(sys, "frozen", False):
@@ -725,16 +602,28 @@ class MainWindow(QMainWindow):
 
         # Path to mainwindow.ui
         loadUi(UI_PATH, self)
+        self.biome_color_pickers = {}
         self.slider_mappings = {}
         self.checkbox_mappings = {}
         self.dropdown_vars = {
             "plugin_selected": self.plugins_dropdown,
-            # Add others here if needed
+            "biome00_qcombobox": self.biome00_qcombobox,
+            "biome01_qcombobox": self.biome01_qcombobox,
+            "biome02_qcombobox": self.biome02_qcombobox,
+            "biome03_qcombobox": self.biome03_qcombobox,
+            "biome04_qcombobox": self.biome04_qcombobox,
+            "biome05_qcombobox": self.biome05_qcombobox,
+            "biome06_qcombobox": self.biome06_qcombobox,
         }
 
         self.setWindowTitle("Planet Painter")
         self.themes = THEMES
-        config = load_config()
+        config = get_config()
+
+        plugin_name = config.get("plugin_name", "default_plugin")
+        planet_name = config.get("planet_name", "default_planet")
+
+        self.png_dir = PNG_OUTPUT_DIR / plugin_name / planet_name
 
         self.news_label.setText("Progress")
 
@@ -767,16 +656,21 @@ class MainWindow(QMainWindow):
             )
         )
 
+        # Set initial index for biome dropdowns
+        for key, box in self.dropdown_vars.items():
+            if key.startswith("biome") and isinstance(box, QComboBox):
+                box.setCurrentIndex(config.get(key, 0))
+
         self.image_labels = [
             self.color_preview_image,
             self.biome_preview_image,
             self.surface_preview_image,
             self.resource_preview_image,
-            self.ocean_preview_image,
+            self.ocean_mask_preview_image,
             self.normal_preview_image,
-            self.ao_preview_image,
+            self.colony_mask_preview_image,
             self.rough_preview_image,
-            self.fault_preview_image,
+            self.terrain_preview_image,
         ]
 
         self.default_image = (
@@ -791,7 +685,7 @@ class MainWindow(QMainWindow):
 
         # Set initial images for all labels
         for image_file, label in zip(IMAGE_FILES, self.image_labels):
-            image_path = TEMP_DIR / image_file
+            image_path = self.png_dir / f"{planet_name}_{image_file}"
             pixmap = (
                 QPixmap(str(image_path)).scaled(
                     label.width(),
@@ -809,14 +703,14 @@ class MainWindow(QMainWindow):
 
         # Connect signals
         self.generate_sphere_button.clicked.connect(create_planet)
-        self.start_command_button.clicked.connect(lambda: start_planet_biomes(self))
+        self.start_command_button.clicked.connect(lambda: start_planet_maker(self))
         self.halt_command_button.clicked.connect(cancel_processing)
         self.exit_command_button.clicked.connect(cancel_and_exit)
         self.reset_command_button.clicked.connect(self.reset_all_to_defaults)
         self.themes_dropdown.addItems(self.themes.keys())
-        self.set_equator_bias_button.clicked.connect(self.set_equator_bias)
-        self.set_polar_bias_button.clicked.connect(self.set_polar_bias)
-        self.set_balanced_bias_button.clicked.connect(self.set_balanced_bias)
+        self.set_canyon_bias_button.clicked.connect(self.set_equator_bias)
+        self.set_mountain_bias_button.clicked.connect(self.set_polar_bias)
+        self.set_water_bias_button.clicked.connect(self.set_balanced_bias)
 
         # Populate themes dropdown
         self.themes_dropdown.clear()  # Clear any existing items
@@ -833,7 +727,9 @@ class MainWindow(QMainWindow):
         # Map checkboxes and sliders to config
         self.setup_config_controls()
 
-        self.change_theme(config.get("theme", "Starfield"))
+        self.change_theme(config.get("theme", "Starfield"))  
+        self.biome_palette_progressBar.setObjectName("BiomePaletteBar")
+        self.setStyleSheet(self.themes.get(config.get("theme", "Starfield"), ""))
 
         save_config()
 
@@ -861,6 +757,8 @@ class MainWindow(QMainWindow):
             if checkbox:
                 checkbox.setChecked(self.meshes[texture_type]["visible"])
 
+        self.init_biome_dropdowns()
+
     def open_selected_folder(self, index):
         folder_path = self.folders_dropdown.itemData(index)
         if folder_path:
@@ -885,8 +783,6 @@ class MainWindow(QMainWindow):
                 slider = slider_vars.get(key)
                 if slider:
                     if key in [
-                        "number_faults",
-                        "fault_width",
                         "user_seed",
                         "texture_resolution_scale",
                     ]:
@@ -922,6 +818,29 @@ class MainWindow(QMainWindow):
             global config
             config = default_config
 
+            # Initialize biome colors based on default biome indices
+            self.biome_db = BiomeDatabase()
+            self.biome_db.load_csv(CSV_DIR / "Biomes.csv")
+            editor_ids = list(self.biome_db.biomes_by_name.keys())
+            for i in range(7):
+                key = f"biome{i:02}_qcombobox"
+                color_key = f"biome{i:02}_color"
+                biome_name = config.get(key, editor_ids[0])
+                if biome_name not in editor_ids:
+                    biome_name = editor_ids[0]
+                biome = self.biome_db.biomes_by_name.get(biome_name)
+                if biome:
+                    r, g, b = biome.color
+                    hex_color = "#{:02x}{:02x}{:02x}".format(r, g, b)
+                    config[color_key] = hex_color
+                    print(f"[Debug] Reset {color_key} to {hex_color}")
+                else:
+                    config[color_key] = "#000000"
+                    print(f"[Debug] Fallback to #000000 for {color_key}")
+
+            # Save updated config
+            save_config()
+
             # --- Set plugin_selected to last item ---
             plugin_list = config.get("plugin_index", [])
             last_index = len(plugin_list) - 1 if plugin_list else 0
@@ -936,12 +855,7 @@ class MainWindow(QMainWindow):
                 slider = self.slider_vars.get(key)
                 if slider:
                     value = config.get(key, 0)
-                    if key in [
-                        "number_faults",
-                        "fault_width",
-                        "user_seed",
-                        "texture_resolution_scale",
-                    ]:
+                    if key in ["user_seed", "texture_resolution_scale"]:
                         slider.setValue(int(value))
                     else:
                         slider.setValue(int(value * 100))
@@ -955,20 +869,70 @@ class MainWindow(QMainWindow):
 
             # Update displays
             self.seed_display.display(config.get("user_seed", 0))
-            self.texture_resolution_display.display(
-                config.get("texture_resolution", 111)
-            )
+            self.resolution_display.display(config.get("resolution", 111))
 
             self.refresh_plugin_list()
             self.plugins_dropdown.setCurrentIndex(last_index)
             update_selected_plugin(last_index, self, force=True)
 
+            self.init_biome_dropdowns()
+
             self.refresh_ui_from_config()
-            save_config()
 
         except FileNotFoundError:
-            print("Default config file not found.")
             print(f"Error: Default config file {DEFAULT_CONFIG_PATH} not found.")
+
+    def init_biome_dropdowns(self):
+        editor_ids = list(self.biome_db.biomes_by_name.keys())
+
+        for key, box in self.dropdown_vars.items():
+            if key.startswith("biome"):
+                box.blockSignals(True)  # Block signals while initializing
+                box.clear()
+                box.addItems(editor_ids)
+
+                # Load saved index or default to 0
+                index = config.get(key, 0)  # Get the index (e.g., 0, 1, 2)
+                if not isinstance(index, int) or index < 0 or index >= len(editor_ids):
+                    index = 0  # Fallback to 0 if index is invalid
+                box.setCurrentIndex(index)
+
+                # Update corresponding config values
+                base_key = key.replace("_qcombobox", "")
+                biome_name = editor_ids[index]
+                biome = self.biome_db.biomes_by_name.get(biome_name)
+                if biome:
+                    r, g, b = biome.color
+                    hex_color = "#{:02x}{:02x}{:02x}".format(r, g, b)
+                    config[f"{base_key}_editor_id"] = biome.editor_id
+                    config[f"{base_key}_formid"] = biome.form_id
+                    config[f"{base_key}_color"] = hex_color
+                    print(
+                        f"[Debug] Initialized {base_key}: editor_id={biome.editor_id}, formid={biome.form_id}, color={hex_color}"
+                    )
+                else:
+                    config[f"{base_key}_editor_id"] = editor_ids[0]
+                    config[f"{base_key}_formid"] = 0
+                    config[f"{base_key}_color"] = "#000000"
+                    print(
+                        f"[Debug] Fallback for {base_key}: editor_id={editor_ids[0]}, formid=0, color=#000000"
+                    )
+
+                box.blockSignals(False)  # Re-enable signals
+
+                # Connect selection change to config
+                box.currentIndexChanged.connect(
+                    partial(update_biome_selection, self, key, self.biome_db)
+                )
+
+        save_config()
+
+        self.biome_palette_progressBar.setStyleSheet(
+            get_biome_palette_stylesheet(config)
+        )
+
+        # Optional: Repaint the bar immediately
+        self.biome_palette_progressBar.repaint()
 
     def refresh_plugin_list(self):
         """Scan for CSVs and update plugin list in config and dropdown."""
@@ -1051,14 +1015,16 @@ class MainWindow(QMainWindow):
         self.slider_vars["zone_05"] = self.findChild(QSlider, "zone_05")
         self.slider_vars["zone_06"] = self.findChild(QSlider, "zone_06")
         checkbox_mappings = {
-            "process_biomes": "process_biomes",
-            "enable_noise": "enable_noise",
-            "enable_distortion": "enable_distortion",
-            "enable_biases": "enable_biases",
-            "enable_anomalies": "enable_anomalies",
+            "run_planet_scripts": "run_planet_scripts",
+            "run_planet_maker": "run_planet_maker",
+            "run_planet_textures": "run_planet_textures",
+            "run_planet_materials": "run_planet_materials",
+            "run_planet_meshes": "run_planet_meshes",
+            "run_planet_biomes": "run_planet_biomes",
+            "run_planet_surface": "run_planet_surface",
             "use_random": "use_random",
-            "enable_equator_anomalies": "enable_equator_anomalies",
-            "enable_polar_anomalies": "enable_polar_anomalies",
+            "enable_coastal_population": "enable_coastal_population",
+            "enable_inland_population": "enable_inland_population",
             "enable_texture_light": "enable_texture_light",
             "enable_texture_edges": "enable_texture_edges",
             "enable_basic_filters": "enable_basic_filters",
@@ -1070,27 +1036,22 @@ class MainWindow(QMainWindow):
             "keep_pngs_after_conversion": "keep_pngs_after_conversion",
             "output_mat_files": "output_mat_files",
             "output_biom_files": "output_biom_files",
-            "enable_seed_anomalies": "enable_seed_anomalies",
+            "enable_seed_population": "enable_seed_population",
             "random_distortion": "random_distortion",
-            "enable_tectonic_plates": "enable_tectonic_plates",
             "enable_surface_metal_view": "enable_surface_metal_view",
             "enable_color_view": "enable_color_view",
-            "enable_fault_view": "enable_fault_view",
+            "enable_terrain_normal_view": "enable_terrain_normal_view",
             "enable_resource_view": "enable_resource_view",
             "enable_biome_view": "enable_biome_view",
             "enable_rough_view": "enable_rough_view",
             "enable_normal_view": "enable_normal_view",
-            "enable_ao_view": "enable_ao_view",
+            "enable_colony_mask_view": "enable_colony_mask_view",
             "enable_ocean_mask_view": "enable_ocean_mask_view",
         }
 
         slider_mappings = {
-            "zoom_factor": "zoom_factor",
+            "tilt_factor": "tilt_factor",
             "squircle_factor": "squircle_factor",
-            "number_faults": "number_faults",
-            "fault_width": "fault_width",
-            "fault_jitter": "fault_jitter",
-            "fault_smooth": "fault_smooth",
             "noise_scale": "noise_scale",
             "noise_amplitude": "noise_amplitude",
             "user_seed": "user_seed",
@@ -1098,10 +1059,10 @@ class MainWindow(QMainWindow):
             "texture_mountains": "texture_mountains",
             "texture_canyons": "texture_canyons",
             "fade_spread": "fade_spread",
-            "equator_anomaly_count": "equator_anomaly_count",
-            "equator_anomaly_spray": "equator_anomaly_spray",
-            "polar_anomaly_count": "polar_anomaly_count",
-            "polar_anomaly_spray": "polar_anomaly_spray",
+            "coastal_population_count": "coastal_population_count",
+            "coastal_population_density": "coastal_population_density",
+            "inland_population_count": "inland_population_count",
+            "inland_population_density": "inland_population_density",
             "distortion_scale": "distortion_scale",
             "noise_scatter": "noise_scatter",
             "biome_perlin": "biome_perlin",
@@ -1127,22 +1088,18 @@ class MainWindow(QMainWindow):
             "texture_swap": "texture_swap",
             "texture_fractal": "texture_fractal",
             "ocean_mask_opacity": "ocean_mask_opacity",
-            "ao_opacity": "ao_opacity",
+            "colony_mask_opacity": "colony_mask_opacity",
             "normal_opacity": "normal_opacity",
             "rough_opacity": "rough_opacity",
             "biome_opacity": "biome_opacity",
             "resource_opacity": "resource_opacity",
-            "fault_opacity": "fault_opacity",
+            "terrain_normal_opacity": "terrain_normal_opacity",
             "color_opacity": "color_opacity",
         }
 
         reset_buttons = [
-            "zoom_factor_reset",
+            "tilt_factor_reset",
             "squircle_factor_reset",
-            "number_faults_reset",
-            "fault_width_reset",
-            "fault_jitter_reset",
-            "fault_smooth_reset",
             "noise_scale_reset",
             "noise_amplitude_reset",
             "noise_scatter_reset",
@@ -1166,15 +1123,15 @@ class MainWindow(QMainWindow):
         ]
 
         # Custom reset functions for grouped settings
-        def reset_anomaly_counts():
-            print("Resetting anomaly counts")
-            self.reset_to_defaults("equator_anomaly_count")
-            self.reset_to_defaults("polar_anomaly_count")
+        def reset_population_counts():
+            print("Resetting population counts")
+            self.reset_to_defaults("coastal_population_count")
+            self.reset_to_defaults("inland_population_count")
 
-        def reset_anomaly_sprays():
-            print("Resetting anomaly scales")
-            self.reset_to_defaults("equator_anomaly_spray")
-            self.reset_to_defaults("polar_anomaly_spray")
+        def reset_population_densities():
+            print("Resetting population scales")
+            self.reset_to_defaults("coastal_population_density")
+            self.reset_to_defaults("inland_population_density")
 
         # Connect checkboxes
         for checkbox_name, key in checkbox_mappings.items():
@@ -1197,10 +1154,8 @@ class MainWindow(QMainWindow):
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
                 elif key in (
-                    "number_faults",
                     "texture_resolution_scale",
-                    "fault_width",
-                    ):
+                ):
                     slider.setRange(1, 8)
                     slider.setValue(int(value))
                     slider.valueChanged.connect(lambda val, k=key: update_value(k, val))
@@ -1211,8 +1166,8 @@ class MainWindow(QMainWindow):
                         "distortion_scale",
                     ):
                         max_val = 0.25
-                    if key in ("ocean_mask_opacity", "ao_opacity"):
-                        min_val, max_val = 0.01, 0.2
+                    if key in ("ocean_mask_opacity", "colony_mask_opacity"):
+                        min_val = 0.01
                     slider.setRange(int(min_val * 100), int(max_val * 100))
                     slider.setValue(int(value * 100))
                     slider.valueChanged.connect(
@@ -1239,8 +1194,8 @@ class MainWindow(QMainWindow):
 
         # Connect special reset buttons
         special_reset_buttons = {
-            "anomaly_count_reset": reset_anomaly_counts,
-            "anomaly_spray_reset": reset_anomaly_sprays,
+            "population_count_reset": reset_population_counts,
+            "population_density_reset": reset_population_densities,
         }
         for button_name, reset_func in special_reset_buttons.items():
             button = getattr(self, button_name, None)
@@ -1259,15 +1214,15 @@ class MainWindow(QMainWindow):
         )
 
         # Setup resolution display
-        texture_resolution = config["texture_resolution_scale"] * 256
-        self.texture_resolution_display.display(texture_resolution)
+        resolution = config["texture_resolution_scale"] * 256
+        self.resolution_display.display(resolution)
         self.texture_resolution_scale.valueChanged.connect(
             lambda val: (
                 update_value(
-                    "texture_resolution", 256 * int(val)
+                    "resolution", 256 * int(val)
                 ),  # Update config correctly
                 update_value("texture_resolution_scale", int(val)),  # Keep scale synced
-                self.texture_resolution_display.display(
+                self.resolution_display.display(
                     256 * int(val)
                 ),  # Show multiplied resolution
             )
@@ -1294,7 +1249,7 @@ class MainWindow(QMainWindow):
 
     def refresh_images(self):
         for i, image_file in enumerate(IMAGE_FILES):
-            output_image = TEMP_DIR / image_file  # Use TEMP_DIR
+            output_image = self.png_dir / image_file  # Use self.png_dir
             pixmap = (
                 QPixmap(str(output_image))
                 if output_image.exists()
@@ -1318,7 +1273,7 @@ class MainWindow(QMainWindow):
         for key, slider in slider_vars.items():
             if slider:
                 value = config.get(key, 0)
-                if key in ["number_faults", "fault_width", "user_seed", "texture_resolution_scale"]:
+                if key in ["user_seed", "texture_resolution_scale"]:
                     slider.setValue(int(value))
                 else:
                     slider.setValue(int(value * 100))
@@ -1329,12 +1284,12 @@ class MainWindow(QMainWindow):
 
         # Update seed display
         self.seed_display.display(config.get("user_seed", 0))
-        self.texture_resolution_display.display(config.get("texture_resolution", 1))
+        self.resolution_display.display(config.get("resolution", 1))
 
-    def save_and_continue(self):
-        """Save config and start PlanetBiomes."""
-        save_config()
-        start_planet_biomes(self)
+        for key in config:
+            if key.startswith("biome") and key.endswith("_qcombobox"):
+                index = config[key]
+                update_biome_selection(self, key, self.biome_db, index)
 
 
 if __name__ == "__main__":
@@ -1346,7 +1301,7 @@ if __name__ == "__main__":
     splash.show()
     QTimer.singleShot(500, splash.close)
 
-    load_config()
+    get_config()
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec())

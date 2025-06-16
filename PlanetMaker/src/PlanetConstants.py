@@ -30,15 +30,43 @@ MESH_OUTPUT_DIR = PLUGINS_DIR / "meshes" / "planets" / "houdiniplanets"
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "default_config.json"
 
+
+_config = None
+
+
+def load_config():
+    global _config
+    """Load plugin config from disk and cache it."""
+    with open(CONFIG_PATH, "r") as f:
+        _config = json.load(f)
+    return _config
+
+
+def get_config():
+    """Return cached config or load it if not cached."""
+    global _config
+    if _config is None:
+        return load_config()
+    return _config
+
+
+def save_config():
+    """Save the cached config back to disk."""
+    if _config is not None:
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(_config, f, indent=2)
+
+
 THEME_PATH = CONFIG_DIR / "custom_themes.json"
 DEFAULT_THEME_PATH = CONFIG_DIR / "default_themes.json"
 
 CSV_PATH = CSV_DIR / "Biomes.csv"
 PREVIEW_PATH = CSV_DIR / "preview.csv"
+BLOCK_PATTERN_PATH = CSV_DIR / "BlockPatterns.csv"
 
 # --- Script and template paths ---
 SCRIPT_PATH = SCRIPT_DIR / "PlanetBiomes.py"
-SPHERE_PATH = SCRIPT_DIR / "PlanetSphere.py"
+MAKER_PATH = SCRIPT_DIR / "PlanetMaker.py"
 TEMPLATE_PATH = ASSETS_DIR / "planetdata" / "biomemaps" / "plugin_name.esm" / "planet_name.biom"
 MATERIAL_PATH = (
     ASSETS_DIR
@@ -69,40 +97,57 @@ GIF_PATHS = {
 }
 
 IMAGE_FILES = [
-    "temp_color.png",
-    "temp_biome.png",
-    "temp_surface.png",
-    "temp_resource.png",
-    "temp_ocean.png",
-    "temp_normal.png",
-    "temp_ao.png",
-    "temp_rough.png",
-    "temp_fault.png"
+    "color.png",
+    "biome.png",
+    "surface_metal.png",
+    "resource.png",
+    "ocean_mask.png",
+    "normal.png",
+    "colony_mask.png",
+    "height.png",
+    "terrain_normal.png"
 ]
+
 PROCESSING_MAP = {
     "Processing color map": [0],
     "Processing biome map": [1],
-    "Processing surface map": [2],
+    "Processing surface metal map": [2],
     "Processing resource map": [3],
-    "Processing ocean mask": [4],
+    "Processing ocean mask map": [4],
     "Processing normal map": [5],
-    "Processing ambient occlusion map": [6],
-    "Processing rough mask": [7],
+    "Processing colony mask map": [6],
+    "Processing height map": [7],
+}
+
+BIOME_HUMIDITY = {
+    "archipelago": 0.9,
+    "canyon": 0.2,
+    "crater": 0.1,
+    "desert": 0.1,
+    "coniferous": 0.6,
+    "deciduous": 0.7,
+    "tropical": 0.8,
+    "frozen": 0.8,
+    "hills": 0.5,
+    "mountains": 0.4,
+    "ocean": 1.0,
+    "volcanic": 0.0,
+    "wetlands": 1.0,
 }
 
 # --- Configuration flags ---
 BOOLEAN_KEYS = {
-    "enable_equator_anomalies",
-    "enable_polar_anomalies",
+    "enable_coastal_population",
+    "enable_inland_population",
     "enable_equator_intrusion",
     "enable_pole_intrusion",
     "apply_distortion",
     "apply_resource_gradient",
     "apply_latitude_blending",
     "keep_pngs_after_conversion",
-    "enable_noise",
-    "enable_anomalies",
-    "enable_biases",
+    "run_planet_maker",
+    "run_planet_meshes",
+    "run_planet_materials",
     "use_random",
     "enable_texture_light",
     "enable_texture_edges",
@@ -116,7 +161,7 @@ BOOLEAN_KEYS = {
     "output_dds_files",
     "output_mat_files",
     "output_biom_files",
-    "enable_seed_anomalies",
+    "enable_seed_population",
     "random_distortion",
 }
 
@@ -378,7 +423,3 @@ CRC_MAP = [
     0x5A05DF1B,
     0x2D02EF8D,
 ]
-
-def load_config(path=CONFIG_PATH):
-    with open(path, "r") as f:
-        return json.load(f)
