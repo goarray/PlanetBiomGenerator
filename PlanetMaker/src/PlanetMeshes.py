@@ -55,7 +55,6 @@ def patch_nif_material_path(nif_path: Path, new_mat_path: str):
 
 
 def generate_and_patch_planet_meshes():
-    config = get_config()
     plugin_name = config.get("plugin_name", "PLUGINNOTFOUND")
     planet_name = config.get("planet_name", "PLUGINNOTFOUND")
 

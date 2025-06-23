@@ -6,23 +6,29 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib import colormaps
 from scipy.interpolate import griddata
+from scipy.interpolate import NearestNDInterpolator
 from PlanetNewsfeed import handle_news
 from pathlib import Path
 from construct import Struct, Const, Rebuild, this, len_
 from construct import Int32ul as UInt32, Int16ul as UInt16, Int8ul as UInt8, Array
 from scipy.ndimage import gaussian_filter, distance_transform_edt, binary_dilation
 from typing import Dict, List, Set, Tuple, NamedTuple, cast
+from multiprocessing import Pool, cpu_count
 import colorsys
 import argparse
 import subprocess
+import cProfile
+import pstats
+import random
 import json
 import csv
 import sys
 import os
 import shutil
 from PIL import Image, ImageEnhance
-from PlanetUtils import get_biome_colormaps, biome_db
+from PlanetUtils import get_biome_colormaps, get_average_biome_humidity, generate_and_save_road_mask, biome_db
 from PlanetConstants import (
+    save_config,
     get_config,
     # Core Dependencies
     TEXCONV_PATH,
@@ -64,15 +70,12 @@ from PlanetConstants import (
 GRID_SIZE = [256, 256]
 GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 
-# Global configuration
-config = get_config()
 
 ########################################Debug#####################################
 
-discrete_cmap, gradient_cmap = get_biome_colormaps(config)
+# discrete_cmap, gradient_cmap = get_biome_colormaps(config)
 
-
-def generate_view(mesh):
+def generate_view(mesh, config):
     discrete_cmap, gradient_cmap = get_biome_colormaps(config)
 
     # ZoneID
@@ -175,48 +178,19 @@ def generate_view(mesh):
     )
     plotter.show()
 
+    # MountainMask
+    plotter = pv.Plotter()
+    plotter.add_mesh(
+        mesh,
+        scalars="MountainMask",
+        cmap="grey",
+        clim=[0.0, 1.0],
+        show_scalar_bar=True,
+    )
+    plotter.show()
+
 
 #####################################Load########################################
-
-
-def get_config():
-    """Load plugin_name from config.json."""
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
-
-
-config = get_config()
-
-
-def load_biome_colors_from_config_or_data(
-    selected_biome_ids: list[int],
-) -> dict[int, tuple[float, float, float]]:
-    biome_colors = {}
-    editor_ids = list(biome_db.biomes_by_name.keys())
-
-    for idx in selected_biome_ids:
-        key = f"biome{idx:02}_color"
-        hex_color = config.get(key)
-        config_idx = config.get(f"biome{idx:02}_qcombobox", 0)
-
-        if hex_color:
-            rgb = mcolors.to_rgb(hex_color)
-        else:
-            if config_idx < len(editor_ids):
-                editor_id = editor_ids[config_idx]
-                biome = biome_db.biomes_by_name.get(editor_id)
-                if biome:
-                    r, g, b = biome.color
-                    rgb = (r / 255.0, g / 255.0, b / 255.0)
-                else:
-                    rgb = (0.0, 0.0, 0.0)
-            else:
-                rgb = (0.0, 0.0, 0.0)
-
-        biome_colors[idx] = rgb
-
-    print(f"[Debug] Loaded biome colors: {biome_colors}")
-    return biome_colors
 
 
 def get_output_paths(plugin_name, planet_name):
@@ -232,6 +206,7 @@ def get_output_paths(plugin_name, planet_name):
         "river_mask": base / f"{planet_name}_river_mask.png",
         "colony_mask": base / f"{planet_name}_colony_mask.png",
         "humidity": base / f"{planet_name}_humidity.png",
+        "mountain_mask": base / f"{planet_name}_mountain_mask.png",
     }
 
 # Helper to retreive settings
@@ -255,7 +230,7 @@ def process_planet_maps(config):
 
 
 def generate_sphere(config):
-    resolution = config.get("resolution", 512)
+    resolution = config.get("texture_resolution", 512)
     mesh = pv.Sphere(theta_resolution=2 * resolution, phi_resolution=resolution)
 
     # Save the original normal for use in polar weighting
@@ -269,19 +244,37 @@ def apply_base_noise(mesh, config):
     scale = config.get("base_scale", 0.005)
     freq = config.get("base_frequency", 1.5)
     octaves = config.get("base_octaves", 4)
-    tilt_factor = config.get("tilt_factor", 0.5)
+    biome_order = config.get("biome_order", 0.5)
+    noise_shaping = config.get("biome_chaos", 0.5)
+    use_random = config.get("use_random", False)
 
-    polar_weight = tilt_sphere_weights(mesh, tilt_factor)
+    if use_random:
+        seed = random.randint(0, 99999)
+        config["user_seed"] = seed
+        print(f"[CONFIG] get_seed, ttl_river={config.get("ttl_river")}")
+        save_config()
+    else:
+        seed = int(config.get("user_seed", 0))
+    rng = random.Random(seed)
+
+    # Generate random offsets in range [0, 1000)
+    offset_x = rng.uniform(0, 1000)
+    offset_y = rng.uniform(0, 1000)
+    offset_z = rng.uniform(0, 1000)
+
+    polar_weight = tilt_sphere_weights(mesh, biome_order)
     mesh.point_data["PolarWeight"] = polar_weight
 
-    base_equator, base_pole = 0.498, 0.502
-
+    base_equator, base_pole = 0.497, 0.503
     base_heights = np.zeros(mesh.n_points)
     new_points = np.zeros_like(mesh.points)
 
     for i, p in enumerate(mesh.points):
         normal = p / np.linalg.norm(p)
-        base_noise = pnoise3(*(normal * freq), octaves=octaves)
+        nx, ny, nz = normal * freq + np.array([offset_x, offset_y, offset_z])
+        base_noise = pnoise3(nx, ny, nz, octaves=octaves)
+        base_noise = np.sign(base_noise) * (abs(base_noise) ** (0.5 / noise_shaping))
+
         base_height = (1 - polar_weight[i]) * base_equator + polar_weight[i] * base_pole
         displacement = base_height + scale * base_noise
         base_heights[i] = displacement
@@ -291,12 +284,12 @@ def apply_base_noise(mesh, config):
     mesh.point_data["BaseHeight"] = base_heights
 
 
-def tilt_sphere_weights(mesh: pv.PolyData, tilt_factor: float) -> np.ndarray:
+def tilt_sphere_weights(mesh: pv.PolyData, biome_order: float) -> np.ndarray:
     """
     Tilt bias for a sphere, favoring equator or poles.
-    tilt_factor = 0.0 --> polar bias
-    tilt_factor = 1.0 --> equator bias
-    tilt_factor = 0.5 --> neutral (no bias)
+    biome_order = 0.0 --> polar bias
+    biome_order = 1.0 --> equator bias
+    biome_order = 0.5 --> neutral (no bias)
     """
     normals = mesh.point_data["OriginalNormal"]  # unit vectors
 
@@ -306,10 +299,29 @@ def tilt_sphere_weights(mesh: pv.PolyData, tilt_factor: float) -> np.ndarray:
     # Convert to an equator-centric weight
     equator_weight = 1.0 - pole_weight  # 1.0 at equator, 0.0 at poles
 
-    # Blend between pole_weight and equator_weight based on tilt_factor
-    bias_weight = (1 - tilt_factor) * pole_weight + tilt_factor * equator_weight
+    # Blend between pole_weight and equator_weight based on biome_order
+    bias_weight = (1 - biome_order) * pole_weight + biome_order * equator_weight
 
     return np.clip(bias_weight, 0.0, 1.0)
+
+
+def fbm_noise(normal, base_freq, octaves=6, gain=0.25, lacunarity=2.0):
+    value = 0.0
+    micro_scale = 0.5
+    micro_freq = base_freq
+    for _ in range(octaves):
+        value += micro_scale * pnoise3(*(normal * micro_freq))
+        micro_freq *= lacunarity
+        micro_scale *= gain
+    return value
+
+
+def compute_displacement(args):
+    p, base_freq, scale, erosion_effect, river_val = args
+    micro = fbm_noise(p, base_freq)
+    erosion_factor = np.clip(1.0 - erosion_effect * river_val, 0.2, 1.0)
+    displacement = 1.0 + scale * micro * erosion_factor
+    return p * displacement
 
 
 def apply_micro_noise(mesh, config):
@@ -318,52 +330,41 @@ def apply_micro_noise(mesh, config):
     octaves = config.get("micro_octaves", 4)
     erosion_effect = config.get("river_micro_strength", 0.6)
 
-    def fbm_noise(normal, base_freq, octaves=6, gain=0.25, lacunarity=2.0):
-        value = 0.0
-        micro_scale = 0.5
-        micro_freq = base_freq
-        for _ in range(octaves):
-            value += micro_scale * pnoise3(*(normal * micro_freq))
-            micro_freq *= lacunarity
-            micro_scale *= gain
-        return value
-
     base_heights = mesh.point_data["BaseHeight"]
     river_flow = mesh.point_data.get("RiverFlow", None)
 
-    # Normalize RiverFlow if available
-    if river_flow is not None:
-        river_flow_norm = river_flow.astype(np.float32) / 255.0
-    else:
-        river_flow_norm = np.zeros_like(base_heights)
+    river_flow_norm = (
+        river_flow.astype(np.float32) / 255.0
+        if river_flow is not None
+        else np.zeros_like(base_heights)
+    )
 
-    new_points = np.zeros_like(mesh.points)
+    args = [
+        (p, freq, scale, erosion_effect, river_flow_norm[i])
+        for i, p in enumerate(mesh.points)
+    ]
 
-    for i, p in enumerate(mesh.points):
-        normal = p / np.linalg.norm(p)
-        micro_noise = fbm_noise(normal, freq, octaves=octaves)
-        erosion_factor = 1.0 - erosion_effect * river_flow_norm[i]
-        displacement = 1.0 + scale * micro_noise * erosion_factor
-        new_points[i] = p * displacement
+    with Pool(processes=cpu_count()) as pool:
+        new_points = pool.map(compute_displacement, args, chunksize=512)
 
     mesh.points = new_points
     final_heights = np.linalg.norm(new_points, axis=1)
-
     mesh.point_data["MicroDisplacement"] = final_heights - base_heights
     mesh.point_data["Height"] = final_heights
 
+import numpy as np
+import pyvista as pv
 
-def assign_river_flow(mesh: pv.PolyData, config):
+
+def assign_humidity_mask(mesh: pv.PolyData, config, biome_db):
     """
-    Compute flow accumulation and store as RiverFlow on the mesh.
+    Compute cloud cover based on biome humidity and store as Humidity on the mesh.
+    Returns cloud cover array to influence river flow.
     """
-    height = mesh.point_data["Height"]
-    scaled_height = (height - height.min()) / (height.max() - height.min() + 1e-8)
-    n_points = mesh.n_points
+    humidity_bias = config.get("humidity_bias", 0.5)
 
     # Get active biome humidity
-    active_biomes = biome_db.active_biomes(config)
-    avg_humidity = np.mean([b.humidity() for b in active_biomes])
+    avg_humidity = get_average_biome_humidity(config, biome_db)
     print(f"[Debug] Average biome humidity: {avg_humidity:.3f}")
 
     # Build biome index -> BiomeEntry map
@@ -381,15 +382,55 @@ def assign_river_flow(mesh: pv.PolyData, config):
     # Map index (0-6) to humidity
     index_to_humidity = {i: b.humidity() for i, b in enumerate(active_biome_entries)}
 
-    # Per-point humidity
+    # Per-point humidity-based cloud cover
     biome_ids = mesh.point_data["BiomeID"]
-    humidity_mask = np.array([
-        index_to_humidity.get(bid, 0.0) for bid in biome_ids
-    ])
+    cloud_cover = np.array([index_to_humidity.get(bid, 0.0) for bid in biome_ids])
 
-    # Adjust river sharpness dynamically
-    base_power = config.get("river_power", 1.45)
-    adjusted_power = base_power * (1.0 - avg_humidity * 0.5)  # Dampens river cutoff on dry planets
+    # Apply humidity bias to cloud cover
+    if humidity_bias < 0.5:
+        cloud_cover *= humidity_bias * 2
+    elif humidity_bias > 0.5:
+        cloud_cover += (1.0 - cloud_cover) * ((humidity_bias - 0.5) * 2)
+
+    # Simple blending effect: smooth cloud cover using neighbor averaging
+    n_points = mesh.n_points
+    neighbors_map = {i: set() for i in range(n_points)}
+    for cell in mesh.faces.reshape((-1, 4))[:, 1:]:
+        for i in range(3):
+            neighbors_map[cell[i]].update(cell[j] for j in range(3) if j != i)
+
+    smoothed_cloud_cover = np.copy(cloud_cover)
+    for i in range(n_points):
+        neighbors = neighbors_map[i]
+        if neighbors:
+            neighbor_clouds = [cloud_cover[j] for j in neighbors]
+            smoothed_cloud_cover[i] = (cloud_cover[i] + np.mean(neighbor_clouds)) / 2
+
+    # Store and return
+    mesh.point_data["Humidity"] = smoothed_cloud_cover
+    return smoothed_cloud_cover, avg_humidity
+
+
+def assign_river_flow(mesh: pv.PolyData, config, biome_db):
+    """
+    Compute flow accumulation and store as RiverFlow on the mesh, influenced by cloud cover.
+    """
+    raw_bias = config.get("river_bias", 0.5)
+    river_bias = 1 + raw_bias
+    height = mesh.point_data["Height"]
+    scaled_height = (height - height.min()) / (height.max() - height.min() + 1e-8)
+    n_points = mesh.n_points
+
+    # Compute cloud cover
+    cloud_cover, avg_cloud_density = assign_humidity_mask(mesh, config, biome_db)
+    print(f"[Debug] Average cloud density: {avg_cloud_density:.3f}")
+    avg_cloud_density = 1.0 - avg_cloud_density
+
+    # Adjust river sharpness dynamically based on cloud density
+    base_power = config.get(river_bias, 1.45)
+    adjusted_power = base_power * (
+        1.5 - avg_cloud_density * 0.5
+    )  # Dampens river cutoff in low-cloud areas
     adjusted_power = max(0.8, min(3.0, adjusted_power))  # Clamp if needed
 
     # Debug: Check height variation
@@ -405,7 +446,7 @@ def assign_river_flow(mesh: pv.PolyData, config):
     flow_accum = np.zeros(n_points)
     for i in range(n_points):
         my_height = scaled_height[i]
-        if humidity_mask[i] < 0.01:
+        if cloud_cover[i] < 0.01:
             continue
         # if my_height > max_river_elevation:
         #    continue  # Skip high points
@@ -428,23 +469,103 @@ def assign_river_flow(mesh: pv.PolyData, config):
     flow_accum = flow_accum / (flow_accum.max() + 1e-8)
 
     # Emphasize strong rivers (power law shaping)
-    river_strength = np.power(flow_accum, config.get("river_power", 1.45))
+    river_strength = np.power(flow_accum, config.get(raw_bias, 1.45))
 
-    # Humidity-based amplification
-    humidity_boost = 1600 * (0.5 + avg_humidity)
-    amplified_flow = river_strength * humidity_boost
+    # Cloud cover-based amplification
+    cloud_boost = (4500 * river_bias) * (0.5 + avg_cloud_density)
+    amplified_flow = river_strength * cloud_boost
 
-    # Humidity-aware thresholding (wetter planets allow more rivers)
-    threshold = 5 + (0.5 - avg_humidity) * 4
+    # Cloud density-aware thresholding (cloudier areas allow more rivers)
+    threshold = 1.3 + (0.5 - avg_cloud_density) * 4
     river_mask = (amplified_flow > threshold).astype(np.uint8) * 255
 
     # Optional debug
     print(
-        f"[Debug] River image stats: min={river_mask.min():.4f}, max={river_mask.max():.4f}, mean={river_mask.mean():.4f}"
+        f"[Debug] River value stats: threshold={threshold:.4f}, amplified_flow={amplified_flow}, river_strength={river_strength}"
+    )
+    print(
+        f"[Debug] River image stats: min={river_mask.max():.4f}, max={river_mask.max():.4f}, mean={river_mask.mean():.4f}"
     )
 
     mesh.point_data["RiverFlow"] = river_mask
-    mesh.point_data["Humidity"] = humidity_mask
+
+
+def assign_mountain_mask(mesh: pv.PolyData, config: dict):
+    height = mesh.point_data["Height"]
+    river_flow = mesh.point_data.get("RiverFlow", None)
+    if river_flow is None:
+        raise ValueError("RiverFlow missing. Run assign_river_flow first.")
+
+    # Normalize height
+    scaled_height = (height - height.min()) / (height.max() - height.min() + 1e-8)
+    n_points = mesh.n_points
+
+    mountain_bias = config.get("mountain_bias", 0.5)  # [0–1], 1 = lots of mountains
+
+    # Build neighbor map
+    neighbors_map = {i: set() for i in range(n_points)}
+    for cell in mesh.faces.reshape((-1, 4))[:, 1:]:
+        for i in range(3):
+            neighbors_map[cell[i]].update(cell[j] for j in range(3) if j != i)
+
+    # Compute gradient (steepness)
+    gradient = np.zeros(n_points)
+    for i in range(n_points):
+        diffs = [abs(scaled_height[j] - scaled_height[i]) for j in neighbors_map[i]]
+        gradient[i] = np.mean(diffs) if diffs else 0
+    gradient /= gradient.max() + 1e-8
+
+    # Thresholds
+    height_cutoff = np.percentile(scaled_height, 50 + mountain_bias * 40)  # 70–90%
+    steepness_cutoff = np.percentile(gradient, 50 + mountain_bias * 40)
+
+    height_mask = scaled_height >= height_cutoff
+    steepness_mask = gradient >= steepness_cutoff
+
+    mountain_mask = height_mask & steepness_mask
+
+    mountain_biome_indices = {
+        i
+        for i, b in enumerate(biome_db.active_biomes(config))
+        if b.category and "mountain" in b.category.lower()
+    }
+    for b in biome_db.active_biomes(config):
+        print(f"[Check] Active biome: {b.editor_id}, form_id={b.form_id}, category={b.category}")
+
+    # Optional: include biomes tagged as "mountain"
+    biome_mask = np.zeros(n_points, dtype=bool)
+    if "BiomeID" in mesh.point_data:
+        biome_ids = mesh.point_data.get("BiomeID")
+        if biome_ids is not None:
+            biome_mask = np.isin(biome_ids, list(mountain_biome_indices))
+            mountain_mask = mountain_mask | biome_mask
+
+    # mountain_mask = mountain_mask | biome_mask
+
+    # Optional growth
+    def grow_mask(mask: np.ndarray, iters=2, bias=0.6):
+        new_mask = mask.copy()
+        indices = np.arange(len(mask))
+        for _ in range(iters):
+            np.random.shuffle(indices)
+            for i in indices:
+                if not new_mask[i]:
+                    neighbors = neighbors_map[int(i)]
+                    count = sum(new_mask[int(j)] for j in neighbors)
+                    if count >= 2 and np.random.rand() < bias:
+                        new_mask[i] = True
+        return new_mask
+
+    mountain_mask = grow_mask(mountain_mask, iters=2, bias=mountain_bias)
+
+    # Remove river overlap
+    river_mask = river_flow < 128
+    mountain_mask[river_mask] = False
+    print(f"River mask count: {np.sum(river_mask)} points")
+    print(f"Mountain points after river removal: {np.sum(mountain_mask)}")
+
+    mesh.point_data["MountainMask"] = mountain_mask.astype(np.uint8) * 255
+    print(f"[Mountain] Assigned {mountain_mask.sum()} mountain points.")
 
 
 def assign_latitude_zones(mesh, config):
@@ -503,7 +624,22 @@ def assign_biome_ids(mesh, config):
         else:
             biome_ids[i] = 6  # Topmost biome for highest heights
 
+    selected_biomes = []
+    for idx in biome_indices:
+        if idx < len(editor_ids):
+            editor_id = editor_ids[idx]
+            biome = biome_db.biomes_by_name.get(editor_id)
+            if biome:
+                selected_biomes.append(biome)
+            else:
+                selected_biomes.append(None)
+        else:
+            selected_biomes.append(None)
+
     mesh.point_data["BiomeID"] = biome_ids
+    mesh.field_data["SelectedBiomes"] = np.array(
+        [b.height if b else -1 for b in selected_biomes]
+    )
     print(
         f"[Debug] Assigned BiomeIDs: min={biome_ids.min()}, max={biome_ids.max()}, unique={np.unique(biome_ids)}"
     )
@@ -540,10 +676,9 @@ def assign_terrain_ids(mesh, config):
 
 
 def export_maps(mesh, output_paths, config):
-    """Export various maps from the mesh to image files."""
     num_biomes = config.get("num_biomes", 5)
     num_res_bands = config.get("num_res_bands", 5)
-    resolution = config.get("resolution", 256)
+    resolution = config.get("texture_resolution", 256)
     map_shape = (2 * resolution, resolution)  # (height, width)
     biom_shape = (512, 256)  # (height, width)
 
@@ -561,35 +696,57 @@ def export_maps(mesh, output_paths, config):
         "river_mask": "grey",
         "colony_mask": "grey",
         "humidity": "grey",
+        "mountain_mask": "grey",
     }
 
-    river = export_river_mask_map(mesh, biom_shape, config)
-    print("river_mask shape:", river.shape)
-
-    ocean = export_ocean_mask_map(mesh, biom_shape)
-    print("ocean_mask shape:", ocean.shape)
+    # Cache common maps
+    ocean_mask = export_ocean_mask_map(mesh, biom_shape, config)
+    print(
+        f"ocean_mask: min={ocean_mask.min()}, max={ocean_mask.max()}, mean={ocean_mask.mean():.4f}, shape={ocean_mask.shape}"
+    )
 
     humidity = export_humidity_map(mesh, biom_shape, config)
-    print("humidity_map shape:", humidity.shape)
+    print(
+        f"humidity_mask: min={humidity.min():.4f}, max={humidity.max():.4f}, mean={humidity.mean():.4f}, shape={humidity.shape}"
+    )
 
     elevation = export_height_map(mesh, biom_shape)
     print("elevation_map shape:", elevation.shape)
 
+    # Convert to float for safe math operations
+    elevation = elevation.astype(np.float64)
+
+    elevation -= elevation.min()
+    elevation /= elevation.max() + 1e-8
+    elevation = elevation**1.2  # sharpen valleys
+    print(
+        f"elevation_map boosted: min={elevation.min():.4f}, max={elevation.max():.4f}, mean={elevation.mean():.4f}, shape={elevation.shape}"
+    )
+
+    river = export_river_mask_map(mesh, biom_shape, config, ocean_mask)
+    print(
+        f"river_mask: min={river.min()}, max={river.max()}, mean={river.mean():.4f}, shape={river.shape}"
+    )
+
     export_layers = {
-        "color": lambda mesh, res: export_color_map(mesh, res),
+        "color": lambda mesh, res: export_color_map(mesh, res, config),
         "height": lambda mesh, res: export_height_map(mesh, res),
-        "zone": lambda mesh, _: export_zone_map(mesh, biom_shape),
+        "zone": lambda mesh, _: export_zone_map(mesh, biom_shape, config),
         "biome": lambda mesh, _: export_biome_map(mesh, biom_shape, config),
-        "ocean_mask": lambda mesh, res: export_ocean_mask_map(mesh, res),
-        "humidity": lambda mesh, res: export_humidity_map(mesh, res, config),
-        "river_mask": lambda mesh, res: export_river_mask_map(mesh, res, config),
+        "ocean_mask": lambda mesh, res: ocean_mask,  # Use cached
+        "humidity": lambda mesh, res: humidity,  # Use cached
+        "river_mask": lambda mesh, res: river,  # Use cached
         "terrain": lambda mesh, res: export_terrain_map(mesh, res),
         "resource": lambda mesh, _: export_resource_map(
             mesh, biom_shape, num_biomes, num_res_bands
         ),
+        "mountain_mask": lambda mesh, _: export_mountain_mask_map(
+            mesh, biom_shape, config, num_biomes, num_res_bands
+        ),
         "colony_mask": lambda mesh, _: export_colony_map(
+            config,
             river_mask=river,
-            ocean_mask=ocean,
+            ocean_mask=ocean_mask,
             humidity_map=humidity,
             elevation_map=elevation,
             colony_ratio=config.get("inland_population_count", 0.1),
@@ -607,7 +764,22 @@ def export_maps(mesh, output_paths, config):
             continue
 
         try:
-            data = export_fn(mesh, map_shape)
+            res = (
+                biom_shape
+                if name
+                in (
+                    "river_mask",
+                    "colony_mask",
+                    "ocean_mask",
+                    "humidity",
+                    "biome",
+                    "resource",
+                    "zone",
+                    "mountain_mask",
+                )
+                else map_shape
+            )
+            data = export_fn(mesh, res)
             if data is None:
                 print(f"Warning: No data returned for {name} map. Skipping.")
                 continue
@@ -617,99 +789,80 @@ def export_maps(mesh, output_paths, config):
             )
             cmap = colormaps.get(name, "viridis")
             if name == "color" or name == "biome":
-                # RGB data
                 Image.fromarray(data, mode="RGB").save(path)
-            elif name == "ocean_mask" or name == "river_mask":
-                # Grayscale binary mask
+            elif (
+                name == "ocean_mask" or name == "river_mask" or name == "mountain_mask"
+            ):
                 Image.fromarray(data, mode="L").save(path)
             elif name in ["zone", "resource"]:
-                # Categorical data
                 data = np.round(data).astype(np.uint8)
                 plt.imsave(path, data, cmap=cmap, vmin=np.min(data), vmax=np.max(data))
             else:
-                # Continuous grayscale data
                 norm_data = (data - np.min(data)) / (np.max(data) - np.min(data) + 1e-8)
                 plt.imsave(path, norm_data, cmap=cmap)
             print(f"Saved {name} map to: {path}")
+
         except Exception as e:
             print(f"Error exporting {name} map: {e}")
 
 
-def export_ocean_mask_map(mesh: pv.PolyData, map_shape) -> np.ndarray:
+def export_ocean_mask_map(mesh: pv.PolyData, map_shape, config) -> np.ndarray:
     height, width = map_shape
     num_biomes = config.get("num_biomes", 7)
 
     if "BiomeID" not in mesh.point_data:
         print("Warning: BiomeID not found. Returning black ocean mask.")
-        return np.ones((height, width), dtype=np.uint8) * 255  # Default to all land (white)
+        return np.ones((height, width), dtype=np.uint8) * 255
 
     biome_ids = mesh.point_data["BiomeID"]
     uvs = mesh.active_texture_coordinates
     if uvs is None:
         raise ValueError("UVs missing. Assign UVs before export.")
     uvs = np.clip(uvs, 0.0, 1.0 - 1e-6)
-    x_coords = uvs[:, 0] * (width - 1)
-    y_coords = (1.0 - uvs[:, 1]) * (height - 1)
-    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
+    x_coords = uvs[:, 0] * (width - 1)  # U -> width
+    y_coords = (1.0 - uvs[:, 1]) * (height - 1)  # V -> height, flipped for image
 
-    # Interpolate BiomeID to grid
-    uv_map = griddata(
-        points=np.column_stack((x_coords, y_coords)),
-        values=biome_ids,
-        xi=(grid_x, grid_y),
-        method="nearest",
-        fill_value=0,
-    ).astype(int)
+    # Create grid with xy indexing (Cartesian)
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))  # (x, y) order
+
+    # Interpolate using NearestNDInterpolator
+    points = np.column_stack((x_coords, y_coords))  # (x, y) order
+    interpolator = NearestNDInterpolator(points, biome_ids)
+    uv_map = interpolator(grid_points).reshape(height, width).astype(int)
     uv_map = np.clip(uv_map, 0, num_biomes - 1)
 
-    # Map BiomeID to editor_id via config
+    # Map BiomeID to ocean slots
     editor_ids = list(biome_db.biomes_by_name.keys())
-    ocean_slots = []
-    for i in range(num_biomes):
-        config_idx = config.get(f"biome{i:02}_qcombobox", 0)
-        if config_idx < len(editor_ids):
-            editor_id = editor_ids[config_idx]
-            biome = biome_db.biomes_by_name.get(editor_id)
-            if biome and biome.category.lower() == "ocean":
-                ocean_slots.append(i)
+    ocean_slots = [
+        i
+        for i in range(num_biomes)
+        if config.get(f"biome{i:02}_qcombobox", 0) < len(editor_ids)
+        and biome_db.biomes_by_name.get(
+            editor_ids[config.get(f"biome{i:02}_qcombobox", 0)], None
+        )
+        and biome_db.biomes_by_name[
+            editor_ids[config.get(f"biome{i:02}_qcombobox", 0)]
+        ].category.lower()
+        == "ocean"
+    ]
 
     # Create ocean mask: 0 for ocean, 255 for land
-    ocean_mask = np.ones((height, width), dtype=np.uint8) * 255  # Default to land (white)
+    ocean_mask = np.ones((height, width), dtype=np.uint8) * 255
     for slot in ocean_slots:
-        ocean_mask[uv_map == slot] = 0  # Set ocean to black
+        ocean_mask[uv_map == slot] = 0
 
-    print(f"[Debug] Ocean slots: {ocean_slots}, Ocean pixels: {np.sum(ocean_mask == 0)}")
+    print(
+        f"[Debug] Ocean slots: {ocean_slots}, Ocean pixels: {np.sum(ocean_mask == 0)}"
+    )
     return ocean_mask
 
 
 def export_humidity_map(mesh: pv.PolyData, map_shape, config):
     if "Humidity" not in mesh.point_data:
-        raise ValueError(
-            "Humidity data not found on mesh. Make sure assign_river_flow() ran first."
-        )
+        raise ValueError("Humidity data not found on mesh.")
 
-    biome_ids = mesh.point_data.get("BiomeID")
-    if biome_ids is None:
-        raise ValueError("BiomeID not found on mesh")
-
-    # Build biome index → humidity from config
-    editor_ids = list(biome_db.biomes_by_name.keys())
-    biome_indices = [config.get(f"biome{i:02}_qcombobox", 0) for i in range(7)]
-    active_biome_entries = []
-
-    for idx in biome_indices:
-        if idx < len(editor_ids):
-            editor_id = editor_ids[idx]
-            biome = biome_db.biomes_by_name.get(editor_id)
-            if biome:
-                active_biome_entries.append(biome)
-
-    index_to_humidity = {i: b.humidity() for i, b in enumerate(active_biome_entries)}
-
-    # Assign per-point humidity
-    humidity = np.array(
-        [index_to_humidity.get(bid, 0.0) for bid in biome_ids], dtype=np.float32
-    )
+    humidity = mesh.point_data["Humidity"]
 
     # Interpolate and fill using UV logic
     image = remap_to_uv_grid(mesh, humidity, map_shape)
@@ -720,41 +873,23 @@ def export_humidity_map(mesh: pv.PolyData, map_shape, config):
     return image
 
 
-def export_river_mask_map(mesh: pv.PolyData, map_shape, config) -> np.ndarray:
-    """
-    Export binary river mask as 256x512 grayscale image using RiverFlow data.
-    """
+def export_river_mask_map(
+    mesh: pv.PolyData, map_shape, config, ocean_mask: np.ndarray
+) -> np.ndarray:
     if "RiverFlow" not in mesh.point_data:
         print("[Warning] RiverFlow not found. Returning black mask.")
         return np.zeros(map_shape, dtype=np.uint8)
 
-    uv = mesh.active_texture_coordinates
-    if uv is None:
-        raise ValueError("UV coordinates missing on mesh. Assign UVs before export.")
-
     height, width = map_shape
     river_flow = mesh.point_data["RiverFlow"]
 
-    # Flip UV V to match vertical image axis
-    u = (uv[:, 0] * (width - 1)).astype(int)
-    v = ((1.0 - uv[:, 1]) * (height - 1)).astype(int)
-    u = np.clip(u, 0, width - 1)
-    v = np.clip(v, 0, height - 1)
+    # Use remap_to_uv_grid for consistency and speed
+    river_image = remap_to_uv_grid(mesh, river_flow, map_shape)
 
-    river_image = np.zeros(map_shape, dtype=np.float32)
-    counts = np.zeros(map_shape, dtype=np.float32)
-
-    for i in range(len(river_flow)):
-        river_image[v[i], u[i]] += river_flow[i]
-        counts[v[i], u[i]] += 1
-
-    counts[counts == 0] = 1
-    river_image /= counts
-
-    # Smooth to reduce artifacts
-    river_image = gaussian_filter(
-        river_image, sigma=config.get("river_blur_sigma", 0.1)
-    )
+    # Minimal smoothing to reduce artifacts
+    sigma = config.get("river_blur_sigma", 0.05)  # Reduced sigma
+    if sigma > 0:
+        river_image = gaussian_filter(river_image, sigma=sigma)
 
     # Normalize to [0, 1]
     max_val = river_image.max()
@@ -764,18 +899,62 @@ def export_river_mask_map(mesh: pv.PolyData, map_shape, config) -> np.ndarray:
     if max_val > 0:
         river_image /= max_val
 
+    river_image = 1.0 - river_image
+
     # Threshold
-    threshold = config.get("river_threshold", 0.05)  # default 5% of max
+    threshold = config.get("river_threshold", 0.05)
     mask = (river_image > threshold).astype(np.uint8) * 255
 
     # Apply ocean mask
-    ocean_mask = export_ocean_mask_map(mesh, map_shape)
     mask[ocean_mask == 0] = 0
+
+    # Compute ttl_mountain
+    ttl_river = config["ttl_river"] = int(np.sum(mask == 255))
+    print(f"[Debug] ttl_river: {ttl_river}")
 
     return mask
 
 
+def export_mountain_mask_map(
+    mesh: pv.PolyData, map_shape, config, *args, **kwargs
+) -> np.ndarray:
+    height, width = map_shape
+
+    if "MountainMask" not in mesh.point_data:
+        print("Warning: MountainMask not found. Returning blank mask.")
+        return np.zeros((height, width), dtype=np.uint8)
+
+    mountain_data = mesh.point_data["MountainMask"]
+
+    uvs = mesh.active_texture_coordinates
+    if uvs is None:
+        raise ValueError("UVs missing. Assign UVs before export.")
+
+    uvs = np.clip(uvs, 0.0, 1.0 - 1e-6)
+
+    # Correct coordinate transform
+    x_coords = uvs[:, 0] * (width - 1)
+    y_coords = (1.0 - uvs[:, 1]) * (height - 1)
+
+    # Create UV grid (same indexing as image)
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
+
+    # Interpolate MountainMask using nearest-neighbor
+    points = np.column_stack((x_coords, y_coords))
+    interpolator = NearestNDInterpolator(points, mountain_data)
+    mountain_mask = interpolator(grid_points).reshape(height, width).astype(np.uint8)
+
+    # Compute ttl_mountain
+    ttl_mountain = config["ttl_mountain"] = int(np.sum(mountain_mask == 255))
+    print(f"[Debug] ttl_mountain: {ttl_mountain}")
+
+    print(f"[Debug] Mountain pixels: {np.sum(mountain_mask == 255)}")
+    return mountain_mask
+
+
 def export_colony_map(
+    config,
     river_mask: np.ndarray,
     ocean_mask: np.ndarray,
     humidity_map: np.ndarray,
@@ -805,23 +984,23 @@ def export_colony_map(
         elev_max_actual - elev_min + 1e-8
     )
 
-    # Masks
-    # land_mask: True on land, False on ocean
-    land_mask = ocean_mask != 0
+    ocean_ratio: float = 0.05
+    enable_coastal_population = config.get("enable_coastal_population", True)
+    enable_inland_population = config.get("enable_inland_population", True)
+    enable_ocean_population = config.get("enable_ocean_population", True)
 
-    # distance_to_ocean: distance of each pixel (land or ocean) to nearest ocean pixel
+    # Masks
+    land_mask = ocean_mask != 0
+    land_mask = land_mask.astype(bool)
+
     distance_to_ocean: np.ndarray = np.asarray(
         distance_transform_edt(~land_mask, return_distances=True)
-    )  # distance from ocean (False) to land (True)
+    )
 
-    coastal_threshold = 5
+    coastal_threshold = 2
     coastal_zone = land_mask & (distance_to_ocean <= coastal_threshold)
-
-    inland_zone = land_mask & (~coastal_zone)
-
-    river_inland = (river_mask > 0) & inland_zone
-
     coastal_elevation_max = coastal_elevation_max
+
     coastal_candidates = (
         coastal_zone
         & (humidity_map >= humidity_threshold)
@@ -833,18 +1012,21 @@ def export_colony_map(
     inland_candidates = (
         river_pixels
         & (humidity_map >= humidity_threshold)
-        & (normalized_elevation > coastal_elevation_max)
-        & (normalized_elevation <= elevation_max)
+        & (normalized_elevation >= 0.0)
+        & (normalized_elevation <= 1.0)
     )
+
+    ocean_candidates = ocean_mask == 0
+    ocean_indices = np.flatnonzero(ocean_candidates)
 
     # Create colony mask
     colonies = np.zeros_like(river_mask, dtype=np.uint8)
 
     # Place coastal colonies
-    coastal_ratio = coastal_ratio * 0.25
+    coastal_ratio = coastal_ratio * 0.01
     coastal_indices = np.flatnonzero(coastal_candidates)
-    n_coastal = int(len(coastal_indices) * coastal_ratio)
-    if n_coastal > 0 and len(coastal_indices) > 0:
+    n_coastal = min(int(len(coastal_indices) * coastal_ratio), len(coastal_indices))
+    if enable_coastal_population and n_coastal > 0:
         selected_coastal = np.random.choice(
             coastal_indices, size=n_coastal, replace=False
         )
@@ -852,30 +1034,41 @@ def export_colony_map(
         colonies[rows, cols] = 255
 
     # Place inland colonies
-    colony_ratio = colony_ratio * 0.25
+    colony_ratio = colony_ratio * 0.05
     inland_indices = np.flatnonzero(inland_candidates)
-    n_inland = int(len(inland_indices) * colony_ratio)
-    if n_inland > 0 and len(inland_indices) > 0:
+    n_inland = min(int(len(inland_indices) * colony_ratio), len(inland_indices))
+    if enable_inland_population and n_inland > 0:
         selected_inland = np.random.choice(inland_indices, size=n_inland, replace=False)
         rows, cols = np.unravel_index(selected_inland, colonies.shape)
         colonies[rows, cols] = 255
 
-    ttl_elegible = np.sum(coastal_candidates) + np.sum(inland_candidates)
-    ttl_placed = np.sum(colonies > 0)
-    ttl_coastal = np.sum(colonies[coastal_candidates] > 0)
-    ttl_inland = np.sum(colonies[inland_candidates] > 0)
+    # Place ocean colonies
+    n_total_so_far = n_coastal + n_inland
+    n_ocean = max(1, int(n_total_so_far * ocean_ratio))
+    if enable_ocean_population and n_ocean > 0 and len(ocean_indices) >= n_ocean:
+        selected_ocean = np.random.choice(ocean_indices, size=n_ocean, replace=False)
+        rows, cols = np.unravel_index(selected_ocean, colonies.shape)
+        colonies[rows, cols] = 255
+
+    ttl_coastal = int(np.sum(colonies[coastal_candidates] > 0))
+    ttl_inland = int(np.sum(colonies[inland_candidates] > 0))
+    ttl_placed = int(np.sum(colonies > 0))
+    ttl_elegible = int(np.sum(coastal_candidates) + np.sum(inland_candidates))
+
+    config["coastal_census_total"] = ttl_coastal
+    config["inland_census_total"] = ttl_inland
 
     print(
         f"[Colonies] Placed: {ttl_placed}, Coastal: {ttl_coastal}, Inland: {ttl_inland}, Total elegible sites: {ttl_elegible}"
     )
 
-    if np.sum(colonies > 0) == 0:
+    if ttl_placed == 0:
         print("[Warning] No colony sites found. Returning empty colony mask.")
 
     return colonies
 
 
-def export_color_map(mesh: pv.PolyData, map_shape):
+def export_color_map(mesh: pv.PolyData, map_shape, config):
     height, width = map_shape
 
     if "ColorID" not in mesh.point_data:
@@ -890,26 +1083,27 @@ def export_color_map(mesh: pv.PolyData, map_shape):
     x_coords = uvs[:, 0] * (width - 1)
     y_coords = (1.0 - uvs[:, 1]) * (height - 1)
 
-    pad = 2
-    grid_x, grid_y = np.meshgrid(np.arange(width + 2 * pad), np.arange(height + 2 * pad))
-    x_coords_padded = x_coords + pad
-    y_coords_padded = y_coords + pad
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
 
-    uv_map = griddata(
-        points=np.column_stack((x_coords_padded, y_coords_padded)),
-        values=scalar_map,
-        xi=(grid_x, grid_y),
-        method="linear",
-        fill_value=np.nan,
+    points = np.column_stack((x_coords, y_coords))
+    values = scalar_map
+
+    interpolator = NearestNDInterpolator(points, values)
+    uv_map = (
+        interpolator(grid_points)
+        .reshape(height, width)
+        .astype(np.float32)
     )
 
-    # Fill and crop
+    # Normalize to [0, 1]
     uv_map = _fill_nan_safe(uv_map)
-    uv_map = uv_map[pad:-pad, pad:-pad] 
 
-    # Apply gradient colormap
+    uv_map -= uv_map.min()
+    uv_map /= (uv_map.max() + 1e-8)
+
     _, gradient_cmap = get_biome_colormaps(config)
-    colored_image = gradient_cmap(uv_map)[:, :, :3]  # RGB only
+    colored_image = gradient_cmap(uv_map)[:, :, :3]
     rgb_image = (colored_image * 255).astype(np.uint8)
 
     print(f"[Debug] Color map stats: min={uv_map.min()}, max={uv_map.max()}")
@@ -932,16 +1126,14 @@ def export_biome_map(mesh: pv.PolyData, biom_shape, config: dict):
     x_coords = uvs[:, 0] * (width - 1)
     y_coords = (1.0 - uvs[:, 1]) * (height - 1)
 
-    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
-    uv_map = griddata(
-        points=np.column_stack((x_coords, y_coords)),
-        values=biome_ids,
-        xi=(grid_x, grid_y),
-        method="nearest",
-        fill_value=0,
-    ).astype(int)
+    # Create grid with xy indexing
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))  # (x, y) order
 
-    # Clip to valid biome indices
+    # Interpolate using NearestNDInterpolator
+    points = np.column_stack((x_coords, y_coords))  # shape: (N, 2)
+    interpolator = NearestNDInterpolator(points, biome_ids)
+    uv_map = interpolator(grid_points).reshape(height, width).astype(int)
     uv_map = np.clip(uv_map, 0, num_biomes - 1)
 
     # Get biome colors from config
@@ -949,7 +1141,7 @@ def export_biome_map(mesh: pv.PolyData, biom_shape, config: dict):
         config.get(f"biome{i:02}_color", "#000000") for i in range(num_biomes)
     ]
     biome_colors_rgb = np.array(
-        [tuple(int(c[i : i + 2], 16) for i in (1, 3, 5)) for c in biome_colors_hex],
+        [tuple(int(c[i:i+2], 16) for i in (1, 3, 5)) for c in biome_colors_hex],
         dtype=np.uint8,
     )
 
@@ -1017,44 +1209,27 @@ def export_height_map(mesh: pv.PolyData, map_shape):
     if "Height" not in mesh.point_data:
         raise ValueError("Height data not found on mesh.")
 
+    heights = mesh.point_data["Height"]
+    height, width = map_shape
     uvs = mesh.active_texture_coordinates
     if uvs is None:
         raise ValueError("UV coordinates not found. Call assign_uv_from_normal first.")
 
-    heights = mesh.point_data["Height"]
-    height, width = map_shape
-
-    # Clip UVs to avoid edge artifacts
     uvs = np.clip(uvs, 0.0, 1.0 - 1e-6)
-
-    # Convert UVs to pixel coordinates
     x_coords = uvs[:, 0] * (width - 1)
     y_coords = (1.0 - uvs[:, 1]) * (height - 1)
 
-    # Create interpolation grid
-    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
+    # Create grid with xy indexing
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
 
-    # Interpolate using linear method
-    image = griddata(
-        points=np.column_stack((x_coords, y_coords)),
-        values=heights,
-        xi=(grid_x, grid_y),
-        method="linear",
-        fill_value=np.nan,
-    )
+    # Interpolate using NearestNDInterpolator
+    points = np.column_stack((x_coords, y_coords))
+    interpolator = NearestNDInterpolator(points, heights)
+    image = interpolator(grid_points).reshape(height, width)
 
-    # Fill remaining NaNs using mean of neighbors (inpainting)
-    nan_mask = np.isnan(image)
-    if np.any(nan_mask):
-        from scipy.ndimage import gaussian_filter
-
-        # Use Gaussian blur as a smooth fallback
-        filled = np.copy(image)
-        filled[nan_mask] = 0.0
-        blurred = gaussian_filter(filled, sigma=1)
-        weight = ~nan_mask
-        blurred_weight = gaussian_filter(weight.astype(float), sigma=1)
-        image[nan_mask] = blurred[nan_mask] / np.maximum(blurred_weight[nan_mask], 1e-6)
+    # Fill NaNs if any
+    image = _fill_nan_safe(image)
 
     return image
 
@@ -1075,38 +1250,29 @@ def export_terrain_map(mesh: pv.PolyData, map_shape):
     uvs = np.clip(uvs, 0.0, 1.0 - 1e-6)
 
     # Convert UVs to pixel coordinates
-    x_coords = uvs[:, 0] * (width - 1)
+    x_coords = uvs[:, 0] * (width - 0)  # 1)
     y_coords = (1.0 - uvs[:, 1]) * (height - 1)
 
-    # Create interpolation grid
-    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
+    # Interpolate on the UV grid
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
 
-    # Interpolate using linear method
-    image = griddata(
-        points=np.column_stack((x_coords, y_coords)),
-        values=heights,
-        xi=(grid_x, grid_y),
-        method="linear",
-        fill_value=np.nan,
-    )
+    # x_coords and y_coords are derived from UVs
+    points = np.column_stack((x_coords, y_coords))  # shape: (N, 2)
+    values = heights  # shape: (N,)
+
+    # Create interpolator
+    interpolator = NearestNDInterpolator(points, values)
+
+    image = interpolator(grid_points).reshape(height, width)#.astype(np.uint8)
 
     # Fill remaining NaNs using mean of neighbors (inpainting)
-    nan_mask = np.isnan(image)
-    if np.any(nan_mask):
-        from scipy.ndimage import gaussian_filter
-
-        # Use Gaussian blur as a smooth fallback
-        filled = np.copy(image)
-        filled[nan_mask] = 0.0
-        blurred = gaussian_filter(filled, sigma=1)
-        weight = ~nan_mask
-        blurred_weight = gaussian_filter(weight.astype(float), sigma=1)
-        image[nan_mask] = blurred[nan_mask] / np.maximum(blurred_weight[nan_mask], 1e-6)
+    image = _fill_nan_safe(image)
 
     return image
 
 
-def export_zone_map(mesh: pv.PolyData, map_shape):
+def export_zone_map(mesh: pv.PolyData, map_shape, config):
     num_zones = config.get("num_zones", 3)
     height, width = map_shape
 
@@ -1153,18 +1319,20 @@ def export_zone_map(mesh: pv.PolyData, map_shape):
 
 
 def remap_to_uv_grid(mesh, scalar_data, map_shape):
-    """Remap scalar data (1D or multi-channel) to a UV grid using interpolation."""
+    """Remap scalar data to 2D UV grid using nearest-neighbor interpolation."""
     uvs = mesh.active_texture_coordinates
     if uvs is None:
         raise ValueError("UV coordinates not found. Call assign_uv_from_normal first.")
 
-    uvs = np.minimum(uvs, 1.0)
-    uvs = np.maximum(uvs, 0.0)
+    uvs = np.clip(uvs, 0.0, 1.0 - 1e-6)
     height, width = map_shape
-    x_coords = uvs[:, 0] * (width - 1)
-    y_coords = (1.0 - uvs[:, 1]) * (height - 1)
 
-    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
+    # Corrected this line
+    x_coords = uvs[:, 0] * (width - 1)
+    y_coords = (1.0 - uvs[:, 1]) * (height - 1)  # Corrected from `(1.0, - uvs[:, 1])`
+
+    grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height), indexing="xy")
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
 
     scalar_data = np.asarray(scalar_data)
 
@@ -1172,13 +1340,10 @@ def remap_to_uv_grid(mesh, scalar_data, map_shape):
     if scalar_data.ndim == 2 and scalar_data.shape[1] > 1:
         channels = []
         for i in range(scalar_data.shape[1]):
-            interp = griddata(
-                points=np.column_stack((x_coords, y_coords)),
-                values=scalar_data[:, i],
-                xi=(grid_x, grid_y),
-                method="linear",
-                fill_value=np.nan,
+            interpolator = NearestNDInterpolator(
+                np.column_stack((x_coords, y_coords)), scalar_data[:, i]
             )
+            interp = interpolator(grid_points).reshape(height, width)
             interp = _fill_nan_safe(interp)
             channels.append(interp)
         return np.stack(channels, axis=-1)
@@ -1187,13 +1352,10 @@ def remap_to_uv_grid(mesh, scalar_data, map_shape):
     if scalar_data.ndim > 1:
         scalar_data = scalar_data.ravel()
 
-    image = griddata(
-        points=np.column_stack((x_coords, y_coords)),
-        values=scalar_data,
-        xi=(grid_x, grid_y),
-        method="linear",
-        fill_value=np.nan,
+    interpolator = NearestNDInterpolator(
+        np.column_stack((x_coords, y_coords)), scalar_data
     )
+    image = interpolator(grid_points).reshape(height, width)
 
     return _fill_nan_safe(image)
 
@@ -1266,7 +1428,10 @@ def assign_uv_from_normal(mesh: pv.PolyData, return_uv=False):
 
 def main():
     # --- Setup ---
+
+    # Global configuration
     config = get_config()
+    print("Config ID:", id(config))
     plugin_name = config.get("plugin_name", "default_plugin")
     planet_name = config.get("planet_name", "default_planet")
 
@@ -1280,14 +1445,21 @@ def main():
     # --- Assign IDs ---
     assign_zone_ids(mesh, config)
     assign_biome_ids(mesh, config)
-    assign_river_flow(mesh, config)
+    assign_river_flow(mesh, config, biome_db)
     assign_resource_ids(mesh, config)
     assign_color_ids(mesh, config)
     assign_terrain_ids(mesh, config)
+    assign_mountain_mask(mesh, config)
 
     # --- Export Maps ---
     export_maps(mesh, output_paths, config)
-    # generate_view(mesh)
+    # generate_view(mesh, config) # Remove '#' for plotter debug
+
+    generate_and_save_road_mask(config)
+
+    print(f"[CONFIG] PlanetMaker main(), ttl_river={config.get("ttl_river")}")
+    save_config()
+    print(f"[CONFIG] config id={id(config)} from {__file__}")
 
     if config.get("run_planet_textures", True):
         subprocess.run(
@@ -1299,4 +1471,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    cProfile.run("main()", "profile_output.prof")  # Optional: save to file
+    # Optional: display sorted stats
+    stats = pstats.Stats("profile_output.prof")
+    stats.strip_dirs().sort_stats("cumulative").print_stats(25)  # Show top 25

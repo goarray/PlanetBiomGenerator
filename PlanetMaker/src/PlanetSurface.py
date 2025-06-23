@@ -39,7 +39,7 @@ from PlanetConstants import (
     DEFAULT_CONFIG_PATH,
     CSV_PATH,
     PREVIEW_PATH,
-    BLOCK_PATTERN_PATH,
+    PATTERN_PATH,
     # Script and template paths
     SCRIPT_PATH,
     TEMPLATE_PATH,
@@ -125,21 +125,64 @@ def load_biom_file(png_output_dir: Path, planet_name: str) -> np.ndarray:
         handle_news(None, "error", f"Failed to load biome PNG {biome_path}: {e}")
         raise
 
+def load_biome_pattern_map(csv_path: Path) -> dict[str, tuple[str, str]]:
+    pattern_map = {}
+    with open(csv_path, newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            category = row["BiomeCategory"].strip().lower()
+            pattern_id = row["BlockPatternID"].strip()
+            pattern_editor = row["BlockPatternEditorID"].strip()
+            if category and pattern_id and pattern_editor:
+                pattern_map[category] = (pattern_id, pattern_editor)
+    return pattern_map
+
+def build_category_to_pattern_map(biome_csv: Path, special_csv: Path) -> dict[str, tuple[str, str]]:
+    pattern_map = load_biome_pattern_map(biome_csv)
+    pattern_map.update(load_special_pattern_map(special_csv))  # override/add roads/rivers
+    return pattern_map
+
+def load_special_pattern_map(csv_path: Path) -> dict[str, tuple[str, str]]:
+    pattern_map = {}
+    with open(csv_path, newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            category = row["Category"].strip().lower()
+            pattern_id = row["FormID"].strip()
+            pattern_editor = row["EditorID"].strip()
+            if category and pattern_id and pattern_editor:
+                pattern_map[category] = (pattern_id, pattern_editor)
+    return pattern_map
+
+def load_mask(mask_path: Path) -> np.ndarray:
+    if not mask_path.exists():
+        raise FileNotFoundError(f"Mask not found: {mask_path}")
+    img = Image.open(mask_path).convert("L")  # grayscale mask
+    return np.array(img, dtype=np.uint8)
 
 def generate_surface_tree(
     biome_array: np.ndarray,
+    river_mask: np.ndarray,
+    road_mask: np.ndarray,
     rgb_to_biome: dict,
     output_path: Path,
 ):
     height, width, _ = biome_array.shape
     rows = []
 
+    category_to_pattern = build_category_to_pattern_map(CSV_PATH, PATTERN_PATH)
+
     for y in range(height):
         for x in range(width):
-            rgb = tuple(int(c) for c in biome_array[y, x])
-            form_id, editor_id, category = rgb_to_biome.get(
-                rgb, ("00000000", "Unknown", "Unknown")
-            )
+            if river_mask[y, x] > 0:
+                category = "rivers"
+            elif road_mask[y, x] > 0:
+                category = "roads"
+            else:
+                rgb = tuple(int(c) for c in biome_array[y, x])
+                _, _, category = rgb_to_biome.get(rgb, ("00000000", "Unknown", "unknown"))
+
+            form_id, editor_id = category_to_pattern.get(category.lower(), ("00000000", "UnknownPattern"))
             rows.append((form_id, editor_id, category))
 
     with open(output_path, "w", newline="") as f:
@@ -150,20 +193,65 @@ def generate_surface_tree(
     print(f"[Info] Wrote surface tree to: {output_path}")
 
 
+def export_colony_overlay_coords(
+    colony_mask: np.ndarray, overlays_csv: Path, output_path: Path
+):
+    """Export colony locations in Bethesda normalized coordinates, with overlay info."""
+    height, width = colony_mask.shape
+    rows = [("Latitude", "Longitude", "FormID", "EditorID", "Name")]
+
+    # Load overlay info
+    overlays = []
+    with open(overlays_csv, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            overlays.append((row["FormID"], row["EditorID"], row["Name"]))
+
+    if not overlays:
+        raise ValueError("No overlays found in WorldOverlays.csv!")
+
+    ys, xs = np.where(colony_mask == 255)
+    for i, (y, x) in enumerate(zip(ys, xs)):
+        lat = 1.0 - (y / height) * 2.0
+        lon = (x / width) * 2.0 - 1.0
+
+        # Round-robin assignment
+        form_id, editor_id, name = overlays[i % len(overlays)]
+        safe_name = name.replace(" ", "_").replace(",", "_")
+        rows.append((lat, lon, form_id, editor_id, safe_name))
+
+    with open(output_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+    print(f"[Info] Exported {len(rows)-1} colony overlays to: {output_path}")
+
+
 def main():
     # Load biome PNG
     biome_array = load_biom_file(PNG_OUTPUT_DIR, planet_name)
 
-    # Build RGB → (FormID, EditorID) lookup 
+    # Build RGB → (FormID, EditorID) lookup
     rgb_to_biome = {
         biome.color: (f"{biome.form_id:08X}", biome.editor_id, biome.category)
         for biome in biome_db.all_biomes()
     }
 
+    river_mask = load_mask(PNG_OUTPUT_DIR / plugin_name / planet_name / f"{planet_name}_river_mask.png")
+    road_mask  = load_mask(PNG_OUTPUT_DIR / plugin_name / planet_name / f"{planet_name}_road_mask.png")
+    colony_mask = load_mask(PNG_OUTPUT_DIR / plugin_name / planet_name / f"{planet_name}_colony_mask.png")
+
     # Generate TSV SurfaceTree
     surface_tree_path = OUTPUT_DIR / "CSVs" / plugin_name / planet_name / f"{planet_name}_SurfaceTree.csv"
     surface_tree_path.parent.mkdir(parents=True, exist_ok=True)
-    generate_surface_tree(biome_array, rgb_to_biome, surface_tree_path)
+    generate_surface_tree(
+        biome_array, river_mask, road_mask, rgb_to_biome, surface_tree_path
+    )
+
+    overlays_csv = CSV_DIR / "WorldOverlays.csv"
+    overlay_output = OUTPUT_DIR / "CSVs" / plugin_name / planet_name / f"{planet_name}_WorldOverlays.csv"
+    overlay_output.parent.mkdir(parents=True, exist_ok=True)
+    export_colony_overlay_coords(colony_mask, overlays_csv, overlay_output)
 
 
 if __name__ == "__main__":

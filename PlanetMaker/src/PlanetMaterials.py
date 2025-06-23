@@ -53,7 +53,6 @@ def count_json_lines(data) -> int:
 
 def get_planet_material_paths():
     """Yield (planet_name, texture_path, material_path)."""
-    config = get_config()
     plugin_name = config.get("plugin_name", "PLUGINNOTFOUND")
     planet_name = config.get("planet_name", "PLUGINNOTFOUND")
 

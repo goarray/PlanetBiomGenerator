@@ -25,6 +25,7 @@ BIOM_DIR = Path("planetdata/biomemaps")
 DDS_OUTPUT_DIR = OUTPUT_DIR / "textures"
 PNG_OUTPUT_DIR = OUTPUT_DIR / "PNGs"
 MESH_OUTPUT_DIR = PLUGINS_DIR / "meshes" / "planets" / "houdiniplanets"
+ESM_OUTPUT_DIR = OUTPUT_DIR / "ESMs"
 
 # --- Config and data files ---
 CONFIG_PATH = CONFIG_DIR / "custom_config.json"
@@ -36,14 +37,12 @@ _config = None
 
 def load_config():
     global _config
-    """Load plugin config from disk and cache it."""
     with open(CONFIG_PATH, "r") as f:
         _config = json.load(f)
     return _config
 
 
 def get_config():
-    """Return cached config or load it if not cached."""
     global _config
     if _config is None:
         return load_config()
@@ -51,10 +50,10 @@ def get_config():
 
 
 def save_config():
-    """Save the cached config back to disk."""
+    global _config
     if _config is not None:
         with open(CONFIG_PATH, "w") as f:
-            json.dump(_config, f, indent=2)
+            json.dump(_config, f, indent=4)
 
 
 THEME_PATH = CONFIG_DIR / "custom_themes.json"
@@ -62,12 +61,13 @@ DEFAULT_THEME_PATH = CONFIG_DIR / "default_themes.json"
 
 CSV_PATH = CSV_DIR / "Biomes.csv"
 PREVIEW_PATH = CSV_DIR / "preview.csv"
-BLOCK_PATTERN_PATH = CSV_DIR / "BlockPatterns.csv"
+PATTERN_PATH = CSV_DIR / "SpecialPatterns.csv"
 
 # --- Script and template paths ---
 SCRIPT_PATH = SCRIPT_DIR / "PlanetBiomes.py"
 MAKER_PATH = SCRIPT_DIR / "PlanetMaker.py"
 TEMPLATE_PATH = ASSETS_DIR / "planetdata" / "biomemaps" / "plugin_name.esm" / "planet_name.biom"
+TEMP_ESM_PATH = ASSETS_DIR / "plugin_name.esm"
 MATERIAL_PATH = (
     ASSETS_DIR
     / "Materials"
@@ -105,7 +105,12 @@ IMAGE_FILES = [
     "normal.png",
     "colony_mask.png",
     "height.png",
-    "terrain_normal.png"
+    "terrain.png",
+    "terrain_normal.png",
+    "river_mask.png",
+    "mountain_mask.png",
+    "road_mask.png",
+    "humidity.png",
 ]
 
 PROCESSING_MAP = {
@@ -129,7 +134,7 @@ BIOME_HUMIDITY = {
     "tropical": 0.8,
     "frozen": 0.8,
     "hills": 0.5,
-    "mountains": 0.4,
+    "mountain": 0.4,
     "ocean": 1.0,
     "volcanic": 0.0,
     "wetlands": 1.0,
@@ -138,6 +143,7 @@ BIOME_HUMIDITY = {
 # --- Configuration flags ---
 BOOLEAN_KEYS = {
     "enable_coastal_population",
+    "enable_ocean_population",
     "enable_inland_population",
     "enable_equator_intrusion",
     "enable_pole_intrusion",
@@ -155,13 +161,11 @@ BOOLEAN_KEYS = {
     "enable_texture_terrain",
     "process_images",
     "enable_texture_noise",
-    "upscale_image",
     "enable_preview_mode",
     "output_csv_files",
     "output_dds_files",
     "output_mat_files",
     "output_biom_files",
-    "enable_seed_population",
     "random_distortion",
 }
 

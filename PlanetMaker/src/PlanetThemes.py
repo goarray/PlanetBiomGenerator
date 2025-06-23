@@ -109,6 +109,58 @@ def get_biome_palette_stylesheet(config: dict) -> str:
         }}"""
 
 
+def get_height_palette_stylesheet(config: dict) -> str:
+    num_biomes = 7
+    colors = []
+    for i in range(num_biomes):
+        height_val = int(
+            config.get(f"biome{i:02}_height", i * 36)
+        )  # fallback, not used for stops
+        gray = max(0, min(255, height_val))
+        gray_hex = "#{:02x}{:02x}{:02x}".format(gray, gray, gray)
+        colors.append(gray_hex)
+
+    stops = []
+    total_stops = 2 + (num_biomes - 2) * 2 + 2  # 2 ends + 3 per middle biome
+
+    # Calculate evenly spaced positions between 0 and 1 for all stops
+    positions = [i / (total_stops - 1) for i in range(total_stops)]
+
+    # Index for position in the stops list
+    pos_index = 0
+
+    # First biome - 2 stops
+    stops.append(f"stop: {positions[pos_index]:.4f} {colors[0]}")
+    pos_index += 1
+    stops.append(f"stop: {positions[pos_index]:.4f} {colors[0]}")
+    pos_index += 1
+
+    # Middle biomes - 3 stops each
+    for i in range(1, num_biomes - 1):
+        stops.append(f"stop: {positions[pos_index]:.4f} {colors[i]}")
+        pos_index += 1
+        stops.append(f"stop: {positions[pos_index]:.4f} {colors[i]}")
+        pos_index += 1
+
+    # Last biome - 2 stops
+    stops.append(f"stop: {positions[pos_index]:.4f} {colors[-1]}")
+    pos_index += 1
+    stops.append(f"stop: {positions[pos_index]:.4f} {colors[-1]}")
+
+    gradient_stops = ",\n                ".join(stops)
+
+    print("[Debug] gradient_stops:\n", gradient_stops)
+
+    return f""" 
+        QProgressBar#HeightPaletteBar::chunk {{
+            background: qlineargradient(
+                x1: 0, y1: 0, x2: 0, y2: 1,
+                {gradient_stops}
+            );
+            border-radius: 4px;
+        }}"""
+
+
 # Load theme at startup
 theme_data = load_theme()
 
@@ -231,20 +283,6 @@ THEMES = {
                 x1: 0, y1: 0, x2: 1, y2: 0,
                 stop: 0 {theme.get('background', '#00FFFF')},
                 stop: 1 {theme.get('primary_hover_color', '#0099FF')}
-            );
-            border-radius: 4px;
-        }}
-
-        QProgressBar#BiomePaletteBar::chunk {{
-            background: qlineargradient(
-                x1: 0, y1: 0, x2: 1, y2: 0,
-                stop: 0 {config.get('biome00_color', '#00FFFF')},
-                stop: 0.17 {config.get('biome01_color', '#00FFFF')},
-                stop: 0.33 {config.get('biome02_color', '#00FFFF')},
-                stop: 0.5 {config.get('biome03_color', '#00FFFF')},
-                stop: 0.66 {config.get('biome04_color', '#00FFFF')},
-                stop: 0.83 {config.get('biome05_color', '#00FFFF')},
-                stop: 1 {config.get('biome06_color', '#00FFFF')},
             );
             border-radius: 4px;
         }}

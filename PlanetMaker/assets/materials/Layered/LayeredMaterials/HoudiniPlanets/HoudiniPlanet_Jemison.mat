@@ -1,0 +1,2416 @@
+{
+	"Filename" : "MATERIALS\\Layered\\LayeredMaterials\\HoudiniPlanets\\HoudiniPlanet_Jemison.mat",
+	"Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat" ],
+	"Objects" : 
+	[
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C8799A:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::BlenderID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C8799F:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::BlenderID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879AC:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 2,
+					"Type" : "BSMaterial::BlenderID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879AF:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879A3:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87946:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 2,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87991:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::LayerID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : ""
+					},
+					"Index" : 2,
+					"Type" : "BSMaterial::LODMaterialID"
+				}
+			],
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Layer3"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C8798B:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87988:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87946:0005F5CD:A3A3A8F4",
+			"Parent" : "res:969A88ED:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_uvstream_3_surfaceA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87946:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87988:0005F5CD:A3A3A8F4",
+			"Parent" : "res:216F70A7:0005A709:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_material_3_surfaceA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C8798F:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87946:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8798B:0005F5CD:A3A3A8F4",
+			"Parent" : "res:969A895B:0005A4F1:A487E721"
+		},
+		{
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C8798B:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8798D:0005F5CD:A3A3A8F4",
+			"Parent" : "res:969A895F:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_textureset_3_surfaceA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_rough.dds"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_ao.dds"
+					},
+					"Index" : 5,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.25"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C8798B:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8798F:0005F5CD:A3A3A8F4",
+			"Parent" : "res:969A895F:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Layer4"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87993:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87998:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87991:0005F5CD:A3A3A8F4",
+			"Parent" : "res:96CD710E:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_material_4_Ocean"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C87994:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				},
+				{
+					"Data" : 
+					{
+						"Value" : 
+						{
+							"Data" : 
+							{
+								"w" : "1",
+								"x" : "0.293877",
+								"y" : "0.342857",
+								"z" : "0.4"
+							},
+							"Type" : "XMFLOAT4"
+						}
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::Color",
+					"Version" : 1
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87991:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87993:0005F5CD:A3A3A8F4",
+			"Parent" : "res:96CD718B:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_textureset_4_Ocean"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"Color" : 
+						{
+							"Data" : 
+							{
+								"Value" : 
+								{
+									"Data" : 
+									{
+										"w" : "1",
+										"x" : "0.3",
+										"y" : "0.3",
+										"z" : "0.3"
+									},
+									"Type" : "XMFLOAT4"
+								}
+							},
+							"Type" : "BSMaterial::Color",
+							"Version" : 1
+						},
+						"Enabled" : "true"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"Color" : 
+						{
+							"Data" : 
+							{
+								"Value" : 
+								{
+									"Data" : 
+									{
+										"w" : "1",
+										"x" : "0.01",
+										"y" : "0.01",
+										"z" : "0.01"
+									},
+									"Type" : "XMFLOAT4"
+								}
+							},
+							"Type" : "BSMaterial::Color",
+							"Version" : 1
+						},
+						"Enabled" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"Color" : 
+						{
+							"Data" : 
+							{
+								"Value" : 
+								{
+									"Data" : 
+									{
+										"w" : "1",
+										"x" : "0.8",
+										"y" : "0.8",
+										"z" : "0.8"
+									},
+									"Type" : "XMFLOAT4"
+								}
+							},
+							"Type" : "BSMaterial::Color",
+							"Version" : 1
+						},
+						"Enabled" : "true"
+					},
+					"Index" : 5,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TilingMetalRough/PlanetNoiseRidgeSwirl01_normal.DDS"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.02"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87993:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87994:0005F5CD:A3A3A8F4",
+			"Parent" : "res:96CD7190:0005A4F1:A487E721"
+		},
+		{
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87993:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87996:0005F5CD:A3A3A8F4",
+			"Parent" : "res:96CD7190:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_uvstream_4_Ocean"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : 
+						{
+							"Data" : 
+							{
+								"x" : "10",
+								"y" : "20"
+							},
+							"Type" : "XMFLOAT2"
+						}
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::Scale"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C87991:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C87998:0005F5CD:A3A3A8F4",
+			"Parent" : "res:216F70A7:0005A709:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Blender1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C8799D:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/BakedMaps/blank_white.DDS"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.999"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.6"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 2,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 6,
+					"Type" : "BSMaterial::ParamBool"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8799A:0005F5CD:A3A3A8F4",
+			"Parent" : "res:951BBA1F:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_blender_uvstream_0_terrain_secondary"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C8799A:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8799D:0005F5CD:A3A3A8F4",
+			"Parent" : "Data\\Materials\\Layered\\Root\\UVStreams.mat"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Blender2"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879A1:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_surface_A_mask.dds"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.999"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::ParamBool"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::ParamBool"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C8799F:0005F5CD:A3A3A8F4",
+			"Parent" : "res:969A8999:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_blender_uvstream_1_surfaceA"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C8799F:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879A1:0005F5CD:A3A3A8F4",
+			"Parent" : "Data\\Materials\\Layered\\Root\\UVStreams.mat"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Layer2"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879A5:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879AA:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879A3:0005F5CD:A3A3A8F4",
+			"Parent" : "res:951BB9F6:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_material_2_terrain_secondary"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879A9:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879A3:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879A5:0005F5CD:A3A3A8F4",
+			"Parent" : "res:951BBA0C:0005A4F1:A487E721"
+		},
+		{
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879A5:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879A7:0005F5CD:A3A3A8F4",
+			"Parent" : "res:951BBA11:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_textureset_2_terrain_secondary"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_10_mixed_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.6"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879A5:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879A9:0005F5CD:A3A3A8F4",
+			"Parent" : "res:951BBA11:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_uvstream_2_terrain_secondary"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879A3:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879AA:0005F5CD:A3A3A8F4",
+			"Parent" : "res:216F70A7:0005A709:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Blender3"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879AE:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_ocean_mask.dds"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.599"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.95"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "false"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::ParamBool"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879AC:0005F5CD:A3A3A8F4",
+			"Parent" : "res:96CD71D0:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_blender_uvstream_2_Ocean"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879AC:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879AE:0005F5CD:A3A3A8F4",
+			"Parent" : "Data\\Materials\\Layered\\Root\\UVStreams.mat"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_Layer1"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879B1:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialID"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879B6:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::UVStreamID"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "<this>",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879AF:0005F5CD:A3A3A8F4",
+			"Parent" : "res:94D2F414:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_material_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ID" : "res:34C879B3:0005F5CD:A3A3A8F4"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureSetID",
+					"Version" : 3
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879AF:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879B1:0005F5CD:A3A3A8F4",
+			"Parent" : "res:94D2F45C:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_textureset_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"ResolutionHint" : "HighResUniqueMap"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureResolutionSetting"
+				},
+				{
+					"Data" : 
+					{
+						"Enabled" : "true"
+					},
+					"Index" : 4,
+					"Type" : "BSMaterial::TextureReplacement"
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_color.dds"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_normal.dds"
+					},
+					"Index" : 1,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_rough.dds"
+					},
+					"Index" : 3,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"FileName" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_ao.dds"
+					},
+					"Index" : 5,
+					"Type" : "BSMaterial::MRTextureFile",
+					"Version" : 2
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "0.5"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::MaterialParamFloat"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879B1:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879B3:0005F5CD:A3A3A8F4",
+			"Parent" : "res:94D2F463:0005A4F1:A487E721"
+		},
+		{
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879B1:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879B4:0005F5CD:A3A3A8F4",
+			"Parent" : "res:94D2F463:0005A4F1:A487E721"
+		},
+		{
+			"Components" : 
+			[
+				{
+					"Data" : 
+					{
+						"Name" : "HoudiniPlanet_Jemison_uvstream_1_terrain"
+					},
+					"Index" : 0,
+					"Type" : "BSComponentDB::CTName"
+				},
+				{
+					"Data" : 
+					{
+						"Value" : "Clamp"
+					},
+					"Index" : 0,
+					"Type" : "BSMaterial::TextureAddressModeComponent"
+				}
+			],
+			"Edges" : 
+			[
+				{
+					"EdgeIndex" : 0,
+					"To" : "res:34C879AF:0005F5CD:A3A3A8F4",
+					"Type" : "BSComponentDB2::OuterEdge"
+				}
+			],
+			"ID" : "res:34C879B6:0005F5CD:A3A3A8F4",
+			"Parent" : "res:216F70A7:0005A709:A487E721"
+		}
+	],
+	"Summary" : 
+	{
+		"Layer1" : 
+		{
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_color.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_ao.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : true
+				},
+				"Normal" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_normal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_04_thermal_rough.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"UseVertexColorAsTint" : false
+		},
+		"Layer2" : 
+		{
+			"Blender" : 
+			{
+				"BlendMask" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/BakedMaps/blank_white.DDS",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"BlendMode" : "PositionContrast",
+				"BlendTextureAdditiveNormal" : true,
+				"BlendTextureAlbedo" : false,
+				"BlendTextureAo" : false,
+				"BlendTextureMetal" : false,
+				"BlendTextureNormal" : true,
+				"BlendTextureRoughness" : false,
+				"MaskIntensity" : 0.60000002384185791,
+				"VertexAlpha" : false,
+				"VertexColorChannel" : "Red"
+			},
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Normal" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_10_mixed_normal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"UseVertexColorAsTint" : false
+		},
+		"Layer3" : 
+		{
+			"Blender" : 
+			{
+				"BlendMask" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_surface_A_mask.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"BlendMode" : "PositionContrast",
+				"BlendTextureAdditiveNormal" : true,
+				"BlendTextureAlbedo" : false,
+				"BlendTextureAo" : true,
+				"BlendTextureMetal" : false,
+				"BlendTextureNormal" : true,
+				"BlendTextureRoughness" : true,
+				"MaskIntensity" : 1,
+				"VertexAlpha" : false,
+				"VertexColorChannel" : "Green"
+			},
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_ao.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Normal" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_normal.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TerrainMapsShared/rock_03_mixed_rough.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"UseVertexColorAsTint" : false
+		},
+		"Layer4" : 
+		{
+			"Blender" : 
+			{
+				"BlendMask" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/BiomeMasks/Jemison_ocean_mask.dds",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"BlendMode" : "PositionContrast",
+				"BlendTextureAdditiveNormal" : false,
+				"BlendTextureAlbedo" : false,
+				"BlendTextureAo" : true,
+				"BlendTextureMetal" : true,
+				"BlendTextureNormal" : true,
+				"BlendTextureRoughness" : true,
+				"MaskIntensity" : 0.94999998807907104,
+				"VertexAlpha" : false,
+				"VertexColorChannel" : "Blue"
+			},
+			"Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\4LayerStandard.mat",
+			"Textures" : 
+			{
+				"Albedo" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"AmbientOcclusion" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.80000001192092896,
+						"y" : 0.80000001192092896,
+						"z" : 0.80000001192092896
+					},
+					"UseReplacement" : true
+				},
+				"Curvature" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"DepthOffset" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Emissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Flow" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Frost" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"HairID" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Height" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Mask" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"Metalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.0099999997764825821,
+						"y" : 0.0099999997764825821,
+						"z" : 0.0099999997764825821
+					},
+					"UseReplacement" : true
+				},
+				"Normal" : 
+				{
+					"File" : "Data/Textures/Planets/HoudiniPlanets/TilingMetalRough/PlanetNoiseRidgeSwirl01_normal.DDS",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 1
+					},
+					"TextureResolutionHint" : "HighResUniqueMap",
+					"UseReplacement" : false
+				},
+				"Opacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"OverlayColor" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayMetalness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"OverlayRoughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.5,
+						"y" : 0.5,
+						"z" : 0.5
+					},
+					"UseReplacement" : false
+				},
+				"Roughness" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0.30000001192092896,
+						"y" : 0.30000001192092896,
+						"z" : 0.30000001192092896
+					},
+					"UseReplacement" : true
+				},
+				"ScatteringDirections" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"ScatteringForwardAlpha" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				},
+				"SecondaryOpacity" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 1,
+						"y" : 1,
+						"z" : 1
+					},
+					"UseReplacement" : false
+				},
+				"Transmissive" : 
+				{
+					"File" : "",
+					"Replacement" : 
+					{
+						"w" : 1,
+						"x" : 0,
+						"y" : 0,
+						"z" : 0
+					},
+					"UseReplacement" : false
+				}
+			},
+			"Tint" : 
+			{
+				"w" : 1,
+				"x" : 0.29387739300727844,
+				"y" : 0.34285715222358704,
+				"z" : 0.40000000596046448
+			},
+			"UVStream" : 
+			{
+				"Channel" : 0,
+				"Offset" : 
+				{
+					"x" : 0,
+					"y" : 0
+				},
+				"Scale" : 
+				{
+					"x" : 10,
+					"y" : 20
+				}
+			},
+			"UseVertexColorAsTint" : false
+		}
+	},
+	"Version" : 1
+}

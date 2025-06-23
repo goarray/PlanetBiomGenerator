@@ -21,19 +21,24 @@ from PlanetNewsfeed import handle_news
 from PlanetThemes import theme_data
 
 config = get_config()
-with open(CONFIG_PATH) as f:
-    config = json.load(f)
+
+print("Config ID:", id(config))
 
 DEFAULT_OPACITIES = {
+    "height": 0.2,
+    "terrain": 0.2,
     "surface_metal": 1.0,
     "normal": 0.2,
     "rough": 0.2,
+    "humidity": 0.2,
+    "ocean_mask": 0.2,
     "color": 1.0,
     "terrain_normal": 0.2,
     "resource": 0.1,
     "biome": 0.4,
+    "mountain_mask": 0.2,
+    "river_mask": 0.2,
     "colony_mask": 0.2,
-    "ocean_mask": 0.2,
 }  # "ao": 0.2,
 
 TEXTURE_OPACITIES = {
@@ -49,13 +54,18 @@ TEXTURE_TYPES = [
     "surface_metal",
     "normal",
     "rough",
+    "terrain_normal",
+    "terrain",
     "resource",
     "biome",
-    "terrain_normal",
     "color",
-    "ocean_mask",
-    "colony_mask"
-] #"ao",
+    "humidity",
+    "ocean_mask",  # white transparent
+    "river_mask",  # white transparent
+    "mountain_mask",  # black transparent
+    "road_mask",  # black transparent
+    "colony_mask",  # black transparent
+]  # "ao",
 
 
 def enable_mesh(main_window, texture_type, visible, plotter, meshes):
@@ -99,7 +109,6 @@ def auto_connect_enable_buttons(window, plotter, meshes):
 
 def refresh_mesh_opacity(texture_type, plotter, meshes):
     """Refresh opacity for a single mesh."""
-    config = get_config()
     if texture_type not in meshes:
         print(f"[WARN] Tried to refresh unknown texture: {texture_type}")
         return
@@ -134,21 +143,46 @@ def refresh_all_opacities(main_window, plotter, meshes):
                 checkbox.setChecked(True)
 
 
-def force_load_texture(path: Path) -> pv.Texture:
-    # Fully reload image using PIL
+def force_load_texture(
+    path: Path,
+    transparent_black: bool = False,
+    transparent_white: bool = False,
+    grayscale_opacity: bool = False,
+) -> pv.Texture:
+    # Load image as RGBA
     image = Image.open(path).convert("RGBA")
     tex_data = np.array(image)
-    texture = pv.Texture(tex_data)
-    return texture
+
+    if transparent_black:
+        # Make pure black pixels fully transparent
+        black_pixels = np.all(tex_data[:, :, :3] == 0, axis=2)
+        tex_data[black_pixels, 3] = 0  # alpha=0 for black pixels
+        tex_data[~black_pixels, 3] = 255  # alpha=255 elsewhere
+
+    elif transparent_white:
+        # Make pure white pixels fully transparent
+        white_pixels = np.all(tex_data[:, :, :3] == 255, axis=2)
+        tex_data[white_pixels, 3] = 0  # alpha=0 for white pixels
+        tex_data[~white_pixels, 3] = 255  # alpha=255 elsewhere
+
+    elif grayscale_opacity:
+        # Set alpha based on grayscale brightness: black (0) = transparent, white (255) = opaque
+        gray = np.mean(tex_data[:, :, :3], axis=2).astype(np.uint8)
+        tex_data[:, :, 3] = gray
+
+    else:
+        # Default: fully opaque
+        tex_data[:, :, 3] = 255
+
+    return pv.Texture(tex_data)
 
 
 def generate_sphere(main_window, plotter, run_once=[False]):
-    config = get_config()
     theme_name = config.get("theme", "Dark")
     plugin_name = config.get("plugin_name", "default_plugin")
     planet_name = config.get("planet_name", "default_planet")
 
-    resolution = config.get("resolution", 256)
+    resolution = config.get("texture_resolution", 256)
 
     # Dictionary to store meshes for each texture type
     meshes = {}
@@ -236,7 +270,6 @@ def generate_sphere(main_window, plotter, run_once=[False]):
             )
 
     sphere.active_texture_coordinates = np.column_stack((u, v))
-    sphere.active_texture_coordinates = np.column_stack((u, v))
 
     # Load textures and create meshes
     for texture_type in TEXTURE_TYPES:
@@ -251,7 +284,14 @@ def generate_sphere(main_window, plotter, run_once=[False]):
             continue
 
         # Load texture
-        texture = force_load_texture(texture_path)
+        if texture_type in ("colony_mask", "mountain_mask", "road_mask", "river_mask"):
+            texture = force_load_texture(texture_path, transparent_black=True)
+        elif texture_type in ("ocean_mask"):
+            texture = force_load_texture(texture_path, transparent_white=True)
+        elif texture_type in ("humidity"):
+            texture = force_load_texture(texture_path, grayscale_opacity=True)
+        else:
+            texture = force_load_texture(texture_path)
         # Correct normal map for southern hemisphere
 
         if texture_type in ("normal", "terrain_normal"):
@@ -338,23 +378,7 @@ def generate_sphere(main_window, plotter, run_once=[False]):
             ),
         )
 
-    # Connect a config update callback
-    def on_config_updated():
-        global config, TEXTURE_OPACITIES
-        config = get_config()
-        TEXTURE_OPACITIES = {
-            **DEFAULT_OPACITIES,
-            **{
-                key.replace("_opacity", ""): value
-                for key, value in config.items()
-                if key.endswith("_opacity")
-            },
-        }
-        refresh_all_opacities(main_window, plotter, meshes)
-
-    # Placeholder: Assume main_window has a signal for config updates
-    if hasattr(main_window, "config_updated"):
-        main_window.config_updated.connect(on_config_updated)
+    refresh_all_opacities(main_window, plotter, meshes)
 
     return meshes
 

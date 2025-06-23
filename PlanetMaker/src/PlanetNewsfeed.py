@@ -8,7 +8,7 @@ import re
 import json
 from pathlib import Path
 from typing import List
-from PlanetConstants import CONFIG_PATH, DEFAULT_CONFIG_PATH, PREVIEW_PATH, INPUT_DIR
+from PlanetConstants import get_config, CONFIG_PATH, DEFAULT_CONFIG_PATH, PREVIEW_PATH, INPUT_DIR
 
 # Shared global variables
 news_count = 0
@@ -19,17 +19,6 @@ total_news = 0
 total_make = 0
 total_text = 0
 total_other = 0
-
-config = {}
-
-
-def save_json(CONFIG_PATH, data: dict):
-    """Save dictionary data to a JSON file."""
-    try:
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(data, f, indent=4)
-    except Exception as e:
-        handle_news(None, "error", f"Error saving JSON: {e}")
 
 
 def format_message(message: str, kind: str = "info", timestamp: bool = False) -> str:
@@ -179,41 +168,18 @@ def calc_other_count(config: dict) -> int:
         )
     return base
 
-
-def load_global_config():
-    global config, total_news, total_make, total_text
-
-    config_path = CONFIG_PATH if CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
-    try:
-        with open(config_path, "r") as f:
-            config = json.load(f)
-
-            total_make = calc_make_count(config)
-            total_text = calc_text_count(config)
-            total_news = total_make + total_text + total_other
-
-            handle_news(
-                None,
-                "info",
-                f"Loaded config: make={total_make}, text={total_text}, total_news={total_news}",
-            )
-    
-    except json.JSONDecodeError as e:
-        handle_news(None, "error", f"Error parsing config file {config_path}: {e}")
-        total_news = 100
-
-
 def precompute_total_news(config: dict):
 
     # Calculate totals
     global total_news, total_make, total_text, total_other
+
     total_make = calc_make_count(config)
     total_text = calc_text_count(config)
     total_other = calc_other_count(config)
     total_news = total_make + total_text + total_other
 
-    config["total_news"] = total_news
-    save_json(CONFIG_PATH, config)
+    #config["total_news"] = total_news
+    #save_json(CONFIG_PATH, config)
 
     return {
         "total_news": total_news,
@@ -221,7 +187,3 @@ def precompute_total_news(config: dict):
         "total_text": total_text,
         "total_other": total_other,
     }
-
-
-# Initialize total_news after all functions are defined
-load_global_config()

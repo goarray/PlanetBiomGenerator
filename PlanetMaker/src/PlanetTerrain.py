@@ -5,7 +5,7 @@ import noise
 from scipy.ndimage import laplace
 from scipy.ndimage import gaussian_filter, sobel
 from PlanetNewsfeed import handle_news
-from PlanetConstants import get_config, CONFIG_PATH
+from PlanetConstants import get_config, CONFIG_PATH, PNG_OUTPUT_DIR
 
 RIDGE_OCTAVES = 5
 RIDGE_SCALE = 5
@@ -69,50 +69,57 @@ def generate_normal_map(height_img, invert_height=True):
     return Image.fromarray(normal_map, mode="RGB")
 
 
-def generate_terrain_normal(
-    river_mask_path: str,
-    terrain_image_path: str,
-    mountain_mask_path: str,
-    output_path: str = "river_normal.png",
-):
-    """Generates a river-based normal map using river mask (and optional terrain + mountain masks)."""
+def generate_terrain_normal(output_path: str = "terrain_normal.png"):
+    """Generates a terrain-based normal map using internal config and standard mask paths."""
 
-    # Load river mask as height source
-    river_mask = Image.open(river_mask_path).convert("L")
-    river_height = np.asarray(river_mask).astype(np.float32) / 255.0
+    # Load config to get planet and plugin names
+    config = get_config()
+    plugin_name = config.get("plugin_name")
+    planet_name = config.get("planet_name")
 
-    # Optionally soften river pattern
-    river_height = gaussian_filter(river_height, sigma=0.1)
+    # Construct input paths based on naming convention
+    base = PNG_OUTPUT_DIR / plugin_name / planet_name
+    paths = {
+        "road_mask": base / f"{planet_name}_road_mask.png",
+        "mountain_mask": base / f"{planet_name}_mountain_mask.png",
+        "terrain": base / f"{planet_name}_terrain.png",
+        "river_mask": base / f"{planet_name}_river_mask.png",
+    }
 
-    # Optional: blend with terrain to adjust base elevation
-    if terrain_image_path:
-        terrain_img = Image.open(terrain_image_path).convert("L")
-        terrain = np.asarray(terrain_img).astype(np.float32) / 255.0
-        river_height = (
-            river_height * 1.0 + terrain * 0.2
-        )  # blend 80% river + 20% terrain
+    # Load and normalize masks
+    def load_grayscale(path):
+        return np.asarray(Image.open(path).convert("L")).astype(np.float32) / 255.0
 
-    # Optional: dampen effect in mountain zones
-    if mountain_mask_path:
-        mountain_mask = Image.open(mountain_mask_path).convert("L")
-        mountain_mask = np.asarray(mountain_mask).astype(np.float32) / 255.0
-        mountain_mask = gaussian_filter(mountain_mask, sigma=1)
-        river_height *= (
-            1.0 - 0.5 * mountain_mask
-        )  # reduce intensity in mountainous areas
+    river = gaussian_filter(load_grayscale(paths["river_mask"]), sigma=0.1)
+    terrain = gaussian_filter(load_grayscale(paths["terrain"]), sigma=0.1)
+    mountain = gaussian_filter(load_grayscale(paths["mountain_mask"]), sigma=0.2)
 
-    # Optional: sharpen river cuts
-    river_height += laplace(river_height) * 0.25
+    
+    # Blend inputs into heightmap
+    river = river * 1.0 + terrain * 0.2
+    river *= 1.0 - 0.5 * mountain
+    river += laplace(river) * 0.25
 
-    # Normalize height to [0, 1]
-    river_height -= river_height.min()
-    river_height /= river_height.max() + 1e-8
+    # Normalize
+    river -= river.min()
+    river /= river.max() + 1e-8
+    river_inverted = 1.0 - river
 
-    # Convert to grayscale image
-    river_img = Image.fromarray((river_height * 255).astype(np.uint8), mode="L")
+    bump = mountain * 0.7 + terrain * 0.3 + river_inverted * 0.4
+    bump -= bump.min()
+    bump /= bump.max() + 1e-8
 
-    # Generate normal map
-    normal_img = generate_normal_map(river_img)
+    # Apply road flattening
+    road = gaussian_filter(load_grayscale(paths["road_mask"]), sigma=2.0)
+    flatten_strength = 0.6
+    bump = bump * (1 - road * flatten_strength) + (0.5 * road * flatten_strength)
+
+    bump += laplace(bump) * 0.2
+    bump -= bump.min()
+    bump /= bump.max() + 1e-8
+
+    bump_img = Image.fromarray((bump * 255).astype(np.uint8), mode="L")
+    normal_img = generate_normal_map(bump_img)
     normal_img.save(output_path)
 
-    handle_news(None, "info", f"Saved river-based normal map to {output_path}")
+    handle_news(None, "info", f"Saved terrain normal to {output_path}")
