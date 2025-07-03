@@ -84,9 +84,11 @@ GRID_FLATSIZE = GRID_SIZE[0] * GRID_SIZE[1]
 def get_output_paths(plugin_name, planet_name):
     base = PNG_OUTPUT_DIR / plugin_name / planet_name
     return {
-        "color": base / f"{planet_name}_color.png", #full color smooth image, res*2res
-        "height": base / f"{planet_name}_height.png", #smooth greyscale heightmap,
+        "color": base / f"{planet_name}_color.png",  # full color smooth image, res*2res
+        "rough": base / f"{planet_name}_height.png",  # smooth greyscale heightmap,
         "ocean_mask": base / f"{planet_name}_ocean_mask.png",
+        "surface_metal": base / f"{planet_name}_river_mask.png",
+        "ao": base / f"{planet_name}_colony_mask.png",
     }
 
 
@@ -564,8 +566,6 @@ def create_biome_image(image_data: Dict[str, np.ndarray]) -> Dict[str, Image.Ima
     enable_basic_filters = config.get("enable_basic_filters", True)
     enable_texture_noise = config.get("enable_texture_noise", True)
     enable_texture_edges = config.get("enable_texture_edges", True)
-    enable_texture_light = config.get("enable_texture_light", True)
-    enable_texture_terrain = config.get("enable_texture_terrain", True)
     process_images = config.get("process_images", False)
     bright_factor = config.get("texture_brightness", 0.05)
     texture_saturation = config.get("texture_saturation", 0.5)
@@ -863,6 +863,8 @@ def main():
         }.get(texture_type, texture_type)
 
         png_path = output_dir / f"{planet_name}_{suffix}.png"
+        if texture_type in ("ao", "surface_metal"):
+            img = 255 - img
         Image.fromarray(img).save(png_path)
         handle_news(None, "info", f"Saved PNG: {png_path}")
 
@@ -891,7 +893,7 @@ def main():
                 dds_output_dir,
                 plugin_name,
                 "terrain_normal",
-                dds_name_map["terrain_normal"],
+                dds_name_map["normal"],
             )
             handle_news(None, "info", f"DDS saved: {dds_path}")
 

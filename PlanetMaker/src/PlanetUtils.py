@@ -201,7 +201,7 @@ def count_white_pixels(path):
 def load_mask(mask_path: Path) -> np.ndarray:
     if not mask_path.exists():
         raise FileNotFoundError(f"Mask not found: {mask_path}")
-    img = Image.open(mask_path).convert("L")  # grayscale mask
+    img = Image.open(mask_path).convert("L")  # Ensure grayscale
     return np.array(img, dtype=np.uint8)
 
 
@@ -216,7 +216,7 @@ def generate_and_save_road_mask(config):
     ocean_mask = load_mask(base / f"{planet_name}_ocean_mask.png")
 
     road_mask = generate_road_mask(
-        colony_mask, river_mask, mountain_mask, ocean_mask, max_connections=5
+        colony_mask, river_mask, mountain_mask, ocean_mask, max_connections=3
     )
 
     output_path = base / f"{planet_name}_road_mask.png"

@@ -171,6 +171,11 @@
              <height>120</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <strikeout>true</strikeout>
+            </font>
+           </property>
            <property name="title">
             <string>Settings</string>
            </property>
@@ -413,7 +418,7 @@
             </font>
            </property>
            <property name="title">
-            <string>Population</string>
+            <string>Communities</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -760,7 +765,7 @@
          <enum>QTabWidget::TabShape::Triangular</enum>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <property name="movable">
          <bool>true</bool>

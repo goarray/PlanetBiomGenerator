@@ -94,7 +94,6 @@ def generate_terrain_normal(output_path: str = "terrain_normal.png"):
     terrain = gaussian_filter(load_grayscale(paths["terrain"]), sigma=0.1)
     mountain = gaussian_filter(load_grayscale(paths["mountain_mask"]), sigma=0.2)
 
-    
     # Blend inputs into heightmap
     river = river * 1.0 + terrain * 0.2
     river *= 1.0 - 0.5 * mountain
@@ -118,7 +117,8 @@ def generate_terrain_normal(output_path: str = "terrain_normal.png"):
     bump -= bump.min()
     bump /= bump.max() + 1e-8
 
-    bump_img = Image.fromarray((bump * 255).astype(np.uint8), mode="L")
+    inverted_bump = 1.0 - bump
+    bump_img = Image.fromarray((inverted_bump * 255).astype(np.uint8), mode="L")
     normal_img = generate_normal_map(bump_img)
     normal_img.save(output_path)
 
